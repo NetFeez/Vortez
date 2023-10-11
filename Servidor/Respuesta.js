@@ -4,22 +4,24 @@
  */
 
 import FS from 'fs';
-import PATCH from 'path';
+import PATH from 'path';
+import URL from 'url';
 
-import {NetFeez-Labs} from '../Server-Core.js';
+import {NetFeez-Labs} from '../Vortez.js';
+import Servidor from '../Vortez.js';
 
-export default class Respuesta {
-	/**@type {import('../Tipo').NetFeez-Labs.Servidor.Petición} Contiene la petición que recibió el servidor. */
+class Respuesta {
+	/**@type {Servidor.Petición} Contiene la petición que recibió el servidor. */
 	Petición = null;
-	/**@type {import('../Tipo').NetFeez-Labs.Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
+	/**@type {Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
 	Plantillas = null;
 	/**@type {import('http').ServerResponse} Contiene la respuesta que dará el servidor. */
 	SrvRespuesta = null;
 	/**
 	 * Crea la forma de Respuesta de `NetFeez-Labs/Servidor`.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Petición} Petición La petición que recibió el servidor.
+	 * @param {Servidor.Petición} Petición La petición que recibió el servidor.
 	 * @param {import('http').ServerResponse} SrvRespuesta La respuesta que dará el servidor.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Plantillas?} Plantillas El listado de plantillas de respuesta del servidor.
+	 * @param {import('../Vortez.js').default.Plantillas?} Plantillas El listado de plantillas de respuesta del servidor.
 	 */
 	constructor(Petición, SrvRespuesta, Plantillas = null) {
 		this.Petición = Petición;
@@ -99,7 +101,7 @@ export default class Respuesta {
 							let Archivo = FS.createReadStream(Ruta, {start: Number(Inicio), end: Number(Final)});
 							this.SrvRespuesta.setHeader('Content-Length', Tamaño + 1);
 							this.SrvRespuesta.setHeader('Content-Range', `bytes ${Inicio}-${Final}/${Detalles.size}`);
-							this.EnviarEncabezados(206, this.Encabezados(PATCH.extname(Ruta)));
+							this.EnviarEncabezados(206, this.Encabezados(PATH.extname(Ruta)));
 							Archivo.pipe(this.SrvRespuesta);
 							//('Inicio:', Inicio, 'Fin:', Final, 'Frag:', Tamaño, 'Tamaño:', Detalles.size)
 						} else {
@@ -111,14 +113,14 @@ export default class Respuesta {
 			}
 			let Archivo = FS.createReadStream(Ruta);
 			this.SrvRespuesta.setHeader('Content-Length', Detalles.size);
-			this.EnviarEncabezados(200, this.Encabezados(PATCH.extname(Ruta)));
+			this.EnviarEncabezados(200, this.Encabezados(PATH.extname(Ruta)));
 			Archivo.pipe(this.SrvRespuesta);
 		});
 	}
 	/**
 	 * Envía el listado de una carpeta como respuesta.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Reglas.Carpeta} Regla La regla de enrutamiento.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Petición} Petición La petición que recibió el servidor.
+	 * @param {import('../Vortez.js').default.Regla.Carpeta} Regla La regla de enrutamiento.
+	 * @param {import('../Vortez.js').default.Petición} Petición La petición que recibió el servidor.
 	 * @returns {void}
 	 */
 	EnviarCarpeta(Regla, Petición) {
@@ -142,7 +144,9 @@ export default class Respuesta {
 							Carpeta: Carpeta
 						});
 					} else {
-						this.EnviarHNetFeez-Labs('NetFeez-Labs/Global/Plantillas/Carpeta.vhtml', {
+						// @ts-ignore
+						let Directorio = PATH.dirname(URL.fileURLToPath(import.meta.url));
+						this.EnviarHNetFeez-Labs(`${Directorio}/../Global/Plantillas/Carpeta.vhtml`, {
 							Url: Petición.Url,
 							Carpeta: Carpeta
 						});
@@ -204,7 +208,9 @@ export default class Respuesta {
 				this.Enviar(`Error: ${Código} -> ${Mensaje}`);
 			});
 		} else {
-			NetFeez-Labs.Plantilla.Cargar('NetFeez-Labs/Global/Plantillas/Error.vhtml', {
+			// @ts-ignore
+			let Directorio = PATH.dirname(URL.fileURLToPath(import.meta.url));
+			NetFeez-Labs.Plantilla.Cargar(`${Directorio}/../Global/Plantillas/Error.vhtml`, {
 				Código: Código, Mensaje: Mensaje
 			}).then((Plantilla) => {
 				this.EnviarEncabezados(Código, this.Encabezados('html'));
@@ -218,3 +224,4 @@ export default class Respuesta {
 		}
 	}
 }
+export default Respuesta;

@@ -2,34 +2,38 @@
  * @author NetFeez <netfeez.dev@gmail.com>.
  * @description Añade una forma sencilla de crear servidores HTTP/S y WS/S.
  * @license NetFeez-Labs
- * @module Vortez
+ * @module NetFeez-Labs.server_core
  */
 
 import FS from 'fs';
 import HTTP from 'http';
 import HTTPS from 'https';
+import PATH from 'path';
+import URL from 'url';
+
 import Debug from '../Debug/[Debug].js';
+import Petición from "./Petición.js";
+import Respuesta from "./Respuesta.js";
+import Sesión from "./Sesión.js";
+import WebSocket from "./WebSocket.js";
 
-import Petición from "../Servidor/Petición.js";
-import Respuesta from "../Servidor/Respuesta.js";
-import Sesión from "../Servidor/Sesión.js";
-import WebSocket from "../Servidor/WebSocket.js";
+const _Peticiones = new Debug('Peticiones', '.Debug/Peticiones', false);
+const _Solicitudes = new Debug('Solicitudes', '.Debug/Solicitudes', false);
 
-const _Peticiones = new Debug('.Debug/Peticiones', 'Peticiones', false);
-const _Solicitudes = new Debug('.Debug/Solicitudes', 'Solicitudes', false);
-
-export default class Servidor {
-	/**@type {typeof import('../Tipo').NetFeez-Labs.Servidor.Petición} */
+class Servidor {
+	/**@type {typeof Debug} */
+	static Debug = Debug;
+	/**@type {typeof Petición} */
 	static Petición = Petición;
-	/**@type {typeof import('../Tipo').NetFeez-Labs.Servidor.Respuesta} */
+	/**@type {typeof Respuesta} */
 	static Respuesta = Respuesta;
-	/**@type {typeof import('../Tipo').NetFeez-Labs.Servidor.Sesión} */
+	/**@type {typeof Sesión} */
 	static Sesión = Sesión;
-	/**@type {typeof import('../Tipo').NetFeez-Labs.Servidor.WebSocket} */
+	/**@type {typeof WebSocket} */
 	static WebSocket = WebSocket;
 	/**@type {string} Contiene el host donde el servidor recibirá peticiones. */
 	Host = null;
-	/**@type {import('../Tipo').NetFeez-Labs.Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
+	/**@type {} Contiene el listado de plantillas de respuesta del servidor. */
 	Plantillas = null;
 	/**@type {('HTTP'|'HTTPS'|'HTTP/S')} El protocolo en el que se esta ejecutando el servidor. */
 	Protocolo = null;
@@ -41,7 +45,7 @@ export default class Servidor {
 	ServidorHTTP = null;
 	/**@type {HTTPS.Server} Contiene el servidor HTTP/S. */
 	ServidorHTTPS = null;
-	/**@type {Array<import('../Tipo').NetFeez-Labs.Servidor.Reglas>} Contiene las reglas de enrutamiento del servidor. */
+	/**@type {any} Contiene las reglas de enrutamiento del servidor. */
 	Reglas = null;
 	/**
 	 * Crea un servidor HTTP/S.
@@ -50,50 +54,54 @@ export default class Servidor {
 	 * @param {{Publico: string, Llave: string, Puerto?: number}} SSL La configuración SSL.
 	 */
 	constructor(Puerto = null, Host = null, SSL = null) {
+		let Usar_HTTPS = SSL && SSL.Publico && SSL.Llave ? true : false;
 		this.Host = Host ? Host : null;
 		this.Plantillas = {};
 		this.PuertoHTTP = Puerto ? Puerto : 80;
 		this.PuertoHTTPS = SSL && SSL.Puerto ? SSL.Puerto : 443;
 		this.Reglas = [];
+		Debug.Log('&B(255,180,220)&C0---------------------------------');
+		Debug.Log('&B(255,180,220)&C0- NetFeez-Labs/Servidor by NetFeez -');
+		Debug.Log('&B(255,180,220)&C0-       Servidor Iniciado       -');
+		Debug.Log('&B(255,180,220)&C0---------------------------------');
+		let [I_HTTP, I_HTTPS] = [false, false];
 		this.ServidorHTTP = HTTP.createServer((Petición, Respuesta) => {
 			this.Peticiones(Petición, Respuesta);
 		}).on('upgrade', (Petición, Socket) => {
 			this.Solicitudes(Petición, Socket);
 		}).listen(this.PuertoHTTP, Host, () => {
-			this.Protocolo = 'HTTP';
-			Debug.Log('---------------------------------');
-			Debug.Log('- NetFeez-Labs/Servidor by NetFeez -');
-			Debug.Log('-       Servidor Iniciado       -');
-			Debug.Log('---------------------------------');
-			Debug.Log('- Host', this.Host ? this.Host : 'localhost');
-			Debug.Log('- Puerto HTTP', this.PuertoHTTP);
-			Debug.Log('- Puerto HTTPS?', this.PuertoHTTPS);
-			Debug.Log('- Protocolo: ', this.Protocolo);
-			Debug.Log('---------------------------------');
+			this.Protocolo = this.Protocolo == 'HTTPS' ? 'HTTP/S' : 'HTTP';
+			Debug.Log('&B(255,180,220)&C0-&R Host', this.Host ? this.Host : 'localhost');
+			Debug.Log('&B(255,180,220)&C0-&R Puerto HTTP', this.PuertoHTTP);
+			if ((! Usar_HTTPS) || I_HTTPS) Debug.Log('&B(255,180,220)&C0---------------------------------');
 		});
-		if (SSL && SSL.Publico && SSL.Llave) {
+		if (Usar_HTTPS) {
 			Servidor.Certificados(SSL.Publico, SSL.Llave).then((Certificados) => {
 				this.ServidorHTTPS = HTTPS.createServer(Certificados, (Petición, Respuesta) => {
 					this.Peticiones(Petición, Respuesta);
 				}).on('upgrade', (Petición, Socket) => {
 					this.Solicitudes(Petición, Socket);
 				}).listen(this.PuertoHTTPS, Host, () => {
-					Debug.Log('[Server - Core]: Protocolo HTTPS Iniciado');
 					this.Protocolo = this.Protocolo == 'HTTP' ? 'HTTP/S' : 'HTTPS';
+					Debug.Log('&B(255,180,220)&C0-&R Puerto HTTPS', this.PuertoHTTPS);
+					if (I_HTTP) Debug.Log('&B(255,180,220)&C0---------------------------------');
 				});
 			}).catch((Error) => {
-				Debug.Log('[Server - Core]: Error con los certificados: ', Error);
+				Debug.Log('&C(255,0,0)[Server - Core]: Error con los certificados: ', Error);
+				if (I_HTTP) Debug.Log('&B(255,180,220)&C0---------------------------------');
 			});
 		}
+		// @ts-ignore
+		let Directorio = PATH.dirname(URL.fileURLToPath(import.meta.url));
 		this.Reglas.push({
 			Método: 'GET', Tipo: 'Carpeta', Url: '/NetFeez-Labs:Global', Opciones: {
-				Recurso: 'NetFeez-Labs/Global'
+				Recurso: `${Directorio}/../Global`
 			}
 		});
 	}
 	/**
 	 * Añade una/varias regla/s de enrutamiento para el servidor.
-	 * @param {Array<import('../../NetFeez-Labs/Tipo').NetFeez-Labs.Servidor.Reglas>} Reglas La regla/s que desea añadir.
+	 * @param {Array} Reglas La regla/s que desea añadir.
 	 * @returns {Servidor}
 	 */
 	Añadir_Reglas(...Reglas) {
@@ -102,7 +110,7 @@ export default class Servidor {
 	}
 	/**
 	 * Define la plantillas `.vhtml` predeterminadas del servidor.
-	 * @param {keyof import('../Tipo').NetFeez-Labs.Servidor.Plantillas} Nombre El nombre de la plantilla.
+	 * @param {any} Nombre El nombre de la plantilla.
 	 * @param {string} Ruta La ruta de la plantilla `.vhtml`.
 	 * @returns {Servidor}
 	 */
@@ -112,8 +120,8 @@ export default class Servidor {
 	}
 	/**
 	 * Enruta las peticiones hechas al servidor para que sean procesadas.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Petición} Petición La petición que recibió el servidor.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Respuesta} Respuesta La respuesta que dará el servidor.
+	 * @param {Petición} Petición La petición que recibió el servidor.
+	 * @param {Respuesta} Respuesta La respuesta que dará el servidor.
 	 * @returns {void}
 	 */
 	Enrutar(Petición, Respuesta) {
@@ -172,8 +180,8 @@ export default class Servidor {
 	}
 	/**
 	 * Enruta las peticiones de conexión WebSocket.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Petición} Petición La petición que recibió el servidor.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.WebSocket} WebSocket La conexión con el cliente.
+	 * @param {Petición} Petición La petición que recibió el servidor.
+	 * @param {WebSocket} WebSocket La conexión con el cliente.
 	 * @returns {void}
 	 */
 	EnrutarWebSocket(Petición, WebSocket) {
@@ -267,3 +275,4 @@ export default class Servidor {
 	  	});
 	}
 }
+export default Servidor;

@@ -1,11 +1,12 @@
 {
-  "name": "NetFeez-Labs-Vortez",
-  "version": "1.0.0",
+  "name": "NetFeez-Labs.Vortez",
+  "version": "2.0.0",
   "description": "a module for http/s and ws/s servers",
-  "main": "Server-Core.js",
+  "main": "Vortez.js",
   "type": "module",
   "scripts": {
-    "csv-to-json": "node \"Herramientas/CSV-To-JSON.js\""
+    "test": "node Test/Plantilla.js && node Test/Debug.js",
+    "csv-to-json": "node \"Global/Herramientas/CSV-To-JSON.js\""
   },
   "keywords": [
     "NetFeez-Labs",

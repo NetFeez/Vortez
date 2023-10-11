@@ -1,0 +1,6 @@
+$Variable{Titulo}
+$Variable{Descripción}
+<ul><HNetFeez-Labs:Array>
+    $HNetFeez-Labs:Array{AR}
+    <li>$Array{ID}: $Array{Valor}</li>
+</HNetFeez-Labs:Array></ul>

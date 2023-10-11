@@ -2,11 +2,10 @@
 * @author NetFeez <netfeez.dev@gmail.com>.
 * @description Añade un sistema de sesiones a `Vortez`.
 */
-
 import CRYPTO from 'crypto';
 import EVENTS from 'events';
 
-export default class Sesión extends EVENTS {
+class Sesión extends EVENTS {
     /**@type {Map<string, any>} Contiene los datos almacenados en la sesión. */
     Datos = null;
     /**@type {Map<string, Sesión>} Contiene las instancias de session. */
@@ -15,8 +14,8 @@ export default class Sesión extends EVENTS {
     SS_UUID = null;
     /**
      * Crea/Recupera una instancia de sesión.
-     * @param {import('../Tipo').NetFeez-Labs.Servidor.Petición} Petición La petición que recibió el servidor.
-	 * @param {import('../Tipo').NetFeez-Labs.Servidor.Respuesta?} Respuesta La respuesta que dará el servidor.
+     * @param {import('../Vortez').default.Petición} Petición La petición que recibió el servidor.
+	 * @param {import('../Vortez').default.Respuesta?} Respuesta La respuesta que dará el servidor.
      * - si no se pasa el parámetro `Respuesta` No se establecerá la cookie `SS_UUID` y deberás hacerlo manualmente.
     */
     constructor(Petición, Respuesta = null) { super();
@@ -49,3 +48,4 @@ export default class Sesión extends EVENTS {
         this.emit('Cerrar');
     }
 }
+export default Sesión;
