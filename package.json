@@ -1,0 +1,20 @@
+{
+  "name": "NetFeez-Labs-Vortez",
+  "version": "1.0.0",
+  "description": "a module for http/s and ws/s servers",
+  "main": "Server-Core.js",
+  "type": "module",
+  "scripts": {
+    "csv-to-json": "node \"Herramientas/CSV-To-JSON.js\""
+  },
+  "keywords": [
+    "NetFeez-Labs",
+    "http",
+    "https",
+    "ws",
+    "wss",
+    "server"
+  ],
+  "author": "NetFeez",
+  "license": "ISC"
+}
