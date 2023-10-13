@@ -13,3 +13,4 @@ export {
 	Vortez,
 	NetFeez-Labs
 };
+module.exports = Vortez;

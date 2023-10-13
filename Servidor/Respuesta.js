@@ -11,17 +11,17 @@ import {NetFeez-Labs} from '../Vortez.js';
 import Servidor from '../Vortez.js';
 
 class Respuesta {
-	/**@type {Servidor.Petición} Contiene la petición que recibió el servidor. */
+	/**@type {typeof Servidor.Petición} Contiene la petición que recibió el servidor. */
 	Petición = null;
-	/**@type {Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
+	/**@type {typeof Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
 	Plantillas = null;
 	/**@type {import('http').ServerResponse} Contiene la respuesta que dará el servidor. */
 	SrvRespuesta = null;
 	/**
 	 * Crea la forma de Respuesta de `NetFeez-Labs/Servidor`.
-	 * @param {Servidor.Petición} Petición La petición que recibió el servidor.
+	 * @param {typeof Servidor.Petición} Petición La petición que recibió el servidor.
 	 * @param {import('http').ServerResponse} SrvRespuesta La respuesta que dará el servidor.
-	 * @param {import('../Vortez.js').default.Plantillas?} Plantillas El listado de plantillas de respuesta del servidor.
+	 * @param {Servidor.Plantillas?} Plantillas El listado de plantillas de respuesta del servidor.
 	 */
 	constructor(Petición, SrvRespuesta, Plantillas = null) {
 		this.Petición = Petición;
