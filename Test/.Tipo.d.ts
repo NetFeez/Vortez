@@ -5,7 +5,9 @@
  * 
  */
 
-export namespace NetFeez-Labs {
+import { Debug, Vortez, Plantilla } from '../Vortez'
+
+export namespace _NetFeez-Labs {
     namespace Servidor {
         namespace Petición {
             type Método = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'ALL';

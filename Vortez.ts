@@ -1,16 +1,15 @@
-import Debug from "./Debug/[Debug].js";
-import Plantilla from "./Plantilla/[Plantilla].js";
-import Servidor from "./Servidor/[Servidor].js";
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>.
+ * @description Exporta lo necesario para usar Vortez
+ * @license Apache-2.0
+ */
 
-const Vortez = Servidor;
-const NetFeez-Labs = {
-	Debug: Debug,
-	Plantilla: Plantilla
-}
+import Debug from "./Debug/Debug.js";
+import Plantilla from "./Template/Template.js";
+import Vortez from "./Server/Server.js";
+
+export {
+	Debug, Plantilla, Vortez
+};
 
 export default Vortez;
-export {
-	Vortez,
-	NetFeez-Labs
-};
-module.exports = Vortez;

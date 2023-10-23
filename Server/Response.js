@@ -7,13 +7,13 @@ import FS from 'fs';
 import PATH from 'path';
 import URL from 'url';
 
-import {NetFeez-Labs} from '../Vortez.js';
-import Servidor from '../Vortez.js';
+import Plantilla from '../Template/Template.js';
+import Servidor from './Server.js';
 
 class Respuesta {
-	/**@type {typeof Servidor.Petición} Contiene la petición que recibió el servidor. */
+	/**@type {Servidor.Petición} Contiene la petición que recibió el servidor. */
 	Petición = null;
-	/**@type {typeof Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
+	/**@type {Servidor.Plantillas} Contiene el listado de plantillas de respuesta del servidor. */
 	Plantillas = null;
 	/**@type {import('http').ServerResponse} Contiene la respuesta que dará el servidor. */
 	SrvRespuesta = null;
@@ -119,8 +119,8 @@ class Respuesta {
 	}
 	/**
 	 * Envía el listado de una carpeta como respuesta.
-	 * @param {import('../Vortez.js').default.Regla.Carpeta} Regla La regla de enrutamiento.
-	 * @param {import('../Vortez.js').default.Petición} Petición La petición que recibió el servidor.
+	 * @param {import('./Server.js').Servidor.} Regla La regla de enrutamiento.
+	 * @param {import('./Request.js').default} Petición La petición que recibió el servidor.
 	 * @returns {void}
 	 */
 	EnviarCarpeta(Regla, Petición) {
@@ -146,7 +146,7 @@ class Respuesta {
 					} else {
 						// @ts-ignore
 						let Directorio = PATH.dirname(URL.fileURLToPath(import.meta.url));
-						this.EnviarHNetFeez-Labs(`${Directorio}/../Global/Plantillas/Carpeta.vhtml`, {
+						this.EnviarHNetFeez-Labs(`${Directorio}/../Global/Template/Folder.vhtml`, {
 							Url: Petición.Url,
 							Carpeta: Carpeta
 						});
@@ -174,7 +174,7 @@ class Respuesta {
 	 * @returns {void}
 	 */
 	EnviarHNetFeez-Labs(Ruta, Datos) {
-		NetFeez-Labs.Plantilla.Cargar(Ruta, Datos).then((Plantilla) => {
+		Plantilla.Cargar(Ruta, Datos).then((Plantilla) => {
 			this.EnviarEncabezados(200, this.Encabezados('html'));
 			this.Enviar(Plantilla, 'utf-8');
 		}).catch((Error) => {
@@ -198,7 +198,7 @@ class Respuesta {
 	 */
 	Error(Código, Mensaje) {
 		if (this.Plantillas.Error) {
-			NetFeez-Labs.Plantilla.Cargar(this.Plantillas.Error, {
+			Plantilla.Cargar(this.Plantillas.Error, {
 				Código: Código, Mensaje: Mensaje
 			}).then((Plantilla) => {
 				this.EnviarEncabezados(Código, this.Encabezados('html'));
@@ -210,7 +210,7 @@ class Respuesta {
 		} else {
 			// @ts-ignore
 			let Directorio = PATH.dirname(URL.fileURLToPath(import.meta.url));
-			NetFeez-Labs.Plantilla.Cargar(`${Directorio}/../Global/Plantillas/Error.vhtml`, {
+			Plantilla.Cargar(`${Directorio}/../Global/Template/Error.vhtml`, {
 				Código: Código, Mensaje: Mensaje
 			}).then((Plantilla) => {
 				this.EnviarEncabezados(Código, this.Encabezados('html'));
