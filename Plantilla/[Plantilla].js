@@ -36,7 +36,7 @@ class Plantilla {
 	}
 	/**
 	 * Compila una plantilla `.vhtml` a `Html`.
-	 * @param {string} Plantilla El contenido de la plantilla.
+	 * @param {string} Contenido El contenido de la plantilla.
 	 * @param {{}} Datos Los datos con los que se compilara la plantilla.
 	 * @returns {string}
 	 */
