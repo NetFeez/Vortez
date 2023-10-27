@@ -1,9 +1,9 @@
 import Plantilla from "../Template/Template.js";
 
 (async () => console.log(
-    await Plantilla.Cargar('./Test/Plantilla.vhtml', {
+    await Plantilla.Load('./Test/Plantilla.vhtml', {
         Titulo: 'Titulo de la prueba',
-        Descripción: 'Descripción xD',
+        Des: 'Descripción xD',
         AR: {
             Algo: 'Algo 1',
             Otra: 'Otra2'

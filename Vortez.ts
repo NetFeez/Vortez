@@ -5,11 +5,11 @@
  */
 
 import Debug from "./Debug/Debug.js";
-import Plantilla from "./Template/Template.js";
+import Template from "./Template/Template.js";
 import Vortez from "./Server/Server.js";
 
 export {
-	Debug, Plantilla, Vortez
+	Debug, Template, Vortez
 };
 
 export default Vortez;
