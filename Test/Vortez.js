@@ -8,7 +8,7 @@ Servidor.Añadir_Reglas({
     Tipo: 'Acción', Opciones: {
         Cobertura: 'Parcial',
         Acción: (Petición, Respuesta) => {
-            Respuesta.EnviarHNetFeez-Labs('./Test/Test.vhtml', {
+            Respuesta.SendTemplate('./Test/Test.vhtml', {
                 Des: 'Una Descripción',
                 Tests: {
                     WebSocket: 'Test/Ws',
