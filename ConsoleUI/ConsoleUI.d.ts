@@ -2,7 +2,6 @@
  * @author NetFeez <netfeez.dev@gmail.com>.
  * @description Contiene las funcionalidades base de las herramientas del modulo NetFeez-Labs
  * @license Apache-2.0
- * @module NetFeez-Labs/CUI
  */
 
 class ConsoleUI {
