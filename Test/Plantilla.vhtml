@@ -13,7 +13,7 @@
                 <th>Enlace</th>
             </tr>
             <HNetFeez-Labs:Array>
-                $HNetFeez-Labs:Array{AR}
+                $HNetFeez-Labs:Array{Tests}
                 <tr>
                     <td>$Array{ID}</td>
                     <td><a href="$Array{Valor}">$Array{Valor}</a></td>
