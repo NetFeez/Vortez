@@ -1,10 +1,10 @@
 import Vortez, { Debug } from "../Vortez.js";
 
-const Servidor = new Vortez(80);
+const Server = new Vortez(80);
 Debug.ShowAll = true;
 
 //Test De Acción y carga de plantillas
-Servidor.AddRules({
+Server.AddRules({
     Method: 'GET', Url: '/Test',
     Type: 'Action', Options: {
         Coverage: 'Partial',
@@ -22,14 +22,14 @@ Servidor.AddRules({
     }
 });
 //Test De Carpeta
-Servidor.AddRules({
+Server.AddRules({
     Method: 'GET', Url: '/Test/Dir',
     Type: 'Folder', Options: {
         Source: './'
     }
 });
 //Test De Archivo
-Servidor.AddRules({
+Server.AddRules({
     Method: 'GET', Url: '/Test/File',
     Type: 'File', Options: {
         Coverage: 'Complete',
@@ -37,7 +37,7 @@ Servidor.AddRules({
     }
 });
 //Test de regla de WebSocket
-Servidor.AddRules((() => {
+Server.AddRules((() => {
     const Conexiones = new Set();
     return {
         Method: 'GET', Url: '/Test/WS-Chat',
