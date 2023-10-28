@@ -16,8 +16,8 @@ class Session extends EVENTS {
     SS_UUID = null;
     /**
      * Crea/Recupera una instancia de sesión.
-     * @param {import('../Vortez').default.Petición} Request La petición que recibió el servidor.
-	 * @param {import('../Vortez').default.Respuesta?} Response La respuesta que dará el servidor.
+     * @param {import('../Vortez').default.Request} Request La petición que recibió el servidor.
+	 * @param {import('../Vortez').default.Response?} Response La respuesta que dará el servidor.
      * - si no se pasa el parámetro `Respuesta` No se establecerá la cookie `SS_UUID` y deberás hacerlo manualmente.
     */
     constructor(Request, Response = null) { super();
