@@ -2,20 +2,42 @@
   "name": "vortez",
   "version": "3.0.0",
   "description": "a module for http/s and ws/s servers",
-  "main": "Vortez.js",
   "type": "module",
+  "main": "Vortez.js",
   "scripts": {
     "test": "node Test/Vortez.js",
     "csv-to-json": "node \"Global/Herramientas/CSV-To-JSON.js\""
   },
+  "author": {
+    "name": "NetFeez",
+    "email": "netfeez.dev@gmail.com",
+    "url": "https://NetFeez.github.io"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NetFeez/Vortez"
+  },
+  "files": [
+    "README.me",
+    "LICENSE",
+    "Vortez.js",
+    "Vortez.d.ts",
+    "ConsoleUI/",
+    "Debug/",
+    "Global/",
+    "Server/",
+    "Template/"
+  ],
   "keywords": [
-    "NetFeez-Labs",
+    "vortez",
+    "core",
+    "framework",
+    "web",
     "http",
     "https",
     "ws",
     "wss",
     "server"
-  ],
-  "author": "NetFeez",
-  "license": "Apache-2.0"
+  ]
 }
