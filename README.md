@@ -30,10 +30,6 @@ Esto es todo por el momento, [NetFeez](https://NetFeez.github.io) se retira.
 
 # Documentación 
 
-> [!NOTE]
-> La documentación ampliada esta siendo escrita.
-> [Aquí puedes ver los avances](Docs/Vortez.md).
-
 <!-- Por el momento iré enlistonado las funcionalidades agregadas para documentar todo debidamente en el futuro. -->
 Para crear un servidor usando el modulo debes primero importarlo.<br/>
 
