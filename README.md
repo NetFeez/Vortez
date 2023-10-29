@@ -19,6 +19,10 @@ este comenzó como un proyecto personal y con fines de práctica de pensamiento 
 por lo tanto no tiene las mejores prácticas ni la mejor documentación, sin embargo<br/>
 publicaré el código de esta manera e iré modificando para corregir esto.
 
+```console
+mpm install vortez
+```
+
 **Futuras correcciones**
 
 - [x] Documentar clases y funciones para intellisense.
@@ -30,24 +34,26 @@ Esto es todo por el momento, [NetFeez](https://NetFeez.github.io) se retira.
 
 # Documentación 
 
-<!-- Por el momento iré enlistonado las funcionalidades agregadas para documentar todo debidamente en el futuro. -->
-Para crear un servidor usando el modulo debes primero importarlo.<br/>
+Primero debemos instalar el modulo usando
 
-> [!NOTE]
-> Por el momento **`Vortez`** no esta en npm, por lo que debes descargar el repositorio y poner su contenido en una carpeta dentro tu proyecto.
-> ```
-> - Proyecto raíz
-> | - Vortez/
-> | - src/
->   | - main.js
-> | - package.json
-> ```
+```console
+mpm install vortez
+```
 
-Una ves tengas Vortez en tu proyecto debes importar el archivo `Vortez.js`<br/>
+También es necesario que en tu package.json este el proyecto como type: module
+```json
+{
+  "name": "my-project",
+  "main": "index.js",
+  "type": "module"
+}
+```
 
+Una ves tengas Vortez en tu proyecto y lo hayas configurado como modulo debes importarlo<br/>
+-->
 - Si en tu package.json tienes la propiedad `"type": "module"`:
   ```js
-  import Vortez from './Vortez/Vortez.js';
+  import Vortez from 'vortez';
   ```
 - Si no tienes esta propiedad usa:
   ```js
