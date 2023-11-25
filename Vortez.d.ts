@@ -1,6 +1,7 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>.
  * @description Exporta lo necesario para usar Vortez
+ * @module NetFeez-Labs.Vortez
  * @license Apache-2.0
  */
 
