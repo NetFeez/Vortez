@@ -1,3 +1,9 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>.
+ * @description Permite la emisión de correos electrónicos.
+ * @license Apache-2.0
+ */
+
 import Debug from '../Debug/Debug.js';
 
 import TLS from 'tls';
