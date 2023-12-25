@@ -3,6 +3,10 @@
 - Mail: acceso desde (vortez/Mail/Mail.js)
 - JsonWT: acceso desde (vortez/JsonWT/JsonWT.js)
 ## 3.4
+### 3.4.2
+**Correcciones**
+  - Mail: error de tipos para la función SendMail.
+  - Mail: error de importación de Debug.
 ### 3.4.1
 **Desarrollado sin añadir**
   - Mail: permite enviar correos electrónicos a traves de un servidor smtp/s
