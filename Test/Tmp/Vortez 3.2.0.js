@@ -1,4 +1,4 @@
-import Vortez, { Debug } from "../Vortez.js";
+import Vortez, { Debug } from "../../Vortez.js";
 
 const Server = new Vortez(80);
 Debug.ShowAll = true;
