@@ -5,8 +5,7 @@
   "type": "module",
   "main": "Vortez.js",
   "scripts": {
-    "test": "node Test/Test.js",
-    "csv-to-json": "node \"Global/Herramientas/CSV-To-JSON.js\""
+    "test": "node Test/Test.js"
   },
   "author": {
     "name": "NetFeez",
