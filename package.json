@@ -30,7 +30,8 @@
     "JsonWT/",
     "Mail/",
     "Server/",
-    "Template/"
+    "Template/",
+    "Utilities/"
   ],
   "keywords": [
     "NetFeez",
