@@ -40,21 +40,6 @@ Primero debemos instalar el modulo usando
 mpm install vortez
 ```
 
-Para instalar la version en desarrollo:
-```console
-mpm install vortez@dev
-```
-> [!WARNING]
-> - Esta version podría contener errores.
-> - Contiene la version mas reciente del proyecto.
-
-Para acceder a las funciones en desarrollo sin añadir mencionadas en changes.md
-```js
-import { Beta } from 'vortez'
-const Mail = Beta.Mail;
-const JsonWT = Beta.JsonWT;
-```
-
 También es necesario que en tu package.json este el proyecto como type: module
 ```json
 {
@@ -242,4 +227,20 @@ Server.AddRules({
     }
   }
 });
+```
+
+# Version Dev
+Para instalar la version en desarrollo:
+```console
+mpm install vortez@dev
+```
+> [!WARNING]
+> - Esta version podría contener errores.
+> - Contiene la version mas reciente del proyecto.
+
+Para acceder a las funciones en desarrollo sin añadir mencionadas en changes.md
+```js
+import { Beta } from 'vortez'
+const Mail = Beta.Mail;
+const JsonWT = Beta.JsonWT;
 ```
