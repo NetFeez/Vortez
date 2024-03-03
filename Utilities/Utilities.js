@@ -7,7 +7,11 @@ const ModuleDir = PATH.dirname(PATH.dirname(URL.fileURLToPath(import.meta.url)))
 class Utilities {
     static Path = {
         ModuleDir: ModuleDir,
-        ModuleMain: `${ModuleDir}\\Vortez.js`
+        ModuleMain: `${ModuleDir}\\Vortez.js`,
+        Normalize: (Path) => {
+            Path = Path.replace(/[\\/]/gi, PATH.sep);
+            return Path;
+        }
     }
 };
 

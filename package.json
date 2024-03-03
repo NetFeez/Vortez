@@ -1,6 +1,6 @@
 {
   "name": "vortez",
-  "version": "3.5.2",
+  "version": "3.5.3",
   "description": "a module for http/s and ws/s servers",
   "type": "module",
   "main": "Vortez.js",
