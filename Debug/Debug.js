@@ -61,9 +61,9 @@ class Debug {
 		this.Stream.write('/*| NetFeez-Labs/Debug by NetFeez |*/\n');
 		this.Stream.write('/*|     Use NetFeez-Labs ReadDebug     |*/\n');
 		this.Stream.write('/*+----------------------------+*/\n');
-		console.log(`Debug: [${this.ID}] --| Guardado en |-> ${this.Path}`);
 		this.Stream.write(`/*the name of the DebugFile is the DateTime of initialize Debug with ID ${this.ID}*/\n`);
 		this.Stream.write(`/*the initialize stream DateTime is ${Fecha.DDMMYYYY} << ${Fecha.HHMMSSmmm}*/\n`);
+		if (this.InFile) this.Log(`Debug: [${this.ID}] --| Guardado en |-> ${this.Path}`);
 	}
 	/**
 	 * Muestra y almacena datos en la consola y en ´.vlog´.
