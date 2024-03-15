@@ -1,10 +1,14 @@
-import Vortez, { Debug } from "../Vortez.js";
+import Vortez, { Debug, Config } from "../Vortez.js";
 
+Config.SetShowDebug({
+    Mail: true,
+    Requests: true,
+    Server: true,
+    UpgradeRequests: true
+});
 
 // Preparación previa a los test`s
-Debug.ShowAll = true;
 const $Test = new Debug('Test', 'Test/.Debug');
-
 
 const Env = {
     Port: 3000,
