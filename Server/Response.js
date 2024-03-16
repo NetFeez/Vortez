@@ -149,7 +149,7 @@ class Response {
 							Carpeta: Folder
 						});
 					} else {
-						this.SendTemplate(`${Utilities.Path.ModuleDir}\\Global\\Template\\Folder.vhtml`, {
+						this.SendTemplate(Utilities.Path.Relative('\\Global\\Template\\Folder.vhtml'), {
 							Url: this.Request.Url,
 							Carpeta: Folder
 						});
@@ -214,7 +214,7 @@ class Response {
 				this.Send(`Error: ${Code} -> ${Message}`);
 			});
 		} else {
-			Template.Load(`${Utilities.Path.ModuleDir}\\Global\\Template\\Error.vhtml`, {
+			Template.Load(Utilities.Path.Relative("\\Global\\Template\\Error.vhtml"), {
 				Código: Code, Mensaje: Message
 			}).then((Template) => {
 				this.SendHeaders(Code, this.GenerateHeaders('html'));
