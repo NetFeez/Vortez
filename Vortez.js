@@ -6,6 +6,7 @@
  */
 
 // Utilidades principales del modulo.
+import Config from "./Config/Config.js";
 import Debug from "./Debug/Debug.js";
 import Template from "./Template/Template.js";
 import Vortez from "./Server/Server.js";
@@ -22,7 +23,7 @@ const Beta = {
 
 // Exportación de utilidades.
 export {
-	Debug, Template, Vortez, Utilities, Beta
+	Config, Debug, Template, Vortez, Utilities, Beta
 };
 
 // Exportación por defecto de Vortez.
