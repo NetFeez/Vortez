@@ -98,7 +98,7 @@ export class Server {
 	 * @param Action La acción que se ejecutara.
 	 * @param Auth La función de comprobación de autorización.
 	 */
-	public AddWebSocket(UrlRule: string, Action: Rule.WebSocketExec, Auth?: Rule.ActionExec): Server;
+	public AddWebSocket(UrlRule: string, Action: Rule.WebSocketExec, Auth?: Rule.AuthExec): Server;
 	/**
 	 * Define la plantillas `.vhtml` predeterminadas del servidor.
 	 * @param Template El nombre de la plantilla.
