@@ -45,6 +45,7 @@ export class Server {
 		this.HttpsPort = sslOptions && sslOptions.Port ? sslOptions.Port : 443;
 		this.rules = [];
         this.protocol = sslOptions && sslOptions.Public && sslOptions.Private ? 'HTTPS' : 'HTTP';
+		this.addFolder('/NetFeez-Labs:Global', `${Utilities.Path.moduleDir}\\Global`);
 		Debug.log('&B(255,180,220)&C0---------------------------------');
 		Debug.log('&B(255,180,220)&C0- NetFeez-Labs/Servidor by NetFeez -');
 		Debug.log('&B(255,180,220)&C0-       Servidor Iniciado       -');
@@ -76,7 +77,6 @@ export class Server {
 			Debug.log('&C(255,0,0)[Server - Core]: Error con los certificados: ', Error);
 			if (HttpStarted) Debug.log('&B(255,180,220)&C0---------------------------------');
 		});
-		this.addFolder('/NetFeez-Labs:Global', `${Utilities.Path.moduleDir}\\Global`);
 	}
 	/**
 	 * Añade una/varias regla/s de enrutamiento para el servidor.
