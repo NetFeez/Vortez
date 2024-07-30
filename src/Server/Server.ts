@@ -45,7 +45,7 @@ export class Server {
 		this.HttpsPort = sslOptions && sslOptions.Port ? sslOptions.Port : 443;
 		this.rules = [];
         this.protocol = sslOptions && sslOptions.Public && sslOptions.Private ? 'HTTPS' : 'HTTP';
-		this.addFolder('/NetFeez-Labs:Global', `${Utilities.Path.moduleDir}\\Global`);
+		this.addFolder('/NetFeez-Labs:Global', `${Utilities.Path.moduleDir}\\global`);
 		Debug.log('&B(255,180,220)&C0---------------------------------');
 		Debug.log('&B(255,180,220)&C0- NetFeez-Labs/Servidor by NetFeez -');
 		Debug.log('&B(255,180,220)&C0-       Servidor Iniciado       -');

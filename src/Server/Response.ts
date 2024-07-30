@@ -136,7 +136,7 @@ export class Response {
                     Carpeta: folder
                 });
             } else {
-                this.sendTemplate(Utilities.Path.relative('\\Global\\Template\\Folder.vhtml'), {
+                this.sendTemplate(Utilities.Path.relative('\\global\\Template\\Folder.vhtml'), {
                     Url: this.request.url,
                     Carpeta: folder
                 });
@@ -194,7 +194,7 @@ export class Response {
                 this.sendHeaders(code, this.generateHeaders('html'));
                 this.send(template);
             } else {
-                const template = await Template.load(Utilities.Path.relative("\\Global\\Template\\Error.vhtml"), {
+                const template = await Template.load(Utilities.Path.relative("\\global\\Template\\Error.vhtml"), {
                     Código: code, Mensaje: message
                 });
                 this.sendHeaders(code, this.generateHeaders('html'));
