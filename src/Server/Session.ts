@@ -1,5 +1,5 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
+ * @author NetFeez <netfeez.dev@gmail.com>
  * @description Añade un sistema de sesiones a `Vortez`.
  * @license Apache-2.0
  */

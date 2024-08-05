@@ -1,5 +1,5 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
+ * @author NetFeez <netfeez.dev@gmail.com>
  * @description add useful functions to the Vortez. 
  * @license Apache-2.0
  */

@@ -1,5 +1,5 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
+ * @author NetFeez <netfeez.dev@gmail.com>
  * @description Añade la forma de Petición de `Vortez`.
  * @license Apache-2.0
  */

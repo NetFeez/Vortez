@@ -1,5 +1,5 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
+ * @author NetFeez <netfeez.dev@gmail.com>
  * @description Añade una forma sencilla de crear servidores HTTP/S y WS/S.
  * @license Apache-2.0
  */

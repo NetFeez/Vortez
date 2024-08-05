@@ -1,5 +1,5 @@
 /**
- * @author NetFeez <netfeez.dev@gmail.com>.
+ * @author NetFeez <netfeez.dev@gmail.com>
  * @description Contiene lo necesario para las reglas de enrutamiento de Vortez.
  * @license Apache-2.0
  */
