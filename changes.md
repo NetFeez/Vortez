@@ -1,7 +1,7 @@
 # Version 3
 **Desarrollados sin añadir y en espera de pruebas**
-- Mail: acceso desde (vortez/Mail/Mail.js)
-- JsonWT: acceso desde (vortez/JsonWT/JsonWT.js)
+- Mail: acceso desde (vortez/Beta/Mail.js)
+- JwtManager: acceso desde (vortez/Beta/JwtManager.js)
 
 ## 3.7
 > [!IMPORTANT]
@@ -31,9 +31,11 @@
 - los métodos sendFile, sendFolder y sendTemplate ahora funcionan con async/await
 **Request**
 - el atributo GET pasa a ser queryParams
-**WebSocket
+**WebSocket**
 - la lógica detrás de la recepción de webSocket fue separada hacia Chunk.ts
 - Chunk.ts fue optimizado
+**Beta**
+- JsonWT se convirtió en JwtManager
 
 ## 3.6
 
