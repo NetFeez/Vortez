@@ -2,6 +2,8 @@
 
 import Rule from "../build/Server/Rule.js";
 import Vortez, { Debug, Config, Utilities } from "../build/Vortez.js";
+import "./debug.js";
+import "./utilities.js";
 
 /* | HABILITAR VISTA EN CONSOLA DE LOS DEBUGS DE Vortez | */
 const config = Config.getInstance();
