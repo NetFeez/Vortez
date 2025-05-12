@@ -30,8 +30,8 @@ export class Response {
         this.request = request;
         this.templates = templates ? templates : {};
         this.httpResponse = httpResponse;
-        this.httpResponse.setHeader('X-Powered-By', 'Vortez');
-        this.httpResponse.setHeader('X-Version', '3.7.0-dev.1');
+        this.httpResponse.setHeader('X-Powered-By', 'MyNetFeez-Labs Vortez');
+        this.httpResponse.setHeader('X-Version', '3.7.0-dev.18');
     }
 	/**
 	 * Generates headers for supported file types.
