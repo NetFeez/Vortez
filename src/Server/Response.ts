@@ -137,12 +137,12 @@ export class Response {
             if (this.templates.Folder) {
                 this.sendTemplate(this.templates.Folder, {
                     Url: this.request.url,
-                    Carpeta: folder
+                    folder
                 });
             } else {
                 this.sendTemplate(Utilities.Path.relative('\\global\\Template\\Folder.vhtml'), {
                     Url: this.request.url,
-                    Carpeta: folder
+                    folder
                 });
             }
         } catch(error) {
@@ -197,13 +197,13 @@ export class Response {
         try {
             if (this.templates.Error) {
                 const template = await Template.load(this.templates.Error, {
-                    Código: status, Mensaje: message
+                    status, message
                 });
 				const headers = this.generateHeaders('html');
                 this.send(template, { status: status, headers });
             } else {
                 const template = await Template.load(Utilities.Path.relative("\\global\\Template\\Error.vhtml"), {
-                    Código: status, Mensaje: message
+                    status, message
                 });
 				const headers = this.generateHeaders('html');
                 this.send(template, { status: status, headers });
