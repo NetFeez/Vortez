@@ -10,7 +10,7 @@ import Config from "./Config.js";
 import Debug from "./Debug.js";
 import Template from "./Template.js";
 import Vortez from "./Server/Server.js";
-import Utilities from "./Utilities.js";
+import Utilities from "./Utilities/Utilities.js";
 
 // Utilidades en desarrollo y sin añadir (Beta).
 import JwtManager from "./Beta/JwtManager.js";
