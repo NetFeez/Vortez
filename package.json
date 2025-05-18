@@ -1,11 +1,14 @@
 {
   "name": "vortez",
-  "version": "3.6.5",
+  "version": "3.7.0",
   "description": "a module for http/s and ws/s servers",
   "type": "module",
-  "main": "Vortez.js",
+  "main": "build/Vortez.js",
   "scripts": {
-    "test": "node Test/Test.js"
+    "dev": "npm run compile && tsc --watch",
+    "test": "node tests/test.js",
+    "compile": "rm -rf build && tsc",
+    "dev.publish": "npm run compile && npm publish --tag Dev"
   },
   "author": {
     "name": "NetFeez",
@@ -18,32 +21,27 @@
     "url": "https://github.com/NetFeez/Vortez"
   },
   "files": [
-    "Config/",
-    "ConsoleUI/",
-    "Debug/",
-    "Global/",
-    "JsonWT/",
-    "Mail/",
-    "Server/",
-    "Template/",
-    "Utilities/",
+    "build/",
+    "examples/",
+    "global/",
+    "tests/",
+    ".gitignore",
     "changes.md",
     "LICENSE",
     "Notes.md",
-    "README.md",
-    "Vortez.js",
-    "Vortez.d.ts"
+    "README.md"
   ],
   "keywords": [
-    "NetFeez",
-    "vortez",
+    "server",
     "core",
-    "framework",
-    "web",
     "http",
     "https",
     "ws",
     "wss",
-    "server"
-  ]
+    "socket"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "typescript": "^5.5.4"
+  }
 }
