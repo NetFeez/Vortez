@@ -5,6 +5,7 @@
  */
 
 import Debug from "./Debug.js";
+import Utilities from "./Utilities/Utilities.js";
 
 export class Config {
     private static instance: Config;
@@ -21,8 +22,8 @@ export class Config {
         const webSocket = Debug.getInstance('server.webSockets', { path: '.debug/webSockets' });
         this.debugs = { mail, server, requests, webSocket: webSocket };
         this.templates = {
-            folder: './global/Template/Folder.vhtml',
-            error: './global/Template/Error.vhtml'
+            folder: Utilities.Path.relative('./global/Template/Folder.vhtml'),
+            error: Utilities.Path.relative('./global/Template/Error.vhtml')
         };
     }
     public get showAll(): boolean { return Debug.showAll; }
