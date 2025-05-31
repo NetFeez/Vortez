@@ -1,6 +1,5 @@
 
 # version (4.1.0)
-## 📒 Notes
 ## ➕ Added
   - **(Logger)**: added to help in log with prefix.
     - this was exported from `Vortez`
@@ -13,7 +12,6 @@
       import Vortez from `vortez`
       Vortez.LoggerManager
       ```
-## ❌ Removed
 ## 🐞 Fixes
   - The default templates now use absolute path to prevent errors
     - Note: the user can use relative path`s
