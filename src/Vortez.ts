@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Exports the main utilities of the Vortez module.
+ * @description Provides the Vortez functionalities and utilities for building robust applications.
  * @module NetFeez-Labs.Vortez
  * @license Apache-2.0
  */
@@ -14,13 +14,28 @@ import Vortez from "./Server/Server.js";
 import Utilities from "./Utilities/Utilities.js";
 
 // Imports the beta utilities of the Vortez module.
-import JwtManager from "./Beta/JwtManager.js";
-import Mail from "./Beta/Mail.js";
+import _JwtManager from "./Beta/JwtManager.js";
+import _Mail from "./Beta/Mail.js";
 
-// Exports the beta utilities of the Vortez module.
-export const Beta = { JwtManager, Mail };
+/**
+ * Contains experimental or beta features of the Vortez module.
+ * Use with caution as these features may change or be removed in future versions.
+ */
+export namespace Beta {
+	export import JwtManager = _JwtManager;
+	export import Mail = _Mail;
+}
 
-// Exports the main utilities of the Vortez module.
+/**
+ * Exports the main classes and utilities provided by the NetFeez-Labs.Vortez module.
+ *
+ * These exports include:
+ * - Debug: For debugging and logging.
+ * - Logger: For managing application logs.
+ * - Utilities: A collection of general utility functions.
+ * - Template: For handling template processing.
+ * - Config: For managing server configuration settings.
+ */
 export {
 	Debug, Logger,
 	Utilities, Template,
