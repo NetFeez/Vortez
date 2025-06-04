@@ -1,3 +1,9 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Adds a logger manager to have an instance of the Vortez loggers.
+ * @license Apache-2.0
+ */
+
 import Debug from "../Debug.js";
 import _Logger from "./Logger.js";
 

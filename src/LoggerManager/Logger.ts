@@ -1,3 +1,9 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Adds a logger class to have organized logs.
+ * @license Apache-2.0
+*/
+
 import ConsoleUI from "../ConsoleUI.js";
 import Debug from "../Debug.js";
 
