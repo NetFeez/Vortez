@@ -1,3 +1,9 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description add the config loader to the Vortez.
+ * @license Apache-2.0
+ */
+
 import { promises as FSP } from "fs";
 import Logger from "../LoggerManager/Logger.js";
 import Config from "./Config.js";
