@@ -1,3 +1,16 @@
+# version (5.0.0)
+## 📒 Notes
+## ➕ Added
+## ❌ Removed
+## 🐞 Fixes
+## ✏️ Changes
+- **(Debug)**: Debug now supports multiline formatting in prints.
+- **(Config)**: Introduced a new configuration system:
+  - The config system is based on a `.json` file.
+  - You can load config from a specific file or use the default.
+  - You can still configure everything dynamically (like in older versions).
+  - Using the config system is optional, not required.
+  - Documentation is available in the `README.md`.
 
 # version (4.1.0)
 ## ➕ Added
