@@ -128,12 +128,12 @@ export class Debug {
 	private showLog(timestamp: string, prefix: string, ...data: any[]): void {
         timestamp = ConsoleUI.formatText(timestamp);
         prefix = ConsoleUI.formatText(prefix);
-		const toShow = data.map((Datum) => {
-            if (typeof Datum === 'string') {
-                if (!Datum.includes('\n')) return ConsoleUI.formatText(Datum);
-                else return this.formatMultiline(timestamp, prefix, Datum);
-            } else if (Datum instanceof Error) return this.formatMultiline(timestamp, prefix, Datum.stack ?? Datum.message);
-            else Datum;
+		const toShow = data.map((datum) => {
+            if (typeof datum === 'string') {
+                if (!datum.includes('\n')) return ConsoleUI.formatText(datum);
+                else return this.formatMultiline(timestamp, prefix, datum);
+            } else if (datum instanceof Error) return this.formatMultiline(timestamp, prefix, datum.stack ?? datum.message);
+            else return datum;
         });
 		console.log(`${timestamp} ${prefix} ->`, ...toShow);
 	}
