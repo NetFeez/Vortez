@@ -44,9 +44,9 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
      * @param request - The Request that matched the rule.
      * @param client - The client that made the request.
      */
-    public exec(request: Request, client: Rule.ClientType<T>): void {
+    public async exec(request: Request, client: Rule.ClientType<T>): Promise<void> {
         request.ruleParams = this.getParams(request.url);
-        if (this.testAuth(request)) switch (this.type) {
+        if (await this.testAuth(request)) switch (this.type) {
             case 'Action':    (this as Rule<'Action'>).content(request, (client as Rule.ClientType<'Action'>)); break;
             case 'File':      (client as Rule.ClientType<'File'>).sendFile((this as Rule<'File'>).content); break;
             case 'Folder':    (client as Rule.ClientType<'Folder'>).sendFolder((this as Rule<'Folder'>).content, this.getSurplus(request.url)); break;
@@ -76,7 +76,7 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
      * Validates whether the request passes authentication.
      * @param request - The incoming request.
      */
-    public testAuth(request: Request): boolean {
+    public async testAuth(request: Request): Promise<boolean> {
         return !this.authExec || this.authExec(request);
     }
     /**
@@ -131,7 +131,7 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
 }
 
 export namespace Rule {
-    export type AuthExec = (Request: Request) => boolean;
+    export type AuthExec = (Request: Request) => boolean | Promise<boolean>;
     export type ActionExec = (Request: Request, Response: Response) => void;
     export type WebSocketExec = (Request: Request, WebSocket: WebSocket) => void;
     export type ClientType<T extends keyof Type> = T extends 'WebSocket' ? WebSocket : Response;

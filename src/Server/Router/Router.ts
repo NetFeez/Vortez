@@ -54,11 +54,11 @@ export class Router {
 	 * @param response - The server response handler.
 	 * @throws If no routing rule matches the request.
 	 */
-	private routeRequest(request: Request, response: Response): void {
+	private async routeRequest(request: Request, response: Response): Promise<void> {
 		let routed = false;
 		for (const rule of this.rules) {
 			if (rule.test(request)) {
-				if (rule.testAuth(request)) {
+				if (await rule.testAuth(request)) {
 					try { rule.exec(request, response); }
 					catch(error) {
 						$logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
@@ -78,11 +78,11 @@ export class Router {
 	 * @param webSocket - The WebSocket connection with the client.
 	 * @throws If no WebSocket routing rule matches.
 	 */
-	private routeWebSocket(request: Request, webSocket: WebSocket): void {
+	private async routeWebSocket(request: Request, webSocket: WebSocket): Promise<void> {
 		let routed = false;
 		for (const rule of this.rules) {
 			if (rule.test(request, true)) {			
-				if (rule.testAuth(request)) {
+				if (await rule.testAuth(request)) {
 					const AcceptKey = (request.headers['sec-websocket-key'] ?? '').trim();
 					webSocket.acceptConnection(AcceptKey, request.cookies);
 					try { rule.exec(request, webSocket); }
