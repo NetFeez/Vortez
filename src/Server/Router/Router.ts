@@ -47,30 +47,22 @@ export class Router {
 		$logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		this.routeWebSocket(request, webSocket);
 	}
-    
-	/**
+    /**
 	 * Routes incoming HTTP requests to be processed.
 	 * @param request - The received HTTP request.
 	 * @param response - The server response handler.
 	 * @throws If no routing rule matches the request.
 	 */
 	private async routeRequest(request: Request, response: Response): Promise<void> {
-		let routed = false;
-		for (const rule of this.rules) {
-			if (rule.test(request)) {
-				if (await rule.testAuth(request)) {
-					try { rule.exec(request, response); }
-					catch(error) {
-						$logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-						$logger.request.error('&C1Route:', request.method, request.url);
-						response.sendError(500, 'Internal Server Error');
-					}
-				} else response.sendError(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
-				routed = true;
-				break;
-			}
+		const rule = this.rules.find((rule) => rule.test(request));
+		if (!rule) return void response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
+		if (!await rule.testAuth(request)) return void response.sendError(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
+		try { return void rule.exec(request, response); }
+		catch(error) {
+			$logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
+			$logger.request.error('&C1Route:', request.method, request.url);
+			return void response.sendError(500, 'Internal Server Error');
 		}
-		if (!(routed)) response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
 	}
 	/**
 	 * Routes WebSocket connection requests.
@@ -79,20 +71,18 @@ export class Router {
 	 * @throws If no WebSocket routing rule matches.
 	 */
 	private async routeWebSocket(request: Request, webSocket: WebSocket): Promise<void> {
-		for (const rule of this.rules) {
-			if (!rule.test(request, true)) continue;
-			if (!await rule.testAuth(request)) return void webSocket.rejectConnection(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
-			const AcceptKey = request.headers['sec-websocket-key']?.trim();
-			if (!AcceptKey) return void webSocket.rejectConnection(400, 'Invalid WebSocket request');
-			webSocket.acceptConnection(AcceptKey, request.cookies);
-			try { return void rule.exec(request, webSocket); }
-			catch(error) {
-				$logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-				$logger.webSocket.error('&C1Route:', request.method, request.url);
-				return void webSocket.rejectConnection(500, 'Internal Server Error');
-			}
+		const rule = this.rules.find((rule) => rule.test(request, true));
+		if (!rule) return void webSocket.rejectConnection(400, `No router for: ${request.method} -> ${request.url}`);
+		if (!await rule.testAuth(request)) return void webSocket.rejectConnection(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
+		const AcceptKey = request.headers['sec-websocket-key']?.trim();
+		if (!AcceptKey) return void webSocket.rejectConnection(400, 'Invalid WebSocket request');
+		webSocket.acceptConnection(AcceptKey, request.cookies);
+		try { return void rule.exec(request, webSocket); }
+		catch(error) {
+			$logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
+			$logger.webSocket.error('&C1Route:', request.method, request.url);
+			return void webSocket.rejectConnection(500, 'Internal Server Error');
 		}
-		webSocket.rejectConnection(400, `No router for: ${request.method} -> ${request.url}`);
 	}
 	/**
 	 * Adds one or more routing rules to the server.
