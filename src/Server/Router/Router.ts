@@ -79,28 +79,20 @@ export class Router {
 	 * @throws If no WebSocket routing rule matches.
 	 */
 	private async routeWebSocket(request: Request, webSocket: WebSocket): Promise<void> {
-		let routed = false;
 		for (const rule of this.rules) {
-			if (rule.test(request, true)) {			
-				if (await rule.testAuth(request)) {
-					const AcceptKey = (request.headers['sec-websocket-key'] ?? '').trim();
-					webSocket.acceptConnection(AcceptKey, request.cookies);
-					try { rule.exec(request, webSocket); }
-					catch(error) {
-						$logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-						$logger.webSocket.error('&C1Route:', request.method, request.url);
-						webSocket.send('HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n');
-						webSocket.end();
-					}
-				} else {
-					webSocket.send('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
-					webSocket.end();
-				}
-				routed = true;
-				break;
+			if (!rule.test(request, true)) continue;
+			if (!await rule.testAuth(request)) return void webSocket.rejectConnection(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
+			const AcceptKey = request.headers['sec-websocket-key']?.trim();
+			if (!AcceptKey) return void webSocket.rejectConnection(400, 'Invalid WebSocket request');
+			webSocket.acceptConnection(AcceptKey, request.cookies);
+			try { return void rule.exec(request, webSocket); }
+			catch(error) {
+				$logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
+				$logger.webSocket.error('&C1Route:', request.method, request.url);
+				return void webSocket.rejectConnection(500, 'Internal Server Error');
 			}
 		}
-		if (!(routed)) webSocket.send(`HTTP/1.1 400 Bad request\r\nNo router for: ${request.method} -> ${request.url}\r\n\r\n`);
+		webSocket.rejectConnection(400, `No router for: ${request.method} -> ${request.url}`);
 	}
 	/**
 	 * Adds one or more routing rules to the server.

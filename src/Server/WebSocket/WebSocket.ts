@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Añade la forma de WebSockets a `Vortez`.
+ * @description adds WebSocket functionality to Vortez
  * @license Apache-2.0
  */
 
@@ -8,69 +8,81 @@ import EVENTS from 'events';
 import CRYPTO from 'crypto';
 import { Duplex } from 'stream';
 import Chunk from './Chunk.js';
-import { setUncaughtExceptionCaptureCallback } from 'process';
 import Cookie from '../Cookie.js';
 
 export class WebSocket extends EVENTS {
-    /**Contiene la conexión con el cliente. */
+    /** Contains the connection with the client. */
     private connection: Duplex;
     /**
-     * Crea una conexión WebSocket.
-     * @param client La conexión Duplex con el cliente.
+     * Creates a new WebSocket.
+     * @param client The connection with the client.
      */
     public constructor(client: Duplex) { super();
         this.connection = client;
         this.initEvents();
     }
     /**
-     * Acepta la conexión del cliente.
-	 * @param acceptKey La llave de conexión `sec-websocket-key`.
+     * Accepts the connection with the client.
+     * @param acceptKey The key that will be used to accept the connection.
+     * @param cookies The cookies that will be sent to the client.
      */
     public acceptConnection(acceptKey: string, cookies?: Cookie): void  {
-        const cookieSetters = cookies
-        ? cookies.getSetters().map((setter) => `Set-Cookie: ${setter}`)
-        : [];
         const acceptToken = CRYPTO.createHash('SHA1').update(
             acceptKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
         ).digest('base64');
-        const headers = [
+
+        const headers = this.buildHeaders([
             'HTTP/1.1 101 Switching Protocols',
             'Upgrade: websocket',
             'Connection: Upgrade',
-            `Sec-WebSocket-Accept: ${acceptToken}`,
-            ...cookieSetters, '\r\n'
-        ].join('\r\n');
+            `Sec-WebSocket-Accept: ${acceptToken}`
+        ], cookies);
+
         this.connection.write(headers);
     }
-    /** Finaliza la conexión esperando a que se terminen de enviar/recibir los datos pendientes. */
+    /**
+     * Rejects the connection with the client.
+     * @param code The code that will be sent to the client.
+     * @param reason The reason that will be sent to the client.
+     * @param cookies The cookies that will be sent to the client.
+     */
+    public rejectConnection(code: number, reason: string, cookies?: Cookie): void {
+        const headers = this.buildHeaders([
+            `HTTP/1.1 ${code} ${reason}`,
+            'Connection: close'
+        ], cookies);
+    
+        this.connection.end(headers);
+    }
+    /**  Finishes the connection. */
     public end(): void { this.connection.end(); }
-    /** Finaliza la conexión de forma abrupta. */
+    /** Destroys the connection. */
     public destroy(): void { this.connection.destroy(); }
     /**
-	 * Envía un dato como respuesta.
-	 * @param data El dato que se enviara.
+	 * Send data to the client.
+	 * @param data The data that will be sent.
      */
     public send(data: String | Buffer): void {
         const [buffer, isText] = typeof data == 'string'
         ? [this.stringToBuffer(data), true]
         : data instanceof Buffer
             ? [data, false]
-            : [this.stringToBuffer('[Error]: Dato enviado no soportado por NetFeez-Labs/WebSocket'), true];
+            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.WebSocket.send'), true];
         const message = this.encode(buffer, isText);
         this.connection.write(message);
     }
     /**
-	 * Envía un JSON como respuesta.
-	 * @param data los datos que enviaras como JSON.
+	 * Send data to the client in JSON format.
+	 * @param data The data that will be sent.
      */
-    public SendJson(data: any): void {
+    public sendJson(data: any): void {
         const message = JSON.stringify(data);
         this.send(message);
     }
     /**
-     * Codifica los datos para enviar por el WebSocket.
-     * @param data Los datos que se van a codificar.
-     * @param Text indica si el contenido es texto o no.
+     * Encodes the data to be sent to the client.
+     * @param data The data that will be encoded.
+     * @param isText Whether the data is a text or a binary.
      */
     private encode(data: Buffer, isText: boolean = false): Buffer {
         const encoded = isText ? [129] : [130];
@@ -91,20 +103,17 @@ export class WebSocket extends EVENTS {
             encoded[8] = (data.length >>  8) & 255;
             encoded[9] = (data.length)       & 255;
         }
-        /* for (let index = 0; index < data.length; index ++) {
-            encoded.push(data[index]);
-        } */
         encoded.push(...data);
         return Buffer.from(encoded);
     }
     /**
-     * Convierte un string en un Buffer.
-     * @param message El string a transformar.
+     * Converts a string to a buffer.
+     * @param message The string that will be converted.
      */
     private stringToBuffer(message: string): Buffer {
         return Buffer.from(message, 'utf-8');
     }
-    /**Añade los disparadores de evento.*/
+    /** Initializes the events. */
     private initEvents(): void {
         let surplus: Buffer = Buffer.alloc(0);
         let currentChunk: Chunk | null = null;
@@ -150,6 +159,12 @@ export class WebSocket extends EVENTS {
     public off(event: string, listener: (...args: any[]) => void): this {
         return super.off(event, listener);
     }
+    private buildHeaders(lines: string[], cookies?: Cookie): string {
+        const cookieSetters = cookies
+            ? cookies.getSetters().map((setter) => `Set-Cookie: ${setter}`)
+            : [];
+        return [...lines, ...cookieSetters, '\r\n'].join('\r\n');
+    }
 }
 
 export namespace WebSocket {
@@ -157,7 +172,7 @@ export namespace WebSocket {
         export type close = () => void;
         export type error = (error: Error) => void;
         export type finish = () => void;
-        export type message = (datos: Buffer, info: dataInfo) => void;
+        export type message = (data: Buffer, info: dataInfo) => void;
     }
     export interface dataInfo {
         opCode: number;
@@ -167,15 +182,15 @@ export namespace WebSocket {
 
 export default WebSocket;
 
-/* Para aceptar las peticiones de conexión a WebSocket
+/* To accept a connection
  * 
  * HTTP/1.1 101 Switching Protocols
  * Upgrade: websocket
  * Connection: Upgrade
  * Sec-WebSocket-Accept: Sec-Websocket-key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
- *                                            en HASH SHA-1 Codificado en Base64
+ *                                            en HASH SHA-1 encoded in Base64
  *
- ** Formato del intercambio de datos
+ ** Format to data exchange
  *  0               1               2               3              
  *  0                   1                   2                   3
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -197,14 +212,15 @@ export default WebSocket;
  * +---------------------------------------------------------------+
  * 
  * 
- * FIN y OPCODE funcionan juntos para entregar mensajes con marco separado
- * Solo esta disponible en OPCODE 0x0 a 0x2
+ * FIN and OPCODE works together to deliver messages with a separate frame
+ * Only available in OPCODE 0x0 to 0x2
+ * 
  * 
  * OPCODES:
- * Continuación = 0x0
- * Texto = 0x1
- * Binario = 0x2
- * Cierre = 0x8
- * Ping = 0x9
- * Pong = 0xa
+ * 0x0: continuation
+ * 0x1: text
+ * 0x2: binary
+ * 0x8: close
+ * 0x9: ping
+ * 0xA: pong
  */
