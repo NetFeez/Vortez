@@ -142,7 +142,7 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
                 continue;
             }
 
-            generated += `/${zone.replace(validators.escape, '')}`;
+            generated += `/${zone}`;
         }
         return new RegExp(`${generated}/?$`);
     }
