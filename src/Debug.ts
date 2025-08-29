@@ -9,6 +9,8 @@ import ConsoleUI from './ConsoleUI.js';
 import Utilities from './Utilities/Utilities.js';
 
 export class Debug {
+    public static readonly defaultID: string = 'Debug';
+    public static readonly default: Debug = Debug.getInstance(this.defaultID);
 	private static debugs: Debug.debugMap = new Map();
     private static timestampFormat = '&C(255,255,255)[DD-MM-YYYY] [hh:mm:ss:ms]&R'
     public static showAll: boolean = false;
@@ -25,10 +27,13 @@ export class Debug {
 	 * @param options - Debug instance options.
      * @returns The debug instance.
      */
-    public static getInstance(id: string = 'Debug', options: Debug.options = {}): Debug {
-        const debug = Debug.debugs.get(id)
+    public static getInstance(id: string = this.defaultID, options: Debug.options = {}): Debug {
+        if (id === this.defaultID) return this.default;
+
+        const debug = Debug.debugs.get(id);
 		if (!debug) return new Debug(id, options);
-        else if (Object.keys(options).length > 0) {
+
+        if (Object.keys(options).length > 0) {
             const called_in = new Error().stack?.split('\n')[2].trim();
             this.warn(`The options of the debug instance with ID &C6${id}&R were overwritten &C6${called_in}`);
             debug.save = options.save ?? debug.save;
