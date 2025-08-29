@@ -87,8 +87,8 @@ export class Response {
 		const encode = options.encode || 'utf-8';
 		const headers = options.headers || this.generateHeaders('txt');
 		this.sendHeaders(status, headers);
-		if (!(data instanceof FS.ReadStream)) return void this.httpResponse.end(data, encode);
-		data.pipe(this.httpResponse);
+		if (data instanceof FS.ReadStream) return void data.pipe(this.httpResponse);
+		this.httpResponse.end(data, encode);
 	}
 	/**
 	 * Sends a file as a response.
