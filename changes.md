@@ -4,7 +4,10 @@
 ## ❌ Removed
 ## 🐞 Fixes
 ## ✏️ Changes
-- **(Debug)**: Debug now supports multiline formatting in prints.
+- **(Debug)**: Added new properties and refactored methods:
+ - Debug now supports multiline formatting in prints.
+ - Debug now have static default and static defaultID attributes.
+ - Debug now return directly Debug.default when use getInstance without params or with id === Debug.defaultID;
 - **(Config)**: Introduced a new configuration system:
   - The config system is based on a `.json` file.
   - You can load config from a specific file or use the default.
