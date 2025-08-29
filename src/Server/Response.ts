@@ -131,7 +131,7 @@ export class Response {
             }
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File does not exist.');
-			logger.error('error sending file:', error);
+			logger.error(`error sending file ${this.request.session.id}`, error);
 		}
 	}
 	/**
@@ -163,7 +163,7 @@ export class Response {
             }
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File/Directory does not exist.');
-			logger.error('error sending folder:', error);
+			logger.error(`error sending folder ${this.request.session.id}`, error);
 		}
 	}
 	/**
@@ -182,7 +182,7 @@ export class Response {
 			this.send(template, { status, headers });
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Template does not exist.');
-			logger.error('error sending template:', error);
+			logger.error(`error sending template ${this.request.session.id}`, error);
 		}
 	}
 	/**
@@ -198,7 +198,7 @@ export class Response {
 			this.send(json, { status, headers });
 		} catch(error) {
 			this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Data cannot be converted to JSON.');
-			logger.error('error sending json:', error);
+			logger.error(`error sending json ${this.request.session.id}`, error);
 		}
     }
 	/**
