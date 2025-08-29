@@ -4,12 +4,9 @@
  * @license Apache-2.0
  */
 
-import Logger from '../../LoggerManager/Logger.js';
 import Request from '../Request.js';
 import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
-
-let debug = new Logger({ prefix: `&B4RULE-TEST`, debug: '_debug' });
 
 export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
     /** The type of the routing rule */
