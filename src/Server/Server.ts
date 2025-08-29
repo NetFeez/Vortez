@@ -19,7 +19,7 @@ import _Cookie from "./Cookie.js";
 import _WebSocket from "./WebSocket/WebSocket.js";
 import _Router from "./Router/Router.js";
 
-const $logger = _LoggerManager.getInstance();
+const logger = _LoggerManager.getInstance();
 
 export class Server {
 	private protocol: Server.Protocol | null;
@@ -49,27 +49,27 @@ export class Server {
 	public async start(): Promise<void> {
 		const { port, host, ssl: sslOptions } = this.config;
 		this.protocol = sslOptions ? 'HTTP/S' : 'HTTP';
-		$logger.info('&C(255,180,220)╭─────────────────────────────────────────────');
-		$logger.info('&C(255,180,220)│ &C1Vortez by NetFeez');
-		$logger.info('&C(255,180,220)│ &C1Server starting...');
-		$logger.info('&C(255,180,220)├─────────────────────────────────────────────');
+		logger.info('&C(255,180,220)╭─────────────────────────────────────────────');
+		logger.info('&C(255,180,220)│ &C1Vortez by NetFeez');
+		logger.info('&C(255,180,220)│ &C1Server starting...');
+		logger.info('&C(255,180,220)├─────────────────────────────────────────────');
 		try {
 			this.HttpServer = await this.initHTTP(port, host);
-			$logger.info(`&C(255,180,220)│ &C3Protocol: &R${this.protocol}`);
-			$logger.info(`&C(255,180,220)│ &C3Host: &R${host}`);
-			$logger.info(`&C(255,180,220)│ &C3HTTP Port: &R${port}`);
-			$logger.info(`&C(255,180,220)│ &C3HTTP URL: &C6http://${host}:${port}`);
+			logger.info(`&C(255,180,220)│ &C3Protocol: &R${this.protocol}`);
+			logger.info(`&C(255,180,220)│ &C3Host: &R${host}`);
+			logger.info(`&C(255,180,220)│ &C3HTTP Port: &R${port}`);
+			logger.info(`&C(255,180,220)│ &C3HTTP URL: &C6http://${host}:${port}`);
 			try { if (sslOptions) {
 				this.HttpsServer = await this.initHTTPS(host, sslOptions);
-				$logger.info(`&C(255,180,220)│ &C3HTTPS Port: &R${sslOptions.port ?? 443}`);
-				$logger.info(`&C(255,180,220)│ &C3HTTPS URL: &C6https://${host}:${sslOptions.port ?? 443}`);
+				logger.info(`&C(255,180,220)│ &C3HTTPS Port: &R${sslOptions.port ?? 443}`);
+				logger.info(`&C(255,180,220)│ &C3HTTPS URL: &C6https://${host}:${sslOptions.port ?? 443}`);
 			} } catch(error) {
 				throw Error('Certificate error ' + (error instanceof Error ? error.message : error), { cause: error });
 			}
-			$logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
+			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
 		} catch(error) {
-			$logger.error(`&C(255,180,220)│ &C1✖ Error starting server: &R&C6${error instanceof Error ? error.message : error}`);
-			$logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
+			logger.error(`&C(255,180,220)│ &C1✖ Error starting server: &R&C6${error instanceof Error ? error.message : error}`);
+			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
 			this.stop();
 		}
 	}
@@ -78,24 +78,24 @@ export class Server {
 	 */
 	public async stop(): Promise<void> {
 		try {
-			$logger.info('&C(255,180,220)╭─────────────────────────────');
-			$logger.info('&C(255,180,220)│ &C1Stopping server...');
+			logger.info('&C(255,180,220)╭─────────────────────────────');
+			logger.info('&C(255,180,220)│ &C1Stopping server...');
 			if (!this.HttpServer && !this.HttpsServer) throw Error('No server to stop');
 			if (this.HttpServer) {
 				await this.stopHTTP();
 				this.HttpServer = null;
-				$logger.info('&C(255,180,220)│   &C3✔ HTTP server stopped');
+				logger.info('&C(255,180,220)│   &C3✔ HTTP server stopped');
 			}
 			if (this.HttpsServer) {
 				await this.stopHTTPS();
 				this.HttpsServer = null;
-				$logger.info('&C(255,180,220)│   &C3✔ HTTPS server stopped');
+				logger.info('&C(255,180,220)│   &C3✔ HTTPS server stopped');
 			}
-			$logger.info('&C(255,180,220)│ &C2✔ All servers stopped successfully');
-			$logger.info('&C(255,180,220)╰─────────────────────────────');
+			logger.info('&C(255,180,220)│ &C2✔ All servers stopped successfully');
+			logger.info('&C(255,180,220)╰─────────────────────────────');
 		} catch(error) {
-			$logger.error('&C(255,180,220)│ &C1✖ Error stopping server: &R&C6' + (error instanceof Error ? error.message : error));
-			$logger.info('&C(255,180,220)╰─────────────────────────────');
+			logger.error('&C(255,180,220)│ &C1✖ Error stopping server: &R&C6' + (error instanceof Error ? error.message : error));
+			logger.info('&C(255,180,220)╰─────────────────────────────');
 		}
 	}
 	/**

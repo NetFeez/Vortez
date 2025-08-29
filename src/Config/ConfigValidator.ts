@@ -7,7 +7,7 @@
 import Config from "./Config.js";
 import Logger from "../LoggerManager/Logger.js";
 
-const $config = new Logger({ prefix: 'Config' });
+const logger = new Logger({ prefix: 'Config' });
 
 export class ConfigValidators {
     /**
@@ -47,7 +47,7 @@ export class ConfigValidators {
      */
     public static validateTemplates(templates: unknown): Config.Templates {
         if (!templates || typeof templates !== 'object') {
-            $config.warn('templates must be an object, using defaults');
+            logger.warn('templates must be an object, using defaults');
             return Config.DEFAULT.templates;
         }
         const defTemplates = Config.DEFAULT.templates;
@@ -71,11 +71,11 @@ export class ConfigValidators {
         const { pubKey, privKey, port = 443 } = sslP;
 
         if (typeof pubKey !== 'string') {
-            $config.warn('ssl.pubKey must be a string, skipping ssl');
+            logger.warn('ssl.pubKey must be a string, skipping ssl');
             return Config.DEFAULT.ssl;
         }
         if (typeof privKey !== 'string') {
-            $config.warn('ssl.privKey must be a string, skipping ssl');
+            logger.warn('ssl.privKey must be a string, skipping ssl');
             return Config.DEFAULT.ssl;
         }
         const validPort = this.validateNumberInRange(port, 0, 65535, 443, 'ssl.port');
@@ -90,7 +90,7 @@ export class ConfigValidators {
      */
     private static validateString(value: unknown, defaultValue: string, fieldName: string): string {
         if (typeof value === 'string') return value;
-        $config.warn(`${fieldName} must be a string, using default: ${defaultValue}`);
+        logger.warn(`${fieldName} must be a string, using default: ${defaultValue}`);
         return defaultValue;
     }
     /**
@@ -102,7 +102,7 @@ export class ConfigValidators {
      */
     private static validateNumber(value: unknown, defaultValue: number, fieldName: string): number {
         if (typeof value === 'number') return value;
-        $config.warn(`${fieldName} must be a number, using default: ${defaultValue}`);
+        logger.warn(`${fieldName} must be a number, using default: ${defaultValue}`);
         return defaultValue;
     }
     /**
@@ -113,7 +113,7 @@ export class ConfigValidators {
      */
     private static validateRange(value: number, min: number, max: number, defaultValue: number, fieldName: string): number {
         if (value >= min && value <= max) return value;
-        $config.warn(`${fieldName} must be between ${min} and ${max}, using default: ${defaultValue}`);
+        logger.warn(`${fieldName} must be between ${min} and ${max}, using default: ${defaultValue}`);
         return defaultValue;
     }
     /**

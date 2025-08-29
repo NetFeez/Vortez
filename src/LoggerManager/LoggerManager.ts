@@ -18,11 +18,10 @@ export class LoggerManager {
     public response: LoggerManager.Logger;
     public webSocket: LoggerManager.Logger;
     private constructor() {
-        const $debug = Debug.getInstance();
-        this.server = new LoggerManager.Logger({ prefix: 'Server', debug: $debug });
-        this.request = new LoggerManager.Logger({ prefix: 'Request', debug: $debug });
-        this.response = new LoggerManager.Logger({ prefix: 'Response', debug: $debug });
-        this.webSocket = new LoggerManager.Logger({ prefix: 'WebSocket', debug: $debug })
+        this.server = new LoggerManager.Logger({ prefix: 'Server' });
+        this.request = new LoggerManager.Logger({ prefix: 'Request' });
+        this.response = new LoggerManager.Logger({ prefix: 'Response' });
+        this.webSocket = new LoggerManager.Logger({ prefix: 'WebSocket' })
     }
     public log(...data: any[]) { this.server.log(...data); }
     public info(...data: any[]) { this.server.info(...data); }

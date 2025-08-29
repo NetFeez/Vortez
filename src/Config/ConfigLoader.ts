@@ -10,7 +10,7 @@ import Config from "./Config.js";
 import Utilities from "../Utilities/Utilities.js";
 import { ConfigValidators } from "./ConfigValidator.js";
 
-const $config = new Logger({ prefix: 'Config' });
+const logger = new Logger({ prefix: 'Config' });
 
 export class ConfigLoader {
     /**
@@ -20,12 +20,12 @@ export class ConfigLoader {
      * @returns A promise that resolves with the loaded config.
      */
     public static async load(path: string, defaultConfig: Config | Config.options = {}): Promise<Config> {
-        $config.log(`loading config from &C6[${path}]`);
+        logger.log(`loading config from &C6[${path}]`);
         if (!await Utilities.fileExists(path)) {
             const config = new Config(defaultConfig);
-            $config.log(`config file &C6[${path}]&R does not exist, creating it`);
+            logger.log(`config file &C6[${path}]&R does not exist, creating it`);
             await ConfigLoader.save(path, config);
-            $config.log(`config file &C6[${path}]&R &C2was created successfully`);
+            logger.log(`config file &C6[${path}]&R &C2was created successfully`);
             return config;
         }
         try {
@@ -34,7 +34,7 @@ export class ConfigLoader {
             const validatedConfig = ConfigValidators.validate(data);
             return new Config(validatedConfig);
         } catch (error) {
-            $config.error(`config file &C6[${path}]&R &C1could not be loaded`);
+            logger.error(`config file &C6[${path}]&R &C1could not be loaded`);
             throw error;
         }
     }

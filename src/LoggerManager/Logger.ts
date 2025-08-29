@@ -4,7 +4,6 @@
  * @license Apache-2.0
 */
 
-import ConsoleUI from "../ConsoleUI.js";
 import Debug from "../Debug.js";
 
 export class Logger {
@@ -19,14 +18,17 @@ export class Logger {
     private debug: Debug;
     public show: boolean = true;
     public save: boolean = true;
-    constructor(options: Logger.Options) {
-        const { prefix, format = '&R&C7', debug } = options;
+    constructor(options: Logger.Options = {}) {
+        const { prefix = 'Logger', format = '&R&C7', debug = Debug.default } = options;
         this.prefix = prefix;
         this.format = format;
         if (debug instanceof Debug) this.debug = debug;
         else if (typeof debug === 'string') this.debug = Debug.getInstance(debug);
-        else if (debug) this.debug = Debug.getInstance(debug.id, debug);
-        else this.debug = Debug.getInstance(ConsoleUI.cleanFormat(prefix));
+        else if (typeof debug === 'object') this.debug = Debug.getInstance(debug.id, debug);
+        else {
+            this.debug = Debug.default;
+            this.warn('The provided option.debug is not valid, the default debug instance will be used.');
+        }
     }
     public log (...data: any[]) { this.debug.customLog(data, this.getLogOptions('log')); }
     public warn (...data: any[]) { this.debug.customLog(data, this.getLogOptions('warn')); }
@@ -47,7 +49,7 @@ export namespace Logger {
         save?: boolean;
     }
     export interface Options {
-        prefix: string;
+        prefix?: string;
         format?: string;
         debug?: string | Debug | NewDebugOptions;
     }

@@ -14,7 +14,7 @@ import WebSocket from '../WebSocket/WebSocket.js';
 import LoggerManager from '../../LoggerManager/LoggerManager.js';
 import Config from '../../Config/Config.js';
 
-const $logger = LoggerManager.getInstance();
+const logger = LoggerManager.getInstance();
 
 export class Router {
     public rules: Router.Rule[];
@@ -32,7 +32,7 @@ export class Router {
 		const request = new Request(HttpRequest);
 		const response = new Response(request, HttpResponse, this.config.templates);
 		const sessionID = request.cookies.get('Session');
-		$logger.request.log(request.ip, request.method, request.url, sessionID);
+		logger.request.log(request.ip, request.method, request.url, sessionID);
 		this.routeRequest(request, response);
 	};
 	/**
@@ -44,7 +44,7 @@ export class Router {
 		const request = new Request(HttpRequest);
 		const webSocket = new WebSocket(Socket);
 		const sessionID = request.cookies.get('Session');
-		$logger.webSocket.log(request.ip, request.method, request.url, sessionID);
+		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		this.routeWebSocket(request, webSocket);
 	}
     /**
@@ -59,8 +59,8 @@ export class Router {
 		if (!await rule.testAuth(request)) return void response.sendError(403, `You don't have permission to access: ${request.method} -> ${request.url}`);
 		try { return void rule.exec(request, response); }
 		catch(error) {
-			$logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-			$logger.request.error('&C1Route:', request.method, request.url);
+			logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
+			logger.request.error('&C1Route:', request.method, request.url);
 			return void response.sendError(500, 'Internal Server Error');
 		}
 	}
@@ -79,8 +79,8 @@ export class Router {
 		webSocket.acceptConnection(AcceptKey, request.cookies);
 		try { return void rule.exec(request, webSocket); }
 		catch(error) {
-			$logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-			$logger.webSocket.error('&C1Route:', request.method, request.url);
+			logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
+			logger.webSocket.error('&C1Route:', request.method, request.url);
 			return void webSocket.rejectConnection(500, 'Internal Server Error');
 		}
 	}
