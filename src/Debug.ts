@@ -5,8 +5,7 @@
  */
 
 import fs, { WriteStream } from 'fs';
-import ConsoleUI from './ConsoleUI.js';
-import Utilities from './Utilities/Utilities.js';
+import Utilities, { ConsoleUI } from './Utilities/Utilities.js';
 
 export class Debug {
 	private static readonly debugs: Debug.debugMap = new Map();

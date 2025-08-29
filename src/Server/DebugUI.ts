@@ -5,7 +5,7 @@
  */
 
 import Server from './Server.js';
-import ConsoleUI from '../ConsoleUI.js';
+import { ConsoleUI } from '../Utilities/Utilities.js';
 import Logger from '../LoggerManager/Logger.js';
 
 export class DebugUI {

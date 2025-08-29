@@ -8,6 +8,11 @@ import { promises as FSP } from "fs";
 
 import _Path from './Path.js';
 import _Env from './Env.js';
+import _ConsoleUI from './ConsoleUI.js';
+
+export { Path } from './Path.js';
+export { Env } from './Env.js';
+export { ConsoleUI } from './ConsoleUI.js';
 
 export class Utilities {
     /**
@@ -64,7 +69,7 @@ export class Utilities {
     /**
      * Reconstructs a nested object from a flattened object with dot notation keys.
      * @template Result - The type of the unflattened object.
-     * @param obj - The flattened object to unflatten.
+     * @param obj - The flattened object to un flatten.
      * @returns The unflattened object.
      */
     public static unFlattenObject<Result extends any = any>(obj: any): Result {
@@ -115,6 +120,7 @@ export class Utilities {
 export namespace Utilities {
     export import Path = _Path;
     export import Env = _Env;
+    export import ConsoleUI = _ConsoleUI;
     export namespace Types {
         type NumListAdd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
         type strToNum<str extends string> = str extends `${infer num extends number}` ? num : never;
