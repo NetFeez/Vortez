@@ -12,57 +12,54 @@
 //   users from using someone else's ss_uuid to access their data.
 
 import CRYPTO from 'crypto';
-import EVENTS from 'events';
-import Request from './Request.js';
 import Cookie from './Cookie.js';
 
-export class Session extends EVENTS {
+export class Session {
     /** Stores session instances. */
-    private static sessions: Map<string, Session> = new Map;
-    /** Stores session data. */
-    private data: Map<string, any>;
-    /** Stores the session's SS_UUID. */
-    private sessionID: string;
+    private static instances: Map<string, Session> = new Map;
     /**
      * Creates or retrieves the current session instance from cookies.
      * @param cookies - The Cookie instance from the request.
      * @returns The current session instance.
      */
-    public static getInstance(cookies: Cookie) {
-        let sessionID = cookies.get('Session');
-        if (!sessionID) {
-            sessionID = CRYPTO.randomUUID();
-            cookies.set('Session', sessionID, {
-                secure: true,
-                httpOnly: true,
-                path: '/',
-                expires: (() => {
-                    const date = new Date();
-                    date.setFullYear(date.getFullYear() + 1);
-                    return date;
-                })()
-            });
-        }
-        let session = Session.sessions.get(sessionID);
-        if (!session) {
-            session = new Session(sessionID);
-            Session.sessions.set(sessionID, session);
-        }
-        return session;
+    public static get(cookies: Cookie) {
+        const id = this.extractID(cookies);
+        const session = this.instances.get(id);
+        if (session) return session;
+
+        const newSession = new Session(id);
+        this.instances.set(id, newSession);
+        return newSession;
     }
+    private static extractID(cookies: Cookie): string {
+        let id = cookies.get('Session');
+        if (id) return id;
+        do id = CRYPTO.randomUUID();
+        while (Session.instances.has(id));
+        cookies.set('Session', id, {
+            secure: true, httpOnly: true,
+            path: '/',
+            expires: this.getExpiration()
+        });
+        return id;
+    }
+    private static getExpiration(): Date {
+        const date = new Date();
+        date.setFullYear(date.getFullYear() + 1);
+        return date;
+    }
+    /** Stores the session's SS_UUID. */
+    public readonly id: string;
+    /** Stores session data. */
+    private data: Map<string, any>;
     /**
      * Constructs a session instance with the given ID.
      * @param sessionID - The session's unique ID.
      */
-    private constructor(sessionID: string) { super();
+    private constructor(sessionID: string) {
         this.data = new Map();
-        this.sessionID = sessionID;
+        this.id = sessionID;
     }
-    /**
-     * Returns the session's SS_UUID.
-     * @returns The session ID string.
-     */
-    public getID(): string { return this.sessionID; }
     /**
      * Checks whether a given key exists in the session.
      * @param name - The key to check in the session data.

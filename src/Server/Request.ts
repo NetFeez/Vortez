@@ -47,7 +47,7 @@ export class Request {
 		this.url = decodeURI(this.url.endsWith('/') ? this.url : this.url + '/');
         this.headers = httpRequest.headers;
 		this.cookies = new Cookie(this.headers.cookie);
-		this.session = Session.getInstance(this.cookies);
+		this.session = Session.get(this.cookies);
 		this.searchParams = this.getSearchParams(url);
 		this.body = new Request.BodyParser(this.headers, this.httpRequest);
 	}
