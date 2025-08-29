@@ -4,9 +4,12 @@
  * @license Apache-2.0
  */
 
+import Logger from '../../LoggerManager/Logger.js';
 import Request from '../Request.js';
 import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
+
+let debug = new Logger({ prefix: `&B4RULE-TEST`, debug: '_debug' });
 
 export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
     /** The type of the routing rule */
@@ -35,7 +38,7 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
         this.urlRule = urlRule;
         this.type = type;
         this.method = method;
-        this.expression = this.getExpression(urlRule);
+        this.expression = this.createExpression(urlRule);
         this.content = content;
         this.authExec = authExec ?? (() => true);
     }
@@ -93,40 +96,58 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
      * @param url - The full URL to extract from.
      */
     public getSurplus(url: string): string {
-        if (this.type == 'Folder') {
-            const folderExp = new RegExp(this.expression.source.replace(/\.\+\?\$$/, ''));
-            return url.replace(folderExp, '');
-        } else return url.replace(this.expression, '');
+        const { $surplus = '' } = this.getParams(url);
+        return $surplus;
     }
     /**
      * Creates a regular expression for route matching.
      * @param urlRule - The UrlRule used to form the RegExp.
      * @throws Invalid URL rule format
      */
-    private getExpression(urlRule: string): RegExp {
+    public createExpression(urlRule: string): RegExp {
+        if (this.type == 'Folder') urlRule += !urlRule.endsWith('/*') ? urlRule.endsWith('/') ? '*' : '/*' : '';
+        return Rule.createExpression(urlRule);
+    }
+    /**
+     * Creates a regular expression for route matching.
+     * @param urlRule - The UrlRule used to form the RegExp.
+     * @throws Invalid URL rule format
+     */
+    private static createExpression(urlRule: string): RegExp {
         const validators = {
-            param: /^\$(?<param>.+)$/,
-            scape: /\\(?![\$\[\]\*\+\?\.\(\)\{\}\^\|\-])|(?<!\\)[\$\[\]\*\+\?\.\(\)\{\}\^\|\-]/gi,
+            paramRequired: /^\$(?<param>(?!\$).+)$/,
+            paramOptional: /^\$\?(?<param>(?!\$).+)$/,
+            escape: /\\(?![\$\[\]\*\+\?\.\(\)\{\}\^\|\-])|(?<!\\)[\$\[\]\*\+\?\.\(\)\{\}\^\|\-]/gi,
         };
         const zones = urlRule.split('/').slice(1);
-        let regExpString = '^';
-        for (let index = 0; index < zones.length; index++) {
+        let generated = '^';
+
+        for (let index = 0; index < zones.length; index ++) {
             const zone = zones[index];
-            regExpString += '\/';
-            if (validators.param.test(zone)) {
-                const match = validators.param.exec(zone);
-                if (match && match.groups) {
-                    const param = match.groups['param'].replace(validators.scape, '');
-                    regExpString += `(?<${param}>[^\/]+?)`;
-                }
-            } else if (zone == '*') {
-                regExpString += index < (zones.length - 1)
-                    ? '(?:[^\/]+)?'
-                    : '(?:.+)?';
-            } else regExpString += zone;
+
+            if (zone == '*') {
+                const isLast = index == (zones.length - 1);
+                generated += isLast ? '(?<$surplus>/.+)?' : '(?:/[^/]+)';
+                continue;
+            }
+
+            const optional = zone.match(validators.paramOptional);
+            if (optional && optional.groups) {
+                const param = optional.groups['param'].replace(validators.escape, '');
+                generated += `(?:/(?<${param}>[^/]+))?`;
+                continue;
+            }
+
+            const required = zone.match(validators.paramRequired);
+            if (required && required.groups) {
+                const param = required.groups['param'].replace(validators.escape, '');
+                generated += `/(?<${param}>[^/]+)`;
+                continue;
+            }
+
+            generated += `/${zone.replace(validators.escape, '')}`;
         }
-        regExpString += `\/?${this.type == 'Folder' ? '.+?' : ''}$`;
-        return new RegExp(regExpString);
+        return new RegExp(`${generated}/?$`);
     }
 }
 

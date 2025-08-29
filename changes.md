@@ -11,7 +11,9 @@
   - You can still configure everything dynamically (like in older versions).
   - Using the config system is optional, not required.
   - Documentation is available in the `README.md`.
-- **(Router)**: The rules now can accept async authExec
+- **(Router)**: Refactored Rule to support async authExec and optional parameters in url rules.
+  - The rules now can accept async authExec.
+  - Url rules now accept `$?<name>` as optional param `$<name>` continue as required param.
 
 # version (4.1.0)
 ## ➕ Added
