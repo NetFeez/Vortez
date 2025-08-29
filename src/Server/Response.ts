@@ -9,9 +9,12 @@ import FS from 'fs';
 import PATH from 'path';
 
 import Request from './Request.js';
+import Logger from '../LoggerManager/Logger.js';
 import Utilities from '../Utilities/Utilities.js';
 import Template from '../Template.js';
 import Config from '../Config/Config.js';
+
+const logger = new Logger({ prefix: 'Response' });
 
 export class Response {
 	/** Contains the request received by the server. */
@@ -128,7 +131,8 @@ export class Response {
             }
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File does not exist.');
-        }
+			logger.error('error sending file:', error);
+		}
 	}
 	/**
 	 * Sends the listing of a folder as a response.
@@ -159,7 +163,8 @@ export class Response {
             }
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File/Directory does not exist.');
-        }
+			logger.error('error sending folder:', error);
+		}
 	}
 	/**
 	 * Sends a `.vhtml` template as a response.
@@ -177,7 +182,8 @@ export class Response {
 			this.send(template, { status, headers });
         } catch(error) {
             this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Template does not exist.');
-        }
+			logger.error('error sending template:', error);
+		}
 	}
 	/**
 	 * Sends data in JSON format.
@@ -185,10 +191,15 @@ export class Response {
 	 * @param options - The response options.
 	 */
 	public sendJson(data: any, options: Response.options = {}): void {
-		const json = JSON.stringify(data);
-		const status = options.status ?? 200;
-		const headers = options.headers || this.generateHeaders('json');
-		this.send(json, { status, headers });
+		try {
+			const json = JSON.stringify(data);
+			const status = options.status ?? 200;
+			const headers = options.headers || this.generateHeaders('json');
+			this.send(json, { status, headers });
+		} catch(error) {
+			this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Data cannot be converted to JSON.');
+			logger.error('error sending json:', error);
+		}
     }
 	/**
 	 * Sends an error as a response.
@@ -214,7 +225,8 @@ export class Response {
 			console.error(error);
 			const headers = this.generateHeaders('txt');
             this.send(`Error: ${status} -> ${message}`, { status: status, headers });
-        }
+			logger.error(`error sending error: ${this.request.session.id}`, error);
+		}
 	}
 	private async fileExist(path: string): Promise<boolean> {
 		try { await FS.promises.stat(path); return true; }
