@@ -9,9 +9,9 @@ import ConsoleUI from './ConsoleUI.js';
 import Utilities from './Utilities/Utilities.js';
 
 export class Debug {
+	private static readonly debugs: Debug.debugMap = new Map();
     public static readonly defaultID: string = 'Debug';
     public static readonly default: Debug = Debug.getInstance(this.defaultID);
-	private static debugs: Debug.debugMap = new Map();
     private static timestampFormat = '&C(255,255,255)[DD-MM-YYYY] [hh:mm:ss:ms]&R'
     public static showAll: boolean = false;
     private id: string;
@@ -28,7 +28,7 @@ export class Debug {
      * @returns The debug instance.
      */
     public static getInstance(id: string = this.defaultID, options: Debug.options = {}): Debug {
-        if (id === this.defaultID) return this.default;
+        if (id === this.defaultID) return this.default || new Debug(id, options);
 
         const debug = Debug.debugs.get(id);
 		if (!debug) return new Debug(id, options);
