@@ -4,8 +4,8 @@
  * @license Apache-2.0
  */
 
-import Debug from "../Debug.js";
-import _Logger from "./Logger.js";
+import Debug from "../Logger/Debug.js";
+import _Logger from "../Logger/Logger.js";
 
 export class LoggerManager {
     private static instance: LoggerManager | null;

@@ -5,7 +5,7 @@
  * @license Apache-2.0
  */
 
-import Debug from '../Debug.js';
+import Debug from '../Logger/Debug.js';
 
 import TLS from 'tls';
 import NET from 'net';

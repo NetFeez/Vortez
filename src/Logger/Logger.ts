@@ -4,7 +4,7 @@
  * @license Apache-2.0
 */
 
-import Debug from "../Debug.js";
+import Debug from "./Debug.js";
 
 export class Logger {
     private static readonly LEVEL_MAP: Logger.LevelMap = {

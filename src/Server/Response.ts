@@ -9,7 +9,7 @@ import FS from 'fs';
 import PATH from 'path';
 
 import Request from './Request.js';
-import Logger from '../LoggerManager/Logger.js';
+import Logger from '../Logger/Logger.js';
 import Utilities from '../Utilities/Utilities.js';
 import Template from '../Template.js';
 import Config from '../Config/Config.js';

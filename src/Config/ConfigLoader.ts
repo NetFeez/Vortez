@@ -5,7 +5,7 @@
  */
 
 import { promises as FSP } from "fs";
-import Logger from "../LoggerManager/Logger.js";
+import Logger from "../Logger/Logger.js";
 import Config from "./Config.js";
 import Utilities from "../Utilities/Utilities.js";
 import { ConfigValidators } from "./ConfigValidator.js";
