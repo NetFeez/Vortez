@@ -6,7 +6,7 @@
  */
 
 // Imports the main utilities of the Vortez module.
-import Config from "./Config/Config.js";
+import Config from "./Server/Config/Config.js";
 import Debug from "./Logger/Debug.js";
 import Logger from "./Logger/Logger.js";
 import Template from "./Template.js";
