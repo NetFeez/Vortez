@@ -5,11 +5,10 @@
  */
 
 import Debug from "../../Logger/Debug.js";
-import LoggerManager from "../../LoggerManager/LoggerManager.js";
+import LoggerManager from "../LoggerManager.js";
 import Utilities from "../../Utilities/Utilities.js";
 import _ConfigLoader from "./ConfigLoader.js";
 import _ConfigValidator from "./ConfigValidator.js";
-
 
 export class Config implements Config.Main {
     public static readonly DEFAULT: Config.Main = {

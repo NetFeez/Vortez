@@ -11,7 +11,7 @@ import _Rule from './Rule.js';
 import Request from '../Request.js';
 import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
-import LoggerManager from '../../LoggerManager/LoggerManager.js';
+import LoggerManager from '../LoggerManager.js';
 import Config from '../Config/Config.js';
 
 const logger = LoggerManager.getInstance();

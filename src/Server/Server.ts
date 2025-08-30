@@ -9,7 +9,7 @@ import FS from 'fs';
 import HTTPS from 'https';
 
 import Utilities from '../Utilities/Utilities.js';
-import _LoggerManager from '../LoggerManager/LoggerManager.js';
+import _LoggerManager from './LoggerManager.js';
 import _DebugUI from './DebugUI.js';
 import _Config from './Config/Config.js';
 import _Request from "./Request.js";
