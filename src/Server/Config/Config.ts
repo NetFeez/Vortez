@@ -10,6 +10,9 @@ import Utilities from "../../Utilities/Utilities.js";
 import _ConfigLoader from "./ConfigLoader.js";
 import _ConfigValidator from "./ConfigValidator.js";
 
+export { ConfigLoader } from "./ConfigLoader.js";
+export { ConfigValidator } from "./ConfigValidator.js";
+
 export class Config implements Config.Main {
     public static readonly DEFAULT: Config.Main = {
         host: 'localhost',

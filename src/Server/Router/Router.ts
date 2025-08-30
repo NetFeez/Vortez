@@ -14,6 +14,8 @@ import WebSocket from '../WebSocket/WebSocket.js';
 import LoggerManager from '../LoggerManager.js';
 import Config from '../Config/Config.js';
 
+export { Rule } from './Rule.js';
+
 const logger = LoggerManager.getInstance();
 
 export class Router {

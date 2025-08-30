@@ -9,7 +9,7 @@ import Logger from "../../Logger/Logger.js";
 
 const logger = new Logger({ prefix: 'Config' });
 
-export class ConfigValidators {
+export class ConfigValidator {
     /**
      * Validates the config.
      * @param config - The config to validate.
@@ -128,5 +128,5 @@ export class ConfigValidators {
         return this.validateRange(num, min, max, defaultValue, fieldName);
     }
 }
-export namespace ConfigValidators {}
-export default ConfigValidators;
+export namespace ConfigValidator {}
+export default ConfigValidator;

@@ -4,7 +4,9 @@
  * @license Apache-2.0
 */
 
-import Debug from "./Debug.js";
+import _Debug from "./Debug.js";
+
+export { Debug } from "./Debug.js";
 
 export class Logger {
     private static readonly LEVEL_MAP: Logger.LevelMap = {
@@ -15,18 +17,18 @@ export class Logger {
     }
     private prefix: string;
     private format: string;
-    private debug: Debug;
+    private debug: Logger.Debug;
     public show: boolean = true;
     public save: boolean = true;
     constructor(options: Logger.Options = {}) {
-        const { prefix = 'Logger', format = '&R&C7', debug = Debug.default } = options;
+        const { prefix = 'Logger', format = '&R&C7', debug = Logger.Debug.default } = options;
         this.prefix = prefix;
         this.format = format;
-        if (debug instanceof Debug) this.debug = debug;
-        else if (typeof debug === 'string') this.debug = Debug.getInstance(debug);
-        else if (typeof debug === 'object') this.debug = Debug.getInstance(debug.id, debug);
+        if (debug instanceof Logger.Debug) this.debug = debug;
+        else if (typeof debug === 'string') this.debug = Logger.Debug.getInstance(debug);
+        else if (typeof debug === 'object') this.debug = Logger.Debug.getInstance(debug.id, debug);
         else {
-            this.debug = Debug.default;
+            this.debug = Logger.Debug.default;
             this.warn('The provided option.debug is not valid, the default debug instance will be used.');
         }
     }
@@ -34,12 +36,13 @@ export class Logger {
     public warn (...data: any[]) { this.debug.customLog(data, this.getLogOptions('warn')); }
     public info (...data: any[]) { this.debug.customLog(data, this.getLogOptions('info')); }
     public error (...data: any[]) { this.debug.customLog(data, this.getLogOptions('error')); }
-    private getLogOptions(level: Logger.level): Debug.LogOptions {
+    private getLogOptions(level: Logger.level): Logger.Debug.LogOptions {
         const prefix = `${Logger.LEVEL_MAP[level]} [${this.prefix}]${this.format}`
         return { prefix, save: this.save, show: this.show, }
     }
 }
 export namespace Logger {
+    export import Debug = _Debug;
     export type level = 'log' | 'warn' | 'info' | 'error';
     export type LevelMap = Record<level, string>;
     export interface NewDebugOptions {
@@ -51,7 +54,7 @@ export namespace Logger {
     export interface Options {
         prefix?: string;
         format?: string;
-        debug?: string | Debug | NewDebugOptions;
+        debug?: string | Logger.Debug | NewDebugOptions;
     }
 }
 export default Logger;

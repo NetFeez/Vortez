@@ -8,7 +8,7 @@ import { promises as FSP } from "fs";
 import Logger from "../../Logger/Logger.js";
 import Config from "./Config.js";
 import Utilities from "../../Utilities/Utilities.js";
-import { ConfigValidators } from "./ConfigValidator.js";
+import { ConfigValidator } from "./ConfigValidator.js";
 
 const logger = new Logger({ prefix: 'Config' });
 
@@ -31,7 +31,7 @@ export class ConfigLoader {
         try {
             const content = await FSP.readFile(path, 'utf8');
             const data = JSON.parse(content);
-            const validatedConfig = ConfigValidators.validate(data);
+            const validatedConfig = ConfigValidator.validate(data);
             return new Config(validatedConfig);
         } catch (error) {
             logger.error(`config file &C6[${path}]&R &C1could not be loaded`);

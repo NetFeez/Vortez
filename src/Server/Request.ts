@@ -8,7 +8,9 @@ import URI from 'url';
 import HTTP from 'http';
 import Cookie from './Cookie.js';
 import Session from './Session.js';
-import _BodyParser, { BodyParser } from './BodyParser.js';
+import _BodyParser from './BodyParser.js';
+
+export { BodyParser } from './BodyParser.js';
 
 export class Request {
 	/** Contains the request headers. */
@@ -51,7 +53,7 @@ export class Request {
 		this.searchParams = this.getSearchParams(url);
 		this.body = new Request.BodyParser(this.headers, this.httpRequest);
 	}
-	public get post(): Promise<BodyParser.Body> { return this.body.parse(); }
+	public get post(): Promise<Request.BodyParser.Body> { return this.body.parse(); }
 	/**
 	 * Defines which method was used to make the request.
 	 * @param method - The method used for the request.
