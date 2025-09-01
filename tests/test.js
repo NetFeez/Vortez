@@ -1,11 +1,11 @@
 /// @ts-check
 
-import Vortez, { Logger, Debug, Utilities } from "../build/Vortez.js";
+import Vortez, { Logger, Utilities } from "../build/Vortez.js";
 import "./debug.js";
 import "./utilities.js";
 
 /* | ENABLING ALL THE Vortez LOGS IN CONSOLE | */
-Debug.showAll = true;
+Logger.Debug.showAll = true;
 /* | CREATING DEBUG INSTANCE TO THE TESTS | */
 const debug = new Logger({ prefix: '[TEST]' });
 

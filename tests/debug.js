@@ -1,6 +1,10 @@
-import Debug from "../build/Debug.js";
+/// @ts-check
 
-Debug.log('Hola mundo');
+import { Logger } from "../build/Vortez.js";
+
+const Debug = Logger.Debug;
+
+Debug.log('Hello world');
 Debug.log([
     'Prueba de envió de multiples datos',
     'Para saber el comportamiento'
@@ -11,7 +15,9 @@ const X = Debug.getInstance('_Debug');
 X.log('Prueba para ver si creando una instancia con una ID existente se devuelve la instancia con dicha ID');
 X.log('Prueba para ver si no se crea un archivo diferente con ID igual');
 
-const Y = Debug.getInstance('SEA', undefined, false);
+const Y = Debug.getInstance('SEA', {
+    show: false
+});
 
 Y.log('Prueba para verificar que no se muestra en consola si se inicializa con EnConsola = false');
 
