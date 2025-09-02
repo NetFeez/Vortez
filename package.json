@@ -1,7 +1,7 @@
 {
   "name": "vortez",
   "version": "5.0.0-dev.9",
-  "description": "a module for http/s and ws/s servers",
+  "description": "a module for web server creation",
   "type": "module",
   "main": "build/Vortez.js",
   "scripts": {
@@ -32,13 +32,9 @@
     "README.md"
   ],
   "keywords": [
-    "server",
-    "core",
-    "http",
-    "https",
-    "ws",
-    "wss",
-    "socket"
+    "web", "server",
+    "http", "https",
+    "ws", "wss", "websocket"
   ],
   "devDependencies": {
     "@types/node": "^20.14.12",
