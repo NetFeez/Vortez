@@ -82,7 +82,9 @@ export namespace Request {
     export interface Document {
         [name: string]: string | undefined;
     }
-    export interface RuleParams extends Document {}
+    export interface RuleParams extends Document {
+		$surplus?: string;
+	}
 	export interface Headers extends HTTP.IncomingHttpHeaders {}
     export interface SearchParams extends Document {};
     export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'ALL';
