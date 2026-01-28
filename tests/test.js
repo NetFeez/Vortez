@@ -26,16 +26,15 @@ const server = new Vortez({ port: 3000 });
 
 /* | FILE RULE TEST | */
 server.router.addFile('/File', 'changes.md')
-server.router.addFile('/favicon.ico', 'Global/Source/Logo_SM_960.png');
+server.router.addFile('/favicon.ico', 'global/Source/Logo_SM_960.png');
 
 /* | FILE RULE TEST USING AUTH EXEC | */
-server.router.addFile('/FileWA', 'changes.md',
-    (Request) => (Request.searchParams.Auth != null && Request.searchParams.Auth == 'AuthYes')
-)
+// AuthExec removed
+// server.router.addFile('/FileWA', 'changes.md')
 
 /* | CREATING RULES WITH THE RULE CONSTRUCTOR | */
 server.router.addRules(
-    new Vortez.Router.Rule('File', 'GET', '/MyFile/*', 'Test/Test.js', () => true)
+    new Vortez.Router.HttpRule('GET', '/MyFile/*', (Rq, Rs) => Rs.sendFile('Test/Test.js'))
 );
 
 /* | FOLDER RULES TEST | */

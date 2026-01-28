@@ -8,77 +8,37 @@ import Request from '../Request.js';
 import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
 
-export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
-    /** The type of the routing rule */
-    public type: T;
-    /** The HTTP method accepted by the routing rule */
-    public method: Request.Method;
+export abstract class Rule<T extends any> {
     /** The UrlRule with which the routing rule was created */
     public urlRule: string;
-    /** The authentication function */
-    public authExec: Rule.AuthExec;
     /** The regular expression for the routing rule */
     public expression: RegExp;
     /** The executable content for the routing rule */
-    public content: Rule.Type[T];
+    public action: T;
     /**
      * Creates a routing rule for Vortez.
-     * @param type - The rule type.
-     * @param method - The HTTP method of the rule.
      * @param urlRule - The URL rule adopted by this Rule instance.
-     * @param content - The executable content of the rule.
-     * @param authExec - The authentication function.
+     * @param action - The executable content of the rule.
      */
-    public constructor(type: T, method: Request.Method, urlRule: string, content: Rule.Type[T], authExec?: Rule.AuthExec) {
+    public constructor(urlRule: string, action: T) {
         if (!urlRule.startsWith('/')) urlRule = '/' + urlRule;
         if (urlRule.endsWith('/')) urlRule = urlRule.slice(0, -1);
         this.urlRule = urlRule;
-        this.type = type;
-        this.method = method;
         this.expression = this.createExpression(urlRule);
-        this.content = content;
-        this.authExec = authExec ?? (() => true);
+        this.action = action;
     }
     /**
      * Executes the rule's content.
      * @param request - The Request that matched the rule.
      * @param client - The client that made the request.
      */
-    public async exec(request: Request, client: Rule.ClientType<T>): Promise<void> {
-        request.ruleParams = this.getParams(request.url);
-        if (await this.testAuth(request)) switch (this.type) {
-            case 'Action':    (this as Rule<'Action'>).content(request, (client as Rule.ClientType<'Action'>)); break;
-            case 'File':      (client as Rule.ClientType<'File'>).sendFile((this as Rule<'File'>).content); break;
-            case 'Folder':    (client as Rule.ClientType<'Folder'>).sendFolder((this as Rule<'Folder'>).content, this.getSurplus(request.url)); break;
-            case 'WebSocket': (this as Rule<'WebSocket'>).content(request, (client as Rule.ClientType<'WebSocket'>)); break;
-        }
-    }
+    public abstract exec(request: Request, client: Rule.ClientType): void | Promise<void>
     /**
      * Checks whether a URL matches this route.
      * Also sets the Request.ruleParams.
      * @param request - The incoming request.
-     * @param isWebSocket - Whether to check for a WebSocket route.
      */
-    public test(request: Request, isWebSocket: boolean = false): boolean {
-        let result = false;
-        if (isWebSocket) {
-            result = this.type == 'WebSocket'
-            ? this.expression.test(request.url)
-            : false;
-        } else {
-            result = this.method == request.method || this.method == 'ALL'
-            ? this.expression.test(request.url)
-            : false;
-        }
-        return result;
-    }
-    /**
-     * Validates whether the request passes authentication.
-     * @param request - The incoming request.
-     */
-    public async testAuth(request: Request): Promise<boolean> {
-        return !this.authExec || this.authExec(request);
-    }
+    public test(request: Request): boolean { return this.expression.test(request.url); }
     /**
      * Retrieves the ruleParams from the routing rule if available.
      * @param path - The URL to resolve.
@@ -102,7 +62,6 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
      * @throws Invalid URL rule format
      */
     public createExpression(urlRule: string): RegExp {
-        if (this.type == 'Folder') urlRule += !urlRule.endsWith('/*') ? urlRule.endsWith('/') ? '*' : '/*' : '';
         return Rule.createExpression(urlRule);
     }
     /**
@@ -149,18 +108,9 @@ export class Rule<T extends keyof Rule.Type = keyof Rule.Type> {
 }
 
 export namespace Rule {
-    export type AuthExec = (Request: Request) => boolean | Promise<boolean>;
-    export type ActionExec = (Request: Request, Response: Response) => void;
-    export type WebSocketExec = (Request: Request, WebSocket: WebSocket) => void;
-    export type ClientType<T extends keyof Type> = T extends 'WebSocket' ? WebSocket : Response;
+    export type ClientType =WebSocket | Response;
     export interface ruleParams {
         [name: string]: string | undefined;
-    }
-    export type Type = {
-        File: string,
-        Folder: string,
-        Action: ActionExec,
-        WebSocket: WebSocketExec
     }
 }
 

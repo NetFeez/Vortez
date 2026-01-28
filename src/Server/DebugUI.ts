@@ -93,8 +93,11 @@ export class DebugUI {
 		this.out.info('&C(255,180,220)╭─────────────────────────────────────────────');
         this.out.info('&C(255,180,220)│ &C2 Rules added to server router');
 		this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
-        for (const rule of this.server.router.rules) {
-            this.out.info(`&C(255,180,220)│ &C3${rule.type.padStart(8, ' ')} rule: &C2${rule.method.padStart(5, ' ')} &R-> &C6${rule.urlRule}${typeof rule.content == 'string' ? " &C3<<&C6&S " + rule.content : ''}`);
+        for (const rule of this.server.router.httpRules) {
+            this.out.info(`&C(255,180,220)│ &C3 http rule: &C2${rule.method.padStart(5, ' ')} &R-> &C6${rule.urlRule}`);
+        }
+        for (const rule of this.server.router.wsRules) {
+            this.out.info(`&C(255,180,220)│ &C3 ws rule: &C6${rule.urlRule}`);
         }
         this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
     }
