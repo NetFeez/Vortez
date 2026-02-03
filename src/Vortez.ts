@@ -9,4 +9,5 @@ export { Logger } from "./Logger/Logger.js";
 export { Template } from "./Template.js";
 export { Utilities } from "./Utilities/Utilities.js";
 export * as Beta from "./Beta/Beta.js";
+export { ServerError } from "./Server/ServerError.js";
 export { Server as default, Server as Vortez } from "./Server/Server.js";

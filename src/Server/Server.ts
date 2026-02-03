@@ -18,6 +18,7 @@ import _Session from "./Session.js";
 import _Cookie from "./Cookie.js";
 import _WebSocket from "./WebSocket/WebSocket.js";
 import _Router from "./Router/Router.js";
+import _ServerError from "./ServerError.js";
 
 export { LoggerManager } from './LoggerManager.js';
 export { DebugUI } from './DebugUI.js';
@@ -28,6 +29,7 @@ export { Session } from "./Session.js";
 export { Cookie } from "./Cookie.js";
 export { WebSocket } from "./WebSocket/WebSocket.js";
 export { Router } from "./Router/Router.js";
+export { ServerError } from "./ServerError.js";
 
 const logger = _LoggerManager.getInstance();
 
@@ -197,6 +199,7 @@ export namespace Server {
     export import Router = _Router;
 	export import LoggerManager = _LoggerManager;
 	export import DebugUI = _DebugUI;
+	export import ServerError = _ServerError;
     export interface Certificates {
         cert: Buffer | string,
         key: Buffer | string
