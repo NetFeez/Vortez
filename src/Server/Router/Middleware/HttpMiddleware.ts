@@ -33,6 +33,9 @@ export class HttpMiddleware extends Middleware<HttpRule> {
                 return await current(request, response, next, state);
             };
             await next();
+            if (response.isSended) return;
+            logger.warn('response was not sent');
+            throw new ServerError('response was not sent', 500);
         } catch(error) {
             if (error instanceof ServerError) {
                 if (error.isSended) return;
