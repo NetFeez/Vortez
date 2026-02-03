@@ -70,9 +70,9 @@ export class HttpRule extends BaseRule<HttpRule.action> {
      * @param request - The incoming request.
      * @param client - The client that made the request.
      */
-    private static sendFolder(path: string, request: Request, client: Response): void {
+    private static async sendFolder(path: string, request: Request, client: Response): Promise<void> {
         const { $surplus = '' } = request.ruleParams;
-        client.sendFolder(path, $surplus);
+        await client.sendFolder(path, $surplus);
     }
     /**
      * Sends a file to the client.
@@ -80,8 +80,8 @@ export class HttpRule extends BaseRule<HttpRule.action> {
      * @param request - The incoming request.
      * @param client - The client that made the request.
      */
-    private static sendFile(path: string, request: Request, client: Response): void {
-        client.sendFile(path);
+    private static async sendFile(path: string, request: Request, client: Response): Promise<void> {
+        await client.sendFile(path);
     }
 }
 

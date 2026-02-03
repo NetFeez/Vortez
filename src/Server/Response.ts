@@ -23,6 +23,7 @@ export class Response {
 	private templates: Config.Templates;
 	/** Contains the response to be sent by the server. */
 	public httpResponse: HTTP.ServerResponse;
+	private _isSended: boolean = false;
 	/**
 	 * Creates the `NetFeez-Labs/Server` response format.
 	 * @param request - The request received by the server.
@@ -37,7 +38,7 @@ export class Response {
         this.httpResponse.setHeader('X-Version', '3.7.0-dev.18');
     }
 	/** Checks if the response has been sent. */
-	public get isSended(): boolean { return this.httpResponse.writableEnded; }
+	public get isSended(): boolean { return this._isSended || this.httpResponse.writableEnded || this.httpResponse.headersSent; }
 	/**
 	 * Generates headers for supported file types.
 	 * More types will be supported over time.
@@ -88,6 +89,7 @@ export class Response {
 	 * @param encode - The encoding used for the response.
 	 */
 	public send(data: Response.data, options: Response.options = {}): void  {
+		this._isSended = true;
 		const status = options.status ?? 200;
 		const encode = options.encode || 'utf-8';
 		const headers = options.headers || this.generateHeaders('txt');
