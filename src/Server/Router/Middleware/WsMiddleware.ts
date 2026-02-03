@@ -34,7 +34,7 @@ export class WsMiddleware extends Middleware<WsRule> {
                     return await action(request, client, state);
                 }
                 const current = this.pipeline[index++];
-                return await current(request, next, state);
+                return await current(request, client, next, state);
             };
             await next();
         } catch(error) {

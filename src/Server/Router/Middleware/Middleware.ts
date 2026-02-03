@@ -6,6 +6,7 @@
 
 import Request from '../../Request.js';
 import Response from '../../Response.js';
+import WebSocket from '../../WebSocket/WebSocket.js';
 import HttpRule from '../HttpRule.js';
 import WsRule from '../WsRule.js';
 
@@ -43,7 +44,7 @@ export abstract class Middleware<Rule extends HttpRule | WsRule> {
 export namespace Middleware {
     export type next = (error?: unknown) => void;
     export type httpAction = (request: Request, response: Response, next: next, state: State) => void | Promise<void>;
-    export type wsAction = (request: Request, next: next, state: State) => void | Promise<void>;
+    export type wsAction = (request: Request, client: WebSocket, next: next, state: State) => void | Promise<void>;
     export type action<Rule extends HttpRule | WsRule> =
     Rule extends WsRule
 ? wsAction
