@@ -9,26 +9,36 @@ import CRYPTO from 'crypto';
 import { Duplex } from 'stream';
 import Chunk from './Chunk.js';
 import Cookie from '../Cookie.js';
+import Request from '../Request.js';
+import LoggerManager from '../LoggerManager.js';
+
+const logger = LoggerManager.getInstance().webSocket;
+
+export { Chunk } from './Chunk.js';
+
 
 export class WebSocket extends EVENTS {
-    /** Contains the connection with the client. */
-    private connection: Duplex;
+    public static readonly WEBSOCKET_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+    private _status: WebSocket.handshakeStatus = 'pending';
     /**
      * Creates a new WebSocket.
      * @param client The connection with the client.
      */
-    public constructor(client: Duplex) { super();
-        this.connection = client;
-        this.initEvents();
-    }
+    public constructor(
+        public readonly request: Request,
+        public readonly connection: Duplex
+    ) { super(); this.initEvents(); }
+    /** Whether the connection is closed. */
+    public get isClosed(): boolean { return this.connection.readableEnded; }
+    public get status(): WebSocket.handshakeStatus { return this._status; }
     /**
      * Accepts the connection with the client.
-     * @param acceptKey The key that will be used to accept the connection.
-     * @param cookies The cookies that will be sent to the client.
      */
-    public acceptConnection(acceptKey: string, cookies?: Cookie): void  {
+    public accept(): void  {
+        this._status = 'accepted';
+        const key = this.request.headers['sec-websocket-key']?.trim();
         const acceptToken = CRYPTO.createHash('SHA1').update(
-            acceptKey + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+            key + WebSocket.WEBSOCKET_GUID
         ).digest('base64');
 
         const headers = this.buildHeaders([
@@ -36,7 +46,7 @@ export class WebSocket extends EVENTS {
             'Upgrade: websocket',
             'Connection: Upgrade',
             `Sec-WebSocket-Accept: ${acceptToken}`
-        ], cookies);
+        ], this.request.cookies);
 
         this.connection.write(headers);
     }
@@ -44,14 +54,13 @@ export class WebSocket extends EVENTS {
      * Rejects the connection with the client.
      * @param code The code that will be sent to the client.
      * @param reason The reason that will be sent to the client.
-     * @param cookies The cookies that will be sent to the client.
      */
-    public rejectConnection(code: number, reason: string, cookies?: Cookie): void {
+    public reject(code: number, reason: string): void {
+        this._status = 'rejected';
         const headers = this.buildHeaders([
             `HTTP/1.1 ${code} ${reason}`,
             'Connection: close'
-        ], cookies);
-    
+        ], this.request.cookies);
         this.connection.end(headers);
     }
     /**  Finishes the connection. */
@@ -62,14 +71,10 @@ export class WebSocket extends EVENTS {
 	 * Send data to the client.
 	 * @param data The data that will be sent.
      */
-    public send(data: String | Buffer): void {
-        const [buffer, isText] = typeof data == 'string'
-        ? [this.stringToBuffer(data), true]
-        : data instanceof Buffer
-            ? [data, false]
-            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.WebSocket.send'), true];
-        const message = this.encode(buffer, isText);
-        this.connection.write(message);
+    public send(data: string | Buffer): void {
+        if (this.status == 'rejected') return void logger.warn('You cannot send data to a rejected websocket connection');
+        if (this.status == 'pending') return void logger.warn('You cannot send data to a pending websocket connection');
+        this.write(data);
     }
     /**
 	 * Send data to the client in JSON format.
@@ -78,6 +83,19 @@ export class WebSocket extends EVENTS {
     public sendJson(data: any): void {
         const message = JSON.stringify(data);
         this.send(message);
+    }
+    /**
+	 * Writes data to the client socket.
+	 * @param data The data that will be sent.
+     */
+    private write(data: String | Buffer): void {
+        const [buffer, isText] = typeof data == 'string'
+        ? [this.stringToBuffer(data), true]
+        : data instanceof Buffer
+            ? [data, false]
+            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.WebSocket.send'), true];
+        const message = this.encode(buffer, isText);
+        this.connection.write(message);
     }
     /**
      * Encodes the data to be sent to the client.
@@ -178,6 +196,7 @@ export namespace WebSocket {
         opCode: number;
         size: number | bigint;
     }
+    export type handshakeStatus = 'accepted' | 'rejected' | 'pending';
 }
 
 export default WebSocket;

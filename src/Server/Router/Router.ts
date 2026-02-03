@@ -15,6 +15,7 @@ import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
 import LoggerManager from '../LoggerManager.js';
 import Config from '../Config/Config.js';
+import Middleware from './Middleware.js';
 
 export { Rule } from './Rule.js';
 export { WsRule } from './WsRule.js';
@@ -26,6 +27,7 @@ export class Router {
     public httpRules: Router.HttpRule[] = [];
     public wsRules: Router.WsRule[] = [];
     public config: Config;
+
     constructor(config: Config, rules: Router.rules[] = []) {
         this.config = config;
 		this.addRules(...rules);
@@ -49,7 +51,7 @@ export class Router {
 	 */
 	public upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): void {
 		const request = new Request(HttpRequest);
-		const webSocket = new WebSocket(Socket);
+		const webSocket = new WebSocket(request, Socket);
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		this.routeWebSocket(request, webSocket);
@@ -58,17 +60,11 @@ export class Router {
 	 * Routes incoming HTTP requests to be processed.
 	 * @param request - The received HTTP request.
 	 * @param response - The server response handler.
-	 * @throws If no routing rule matches the request.
 	 */
 	private async routeRequest(request: Request, response: Response): Promise<void> {
 		const rule = this.httpRules.find((rule) => rule.test(request));
 		if (!rule) return void response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
-		try { return void rule.exec(request, response); }
-		catch(error) {
-			logger.request.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-			logger.request.error('&C1Route:', request.method, request.url);
-			return void response.sendError(500, 'Internal Server Error');
-		}
+		return void rule.exec(request, response);
 	}
 	/**
 	 * Routes WebSocket connection requests.
@@ -78,16 +74,8 @@ export class Router {
 	 */
 	private async routeWebSocket(request: Request, webSocket: WebSocket): Promise<void> {
 		const rule = this.wsRules.find((rule) => rule.test(request));
-		if (!rule) return void webSocket.rejectConnection(400, `No router for: ${request.method} -> ${request.url}`);
-		const AcceptKey = request.headers['sec-websocket-key']?.trim();
-		if (!AcceptKey) return void webSocket.rejectConnection(400, 'Invalid WebSocket request');
-		webSocket.acceptConnection(AcceptKey, request.cookies);
-		try { return void rule.exec(request, webSocket); }
-		catch(error) {
-			logger.webSocket.error('&C1Error executing rule:&R&C6', (error instanceof Error ? error.message : error));
-			logger.webSocket.error('&C1Route:', request.method, request.url);
-			return void webSocket.rejectConnection(500, 'Internal Server Error');
-		}
+		if (!rule) return void webSocket.reject(400, `No router for: ${request.method} -> ${request.url}`);
+		return void rule.exec(request, webSocket);
 	}
 	/**
 	 * Adds one or more routing rules to the server.
@@ -103,7 +91,7 @@ export class Router {
 	 */
 	public addRule(rule: Router.rules): this {
 		if (rule instanceof Router.WsRule) this.wsRules.push(rule);
-		else this.httpRules.push(rule);
+		else { this.httpRules.push(rule); }
 		return this;
 	}
 	/**
@@ -111,41 +99,41 @@ export class Router {
 	 * @param method - The HTTP method to respond to.
 	 * @param urlRule - The URL path for the action.
 	 * @param action - The action to be executed.
-	 * @param auth - The optional authorization check function.
 	 */
-	public addAction(method: Request.Method, urlRule: string, action: Router.HttpRule.action): this {
-		this.addRule(new Router.HttpRule(method, urlRule, action));
-		return this;
+	public addAction(method: Request.Method, urlRule: string, action: Router.HttpRule.action): Router.HttpRule {
+		const rule = new Router.HttpRule(method, urlRule, action);
+		this.addRule(rule);
+		return rule;
 	}
 	/**
 	 * Adds a file routing rule.
 	 * @param urlRule - The URL path to listen on.
 	 * @param source - The path to the file to be served.
-	 * @param auth - The optional authorization check function.
 	 */
-	public addFile(urlRule: string, source: string): this {
-		this.addRule(Router.HttpRule.file(urlRule, source));
-		return this;
+	public addFile(urlRule: string, source: string,): Router.HttpRule {
+		const rule = Router.HttpRule.file(urlRule, source);
+		this.addRule(rule);
+		return rule;
 	}
 	/**
 	 * Adds a folder routing rule.
 	 * @param urlRule - The URL path to listen on.
 	 * @param source - The directory path to be served.
-	 * @param auth - The optional authorization check function.
 	 */
-	public addFolder(urlRule: string, source: string): this {
-		this.addRules(Router.HttpRule.folder(urlRule, source));
+	public addFolder(urlRule: string, source: string): Router {
+		const rule = Router.HttpRule.folder(urlRule, source);
+		this.addRule(rule);
 		return this;
 	}
 	/**
 	 * Adds a WebSocket routing rule.
 	 * @param urlRule - The URL path to listen on.
 	 * @param action - The action to be executed on connection.
-	 * @param auth - The optional authorization check function.
 	 */
-	public addWebSocket(urlRule: string, action: Router.WsRule.action): this {
-		this.addRules(new Router.WsRule(urlRule, action));
-		return this;
+	public addWebSocket(urlRule: string, action: Router.WsRule.action): Router.WsRule {
+		const rule = new Router.WsRule(urlRule, action)
+		this.addRules(rule);
+		return rule;
 	}
 }
 export namespace Router {
@@ -154,4 +142,5 @@ export namespace Router {
 	export import HttpRule = _HttpRule;
 	export type rules = WsRule | HttpRule;
 }
+
 export default Router;

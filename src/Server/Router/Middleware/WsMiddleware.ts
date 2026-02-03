@@ -1,0 +1,54 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Manages the middleware pipeline for WsRules.
+ * @license Apache-2.0
+ */
+
+import Request from '../../Request.js';
+import ServerError from '../../ServerError.js';
+import LoggerManager from '../../LoggerManager.js';
+import WsRule from '../WsRule.js';
+import Middleware from './Middleware.js';
+import WebSocket from '../../WebSocket/WebSocket.js';
+
+const logger = LoggerManager.getInstance();
+
+export class WsMiddleware extends Middleware<WsRule> {
+    public clone(): WsMiddleware { return new WsMiddleware(this.pipeline); }
+    /**
+     * Runs the middleware pipeline.
+     * @param request The request received by the server.
+     * @param client The WebSocket connection.
+     * @param action The action to execute after the middleware pipeline.
+     * @param state The state to pass to the middleware and action.
+     */
+    public async run(request: Request, client: WebSocket, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
+        try {
+            let index = 0;
+            const next: Middleware.next = async (error?: unknown) => {
+                if (error) throw error;
+                if (index >= this.pipeline.length) {
+                    if (client.isClosed) return void logger.warn('websocket was closed when calling next()');
+                    if (client.status === 'rejected') return void logger.warn('websocket was rejected when calling next()');
+                    if (client.status === 'pending') client.accept();
+                    return await action(request, client, state);
+                }
+                const current = this.pipeline[index++];
+                return await current(request, next, state);
+            };
+            await next();
+        } catch(error) {
+            if (client.isClosed) logger.error(error);
+            if (error instanceof ServerError) client.reject(error.status, error.message);
+            else if (error instanceof Error) {
+                logger.error(error);
+                client.reject(500, error.message);
+            } else {
+                logger.error(error);
+                client.reject(500, 'Internal Server Error');
+            }
+        }
+    }
+}
+
+export default WsMiddleware;

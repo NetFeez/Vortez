@@ -17,6 +17,12 @@
 - **(Router)**: Refactored Rule to support async authExec and optional parameters in url rules.
   - The rules now can accept async authExec.
   - Url rules now accept `$?<name>` as optional param `$<name>` continue as required param.
+- **(Server/Middleware)**: Major refactor of the middleware architecture.
+  - Introduced an abstract `Middleware` base class to create a solid and extensible foundation for request processing.
+  - This new structure enforces a clear contract for all middleware implementations (`HttpMiddleware`, `WsMiddleware`), requiring `run()` and `clone()` methods.
+- **(Server/WebSocket)**: Overhauled the WebSocket connection lifecycle for improved security and developer experience.
+  - The `WebSocket` class no longer accepts connections in its constructor. Instead, it waits in a `pending` state.
+  - Added `accept()` and `reject()` methods to give the framework full control over the connection handshake.
 
 # version (4.1.0)
 ## ➕ Added

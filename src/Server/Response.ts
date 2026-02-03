@@ -36,6 +36,8 @@ export class Response {
         this.httpResponse.setHeader('X-Powered-By', 'MyNetFeez-Labs Vortez');
         this.httpResponse.setHeader('X-Version', '3.7.0-dev.18');
     }
+	/** Checks if the response has been sent. */
+	public get isSended(): boolean { return this.httpResponse.writableEnded; }
 	/**
 	 * Generates headers for supported file types.
 	 * More types will be supported over time.
