@@ -7,19 +7,12 @@ import "./utilities.js";
 /* | ENABLING ALL THE Vortez LOGS IN CONSOLE | */
 Logger.Debug.showAll = true;
 /* | CREATING DEBUG INSTANCE TO THE TESTS | */
-const debug = new Logger({ prefix: '[TEST]' });
+const debug = new Logger({ prefix: 'TEST' });
 
 /* | CREATING ENV VARIABLES FOR THE TESTS | */
 
 await Utilities.Env.load('tests/test.env');
 // Utilities.Env.loadSync('tests/test.env');
-
-const HOST = process.env.HOST;
-const PORT = process.env.PORT ?
-Number(process.env.PORT)
-? Number(process.env.PORT)
-: 5050 : 5050;
-const WEBSOCKET_URL = process.env['REMOTE-WS'] ?? `ws://${HOST ?? 'localhost'}:${PORT}`;
 
 /* | CREATING SERVER | */
 const server = new Vortez({ port: 3000 });
@@ -29,8 +22,12 @@ server.router.addFile('/File', 'changes.md')
 server.router.addFile('/favicon.ico', 'global/Source/Logo_SM_960.png');
 
 /* | FILE RULE TEST USING AUTH EXEC | */
-// AuthExec removed
-// server.router.addFile('/FileWA', 'changes.md')
+server.router.addFile('/FileWA', 'changes.md')
+    .use(async (request, Response, next) => {
+        const { Auth } = request.searchParams;
+        if (Auth === 'AuthYes') return next();
+        throw new Vortez.ServerError('No authorized', 401);
+    });
 
 /* | CREATING RULES WITH THE RULE CONSTRUCTOR | */
 server.router.addRules(
@@ -42,7 +39,7 @@ server.router.addFolder('/Folder', '.debug');
 
 /* | ACTION RULES TEST | */
 server.router.addAction('ALL', '/', (Rq, Rs) => {
-    Rs.sendTemplate('tests/test.vhtml', {
+    return Rs.sendTemplate('tests/test.vhtml', {
         Tittle: '[NetFeez-Labs] · Tests',
         Sources: {
             File: '/File',
@@ -84,8 +81,8 @@ function broadCast(message, exclude = null) {
 }
 
 server.router.addAction('ALL', 'WebSocket', (Rq, Rs) => {
-    Rs.sendTemplate('tests/websocket.vhtml', {
-        Host: `${WEBSOCKET_URL}/WebSocket`
+    return Rs.sendTemplate('tests/websocket.vhtml', {
+        Host: `/WebSocket`
     });
 });
 
@@ -123,6 +120,11 @@ server.router.addWebSocket('/WebSocket/$?username', (request, socket) => {
         broadCast('[server] client disconnected: ' + username);
         debug.log('[WebSocket-Finish]: client disconnected')
     });
+}).use((request, client, next) => {
+    const { username } = request.ruleParams;
+    if (!username) return next(new Vortez.ServerError('no username', 400));
+    if (username === 'system') return next(new Vortez.ServerError('you cant use system as username', 400));
+    return next();
 });
 
 server.start();
