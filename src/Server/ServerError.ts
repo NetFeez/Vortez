@@ -10,7 +10,6 @@ export class ServerError extends Error {
 export namespace ServerError {
     export interface Options {
         isSended?: boolean;
-        status?: number;
         cause?: Error;
     }
 }

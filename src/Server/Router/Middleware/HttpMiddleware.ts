@@ -35,6 +35,7 @@ export class HttpMiddleware extends Middleware<HttpRule> {
             await next();
         } catch(error) {
             if (error instanceof ServerError) {
+                if (error.isSended) return;
                 if (response.isSended) return void logger.warn('throw ApiError used when response was already sent');
                 response.sendError(error.status, error.message);
             } else if (error instanceof Error) {

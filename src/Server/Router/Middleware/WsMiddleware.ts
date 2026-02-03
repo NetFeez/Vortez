@@ -38,13 +38,19 @@ export class WsMiddleware extends Middleware<WsRule> {
             };
             await next();
         } catch(error) {
-            if (client.isClosed) logger.error(error);
-            if (error instanceof ServerError) client.reject(error.status, error.message);
-            else if (error instanceof Error) {
+            if (error instanceof ServerError) {
+                if (error.isSended) return;
+                if (client.isClosed) return void logger.error(error);
+                if (client.status !== 'pending') return;
+                client.reject(error.status, error.message);
+            } else if (error instanceof Error) {
                 logger.error(error);
+                if (client.isClosed || client.status !== 'pending') return;
                 client.reject(500, error.message);
             } else {
                 logger.error(error);
+                if (client.isClosed || client.status !== 'pending') return;
+                if (client.isClosed) return;
                 client.reject(500, 'Internal Server Error');
             }
         }
