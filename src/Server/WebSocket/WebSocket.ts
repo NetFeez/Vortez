@@ -57,11 +57,15 @@ export class WebSocket extends EVENTS {
      */
     public reject(code: number, reason: string): void {
         this._status = 'rejected';
+        const body = JSON.stringify({ code, reason },null, 4);
         const headers = this.buildHeaders([
             `HTTP/1.1 ${code} ${reason}`,
+            'Content-Type: application/json',
+            `Content-Length: ${Buffer.byteLength(body)}`,
             'Connection: close'
         ], this.request.cookies);
-        this.connection.end(headers);
+        this.connection.write(headers);
+        this.connection.end(body);
     }
     /**  Finishes the connection. */
     public end(): void { this.connection.end(); }
