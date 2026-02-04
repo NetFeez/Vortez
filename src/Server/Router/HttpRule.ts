@@ -17,20 +17,28 @@ export class HttpRule extends BaseRule<HttpRule.action> {
         urlRule: string, action: HttpRule.action,
         public readonly middleware: HttpMiddleware = new HttpMiddleware()
     ) { super(urlRule, action); }
-    /**
-     * Adds a middleware to this specific rule.
-     * @param action The middleware action.
-     */
-    public use(action: Middleware.httpAction): this {
-        this.middleware.use(action);
-        return this;
-    }
     public exec(request: Request, response: Response, state?: Middleware.State): void {
         request.ruleParams = this.getParams(request.url);
         this.middleware.run(request, response, this.action, state);
     }
     public test(request: Request): boolean {
         return (this.method == request.method || this.method == 'ALL')  && super.test(request);
+    }
+    /**
+     * Adds a middleware to this specific rule.
+     * @param action The middleware action.
+     */
+    public use(action: Middleware.action.http): this {
+        this.middleware.use(action);
+        return this;
+    }
+    /**
+     * Adds a error middleware to this specific rule.
+     * @param action The middleware action.
+     */
+    public useError(action: Middleware.errorAction.http): this {
+        this.middleware.useError(action);
+        return this;
     }
     /**
      * Creates a routing rule to send a folder to the client.

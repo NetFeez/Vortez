@@ -27,9 +27,9 @@ export class WsMiddleware extends Middleware<WsRule> {
             let index = 0;
             const next: Middleware.next = async (error?: unknown) => {
                 if (error) throw error;
+                if (client.isClosed) return void logger.warn('websocket was closed when calling next()');
+                if (client.status === 'rejected') return void logger.warn('websocket was rejected when calling next()');
                 if (index >= this.pipeline.length) {
-                    if (client.isClosed) return void logger.warn('websocket was closed when calling next()');
-                    if (client.status === 'rejected') return void logger.warn('websocket was rejected when calling next()');
                     if (client.status === 'pending') client.accept();
                     return await action(request, client, state);
                 }
@@ -38,21 +38,37 @@ export class WsMiddleware extends Middleware<WsRule> {
             };
             await next();
         } catch(error) {
-            if (error instanceof ServerError) {
-                if (error.isSended) return;
-                if (client.isClosed) return void logger.error(error);
-                if (client.status !== 'pending') return;
-                client.reject(error.status, error.message);
-            } else if (error instanceof Error) {
-                logger.error(error);
-                if (client.isClosed || client.status !== 'pending') return;
-                client.reject(500, error.message);
-            } else {
-                logger.error(error);
-                if (client.isClosed || client.status !== 'pending') return;
-                if (client.isClosed) return;
-                client.reject(500, 'Internal Server Error');
-            }
+            if (this.errorPipeline.length === 0) return this.errorHandler(error, request, client);
+            else return this.runError(error, request, client, state);
+        }
+    }
+    public async runError(error: unknown, request: Request, client: WebSocket, state: Middleware.State = {}): Promise<void> {
+        try {
+            let index = 0;
+            const next: Middleware.next = async (error?: unknown) => {
+                if (error) throw error;
+                if (index >= this.errorPipeline.length) return await this.errorHandler(error, request, client);
+                const current = this.errorPipeline[index++];
+                return await current(error, request, client, next, state);
+            };
+            await next();
+        } catch(error) { return this.errorHandler(error, request, client); }
+    }
+    protected async errorHandler(error: unknown, request: Request, client: WebSocket): Promise<void> {
+        if (error instanceof ServerError) {
+            if (error.isSended) return;
+            if (client.isClosed) return void logger.error(error);
+            if (client.status !== 'pending') return;
+            client.reject(error.status, error.message);
+        } else if (error instanceof Error) {
+            logger.error(error);
+            if (client.isClosed || client.status !== 'pending') return;
+            client.reject(500, error.message);
+        } else {
+            logger.error(error);
+            if (client.isClosed || client.status !== 'pending') return;
+            if (client.isClosed) return;
+            client.reject(500, 'Internal Server Error');
         }
     }
 }
