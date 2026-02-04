@@ -45,13 +45,13 @@ export class WsMiddleware extends Middleware<WsRule> {
     public async runError(error: unknown, request: Request, client: WebSocket, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
-            const next: Middleware.next = async (error?: unknown) => {
-                if (error) throw error;
+            const next: Middleware.next = async (caughtError?: unknown) => {
+                if (caughtError) throw caughtError;
                 if (index >= this.errorPipeline.length) return await this.errorHandler(error, request, client);
                 const current = this.errorPipeline[index++];
                 return await current(error, request, client, next, state);
             };
-            await next(error);
+            await next();
         } catch(error) { return this.errorHandler(error, request, client); }
     }
     protected async errorHandler(error: unknown, request: Request, client: WebSocket): Promise<void> {

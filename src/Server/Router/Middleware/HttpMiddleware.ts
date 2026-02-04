@@ -49,8 +49,8 @@ export class HttpMiddleware extends Middleware<HttpRule> {
     public async runError(error: unknown, request: Request, response: Response, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
-            const next: Middleware.next = async (error?: unknown) => {
-                if (error) throw error;
+            const next: Middleware.next = async (caughtError?: unknown) => {
+                if (caughtError) throw caughtError;
                 if (index >= this.errorPipeline.length) return await this.errorHandler(error, request, response);
                 const current = this.errorPipeline[index++];
                 return await current(error, request, response, next, state);
