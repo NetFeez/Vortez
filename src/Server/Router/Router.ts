@@ -10,12 +10,15 @@ import { Duplex } from 'stream';
 import _Rule from './Rule.js';
 import _WsRule from './WsRule.js';
 import _HttpRule from './HttpRule.js';
+import _WsMiddleware from './Middleware/WsMiddleware.js';
+import _HttpMiddleware from './Middleware/HttpMiddleware.js';
+import _Middleware from './Middleware/Middleware.js';
+
 import Request from '../Request.js';
 import Response from '../Response.js';
 import WebSocket from '../WebSocket/WebSocket.js';
 import LoggerManager from '../LoggerManager.js';
 import Config from '../Config/Config.js';
-import Middleware from './Middleware.js';
 
 export { Rule } from './Rule.js';
 export { WsRule } from './WsRule.js';
@@ -26,12 +29,41 @@ const logger = LoggerManager.getInstance();
 export class Router {
     public httpRules: Router.HttpRule[] = [];
     public wsRules: Router.WsRule[] = [];
-    public config: Config;
+	public subRouters: Router[] = [];
+	public readonly httpMiddleware: Router.HttpMiddleware;
+	public readonly wsMiddleware: Router.WsMiddleware;
 
-    constructor(config: Config, rules: Router.rules[] = []) {
-        this.config = config;
+    constructor(
+		public config: Config,
+		rules: Router.rules[] = [],
+		middlewares: Router.MiddlewareOptions = {}
+	) {
+		const {
+			http: httpMiddleware = new Router.HttpMiddleware(),
+			ws: wsMiddleware = new Router.WsMiddleware()
+		} = middlewares;
+		this.httpMiddleware = httpMiddleware;
+		this.wsMiddleware = wsMiddleware;
 		this.addRules(...rules);
     }
+	/**
+	 * Adds middleware actions to the router.
+	 * @param middleware - The middleware to be added.
+	 */
+	public use(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
+		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.use(middleware);
+		else this.wsMiddleware.use(middleware);
+		return this;
+	}
+	/**
+	 * Adds middleware error actions to the router.
+	 * @param middleware - The middleware to be added.
+	 */
+	public useError(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
+		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.useError(middleware);
+		else this.wsMiddleware.useError(middleware);
+		return this;
+	}
 	/**
 	 * Triggered when the server receives an HTTP request.
 	 * @param HttpRequest - The incoming HTTP request.
@@ -42,7 +74,8 @@ export class Router {
 		const response = new Response(request, HttpResponse, this.config.templates);
 		const sessionID = request.cookies.get('Session');
 		logger.request.log(request.ip, request.method, request.url, sessionID);
-		this.routeRequest(request, response);
+		const isRouted = this.routeRequest(request, response);
+		if (!isRouted) response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
 	};
 	/**
 	 * Will be executed when the server receives an upgrade request.
@@ -54,35 +87,49 @@ export class Router {
 		const webSocket = new WebSocket(request, Socket);
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
-		this.routeWebSocket(request, webSocket);
+		const isRouted = this.routeWebSocket(request, webSocket);
+		if (!isRouted) webSocket.reject(400, `No router for: ${request.method} -> ${request.url}`);
 	}
     /**
 	 * Routes incoming HTTP requests to be processed.
 	 * @param request - The received HTTP request.
 	 * @param response - The server response handler.
 	 */
-	private async routeRequest(request: Request, response: Response): Promise<void> {
-		const rule = this.httpRules.find((rule) => rule.test(request));
-		if (!rule) return void response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
-		return void rule.exec(request, response);
+	public async routeRequest(request: Request, response: Response): Promise<boolean> {
+		let rule = this.httpRules.find((rule) => rule.test(request));
+		if (rule) {
+			rule.exec(request, response);
+			return true;
+		}
+		for (const router of this.subRouters) {
+			const isRouted = await router.routeRequest(request, response);
+			if (isRouted) return true;
+		}
+		return false;
 	}
 	/**
 	 * Routes WebSocket connection requests.
 	 * @param request - The received HTTP request.
 	 * @param webSocket - The WebSocket connection with the client.
-	 * @throws If no WebSocket routing rule matches.
 	 */
-	private async routeWebSocket(request: Request, webSocket: WebSocket): Promise<void> {
+	public async routeWebSocket(request: Request, webSocket: WebSocket): Promise<boolean> {
 		const rule = this.wsRules.find((rule) => rule.test(request));
-		if (!rule) return void webSocket.reject(400, `No router for: ${request.method} -> ${request.url}`);
-		return void rule.exec(request, webSocket);
+		if (rule) {
+			rule.exec(request, webSocket);
+			return true;
+		}
+		for (const router of this.subRouters) {
+			const isRouted = await router.routeWebSocket(request, webSocket);
+			if (isRouted) return true;
+		}
+		return false;
 	}
 	/**
 	 * Adds one or more routing rules to the server.
 	 * @param rules - The rule(s) to be added.
 	 */
 	public addRules(...rules: Router.rules[]): this {
-		for (const rule of rules ) this.addRule(rule);
+		for (const rule of rules) this.addRule(rule);
 		return this;
 	}
 	/**
@@ -90,8 +137,13 @@ export class Router {
 	 * @param rule - The rule(s) to be added.
 	 */
 	public addRule(rule: Router.rules): this {
-		if (rule instanceof Router.WsRule) this.wsRules.push(rule);
-		else { this.httpRules.push(rule); }
+		if (rule instanceof Router.WsRule) {
+			rule.middleware.mergeAtStart(this.wsMiddleware);
+			this.wsRules.push(rule);
+		} else {
+			rule.middleware.mergeAtStart(this.httpMiddleware);
+			this.httpRules.push(rule);
+		}
 		return this;
 	}
 	/**
@@ -135,11 +187,31 @@ export class Router {
 		this.addRules(rule);
 		return rule;
 	}
+	/**
+	 * Creates a new sub-router.
+	 * - this sub route heredes the middleware actions of the parent router.
+	 * - has independent middleware actions.
+	 * @param config - The configuration for the new sub-router.
+	 */
+	public subRouter(config: Config = this.config): Router {
+		const router = new Router(config);
+		this.subRouters.push(router);
+		router.wsMiddleware.mergeAtStart(this.wsMiddleware);
+		router.httpMiddleware.mergeAtStart(this.httpMiddleware);
+		return router;
+	}
 }
 export namespace Router {
     export import Rule = _Rule;
 	export import WsRule = _WsRule;
 	export import HttpRule = _HttpRule;
+	export import WsMiddleware = _WsMiddleware;
+	export import HttpMiddleware = _HttpMiddleware;
+	export import Middleware = _Middleware;
+	export interface MiddlewareOptions {
+		http?: HttpMiddleware;
+		ws?: WsMiddleware;
+	}
 	export type rules = WsRule | HttpRule;
 }
 
