@@ -51,7 +51,7 @@ export class WsMiddleware extends Middleware<WsRule> {
                 const current = this.errorPipeline[index++];
                 return await current(error, request, client, next, state);
             };
-            await next();
+            await next(error);
         } catch(error) { return this.errorHandler(error, request, client); }
     }
     protected async errorHandler(error: unknown, request: Request, client: WebSocket): Promise<void> {
@@ -72,5 +72,5 @@ export class WsMiddleware extends Middleware<WsRule> {
         }
     }
 }
-
+export namespace WsMiddleware {}
 export default WsMiddleware;
