@@ -55,7 +55,7 @@ export class HttpMiddleware extends Middleware<HttpRule> {
                 const current = this.errorPipeline[index++];
                 return await current(error, request, response, next, state);
             };
-            await next(error);
+            await next();
         } catch(error) { return this.errorHandler(error, request, response); }
     }
     /**
