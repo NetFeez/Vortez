@@ -4,9 +4,9 @@
  * @license Apache-2.0
  */
 
-import Debug from "../../Logger/Debug.js";
+import Debug from "../../logger/Debug.js";
 import LoggerManager from "../LoggerManager.js";
-import Utilities from "../../Utilities/Utilities.js";
+import Utilities from "../../utilities/Utilities.js";
 import _ConfigLoader from "./ConfigLoader.js";
 import _ConfigValidator from "./ConfigValidator.js";
 

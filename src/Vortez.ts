@@ -5,10 +5,10 @@
  * @license Apache-2.0
  */
 
-export { Logger } from "./Logger/Logger.js";
+export { Logger } from "./logger/Logger.js";
 export { Template } from "./Template.js";
-export { Utilities } from "./Utilities/Utilities.js";
-export * as Beta from "./Beta/Beta.js";
-export { ServerError } from "./Server/ServerError.js";
-export { Router } from "./Server/Router/Router.js";
-export { Server as default, Server as Vortez } from "./Server/Server.js";
+export { Utilities } from "./utilities/Utilities.js";
+export * as Beta from "./beta/Beta.js";
+export { ServerError } from "./server/ServerError.js";
+export { Router } from "./server/router/Router.js";
+export { Server as default, Server as Vortez } from "./server/Server.js";

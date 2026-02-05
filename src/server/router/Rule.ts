@@ -6,7 +6,7 @@
 
 import Request from '../Request.js';
 import Response from '../Response.js';
-import WebSocket from '../WebSocket/WebSocket.js';
+import Websocket from '../websocket/Websocket.js';
 
 export abstract class Rule<T extends any> {
     /** The UrlRule with which the routing rule was created */
@@ -108,7 +108,7 @@ export abstract class Rule<T extends any> {
 }
 
 export namespace Rule {
-    export type ClientType =WebSocket | Response;
+    export type ClientType =Websocket | Response;
     export interface ruleParams {
         [name: string]: string | undefined;
     }

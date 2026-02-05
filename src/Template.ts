@@ -5,7 +5,7 @@
  */
 
 import FS from 'fs';
-import Utilities from './Utilities/Utilities.js';
+import Utilities from './utilities/Utilities.js';
 
 export class Template {
 	/** Regular expressions used for parsing and processing the template. */

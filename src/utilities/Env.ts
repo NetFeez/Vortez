@@ -1,7 +1,7 @@
 import FS, { promises as FSP } from "fs";
 import PATH from "path";
 
-import Debug from "../Logger/Debug.js";
+import Debug from "../logger/Debug.js";
 import Utilities from "./Utilities.js";
 
 export class Env {

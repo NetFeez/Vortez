@@ -9,10 +9,10 @@ import FS from 'fs';
 import PATH from 'path';
 
 import Request from './Request.js';
-import Logger from '../Logger/Logger.js';
-import Utilities from '../Utilities/Utilities.js';
+import Logger from '../logger/Logger.js';
+import Utilities from '../utilities/Utilities.js';
 import Template from '../Template.js';
-import Config from './Config/Config.js';
+import Config from './config/Config.js';
 
 const logger = new Logger({ prefix: 'Response' });
 

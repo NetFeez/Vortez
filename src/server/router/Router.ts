@@ -10,15 +10,15 @@ import { Duplex } from 'stream';
 import _Rule from './Rule.js';
 import _WsRule from './WsRule.js';
 import _HttpRule from './HttpRule.js';
-import _WsMiddleware from './Middleware/WsMiddleware.js';
-import _HttpMiddleware from './Middleware/HttpMiddleware.js';
-import _Middleware from './Middleware/Middleware.js';
+import _WsMiddleware from './middleware/WsMiddleware.js';
+import _HttpMiddleware from './middleware/HttpMiddleware.js';
+import _Middleware from './middleware/Middleware.js';
 
 import Request from '../Request.js';
 import Response from '../Response.js';
-import WebSocket from '../WebSocket/WebSocket.js';
+import Websocket from '../websocket/Websocket.js';
 import LoggerManager from '../LoggerManager.js';
-import Config from '../Config/Config.js';
+import Config from '../config/Config.js';
 
 export { Rule } from './Rule.js';
 export { WsRule } from './WsRule.js';
@@ -84,7 +84,7 @@ export class Router {
 	 */
 	public upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): void {
 		const request = new Request(HttpRequest);
-		const webSocket = new WebSocket(request, Socket);
+		const webSocket = new Websocket(request, Socket);
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeWebSocket(request, webSocket);
@@ -112,7 +112,7 @@ export class Router {
 	 * @param request - The received HTTP request.
 	 * @param webSocket - The WebSocket connection with the client.
 	 */
-	public async routeWebSocket(request: Request, webSocket: WebSocket): Promise<boolean> {
+	public async routeWebSocket(request: Request, webSocket: Websocket): Promise<boolean> {
 		const rule = this.wsRules.find((rule) => rule.test(request));
 		if (rule) {
 			rule.exec(request, webSocket);

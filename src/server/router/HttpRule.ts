@@ -1,8 +1,8 @@
 import Request from '../Request.js';
 import Response from '../Response.js';
 import BaseRule from './Rule.js';
-import HttpMiddleware from './Middleware/HttpMiddleware.js';
-import Middleware from './Middleware/Middleware.js';
+import HttpMiddleware from './middleware/HttpMiddleware.js';
+import Middleware from './middleware/Middleware.js';
 
 export class HttpRule extends BaseRule<HttpRule.action> {
     /**

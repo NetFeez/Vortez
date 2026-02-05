@@ -5,8 +5,8 @@
  */
 
 import Server from './Server.js';
-import { ConsoleUI } from '../Utilities/Utilities.js';
-import Logger from '../Logger/Logger.js';
+import { ConsoleUI } from '../utilities/Utilities.js';
+import Logger from '../logger/Logger.js';
 
 export class DebugUI {
     private dataHandleInstance: DebugUI.dataHandler;

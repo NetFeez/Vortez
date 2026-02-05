@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description adds WebSocket functionality to Vortez
+ * @description adds websocket functionality to Vortez
  * @license Apache-2.0
  */
 
@@ -17,11 +17,11 @@ const logger = LoggerManager.getInstance().webSocket;
 export { Chunk } from './Chunk.js';
 
 
-export class WebSocket extends EVENTS {
+export class Websocket extends EVENTS {
     public static readonly WEBSOCKET_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-    private _status: WebSocket.handshakeStatus = 'pending';
+    private _status: Websocket.handshakeStatus = 'pending';
     /**
-     * Creates a new WebSocket.
+     * Creates a new websocket.
      * @param client The connection with the client.
      */
     public constructor(
@@ -30,7 +30,7 @@ export class WebSocket extends EVENTS {
     ) { super(); this.initEvents(); }
     /** Whether the connection is closed. */
     public get isClosed(): boolean { return this.connection.readableEnded; }
-    public get status(): WebSocket.handshakeStatus { return this._status; }
+    public get status(): Websocket.handshakeStatus { return this._status; }
     /**
      * Accepts the connection with the client.
      */
@@ -38,7 +38,7 @@ export class WebSocket extends EVENTS {
         this._status = 'accepted';
         const key = this.request.headers['sec-websocket-key']?.trim();
         const acceptToken = CRYPTO.createHash('SHA1').update(
-            key + WebSocket.WEBSOCKET_GUID
+            key + Websocket.WEBSOCKET_GUID
         ).digest('base64');
 
         const headers = this.buildHeaders([
@@ -97,7 +97,7 @@ export class WebSocket extends EVENTS {
         ? [this.stringToBuffer(data), true]
         : data instanceof Buffer
             ? [data, false]
-            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.WebSocket.send'), true];
+            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.Websocket.send'), true];
         const message = this.encode(buffer, isText);
         this.connection.write(message);
     }
@@ -167,17 +167,17 @@ export class WebSocket extends EVENTS {
         this.connection.on('error', (error) => this.emit('error', error));
     }
 
-    public on(event: 'close',    listener: WebSocket.listener.close): this;
-    public on(event: 'error',    listener: WebSocket.listener.error): this;
-    public on(event: 'finish',   listener: WebSocket.listener.finish): this;
-    public on(event: 'message',  listener: WebSocket.listener.message): this;
+    public on(event: 'close',    listener: Websocket.listener.close): this;
+    public on(event: 'error',    listener: Websocket.listener.error): this;
+    public on(event: 'finish',   listener: Websocket.listener.finish): this;
+    public on(event: 'message',  listener: Websocket.listener.message): this;
     public on(event: string, listener: (...args: any[]) => void): this {
         return super.on(event, listener);
     }
-    public off(event: 'close',   listener: WebSocket.listener.close): this;
-    public off(event: 'error',   listener: WebSocket.listener.error): this;
-    public off(event: 'finish',  listener: WebSocket.listener.finish): this;
-    public off(event: 'message', listener: WebSocket.listener.message): this
+    public off(event: 'close',   listener: Websocket.listener.close): this;
+    public off(event: 'error',   listener: Websocket.listener.error): this;
+    public off(event: 'finish',  listener: Websocket.listener.finish): this;
+    public off(event: 'message', listener: Websocket.listener.message): this
     public off(event: string, listener: (...args: any[]) => void): this {
         return super.off(event, listener);
     }
@@ -189,7 +189,7 @@ export class WebSocket extends EVENTS {
     }
 }
 
-export namespace WebSocket {
+export namespace Websocket {
     export namespace listener {
         export type close = () => void;
         export type error = (error: Error) => void;
@@ -203,7 +203,7 @@ export namespace WebSocket {
     export type handshakeStatus = 'accepted' | 'rejected' | 'pending';
 }
 
-export default WebSocket;
+export default Websocket;
 
 /* To accept a connection
  * 

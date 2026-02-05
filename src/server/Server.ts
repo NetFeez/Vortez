@@ -8,27 +8,27 @@ import HTTP from 'http';
 import FS from 'fs';
 import HTTPS from 'https';
 
-import Utilities from '../Utilities/Utilities.js';
+import Utilities from '../utilities/Utilities.js';
 import _LoggerManager from './LoggerManager.js';
 import _DebugUI from './DebugUI.js';
-import _Config from './Config/Config.js';
+import _Config from './config/Config.js';
 import _Request from "./Request.js";
 import _Response from "./Response.js";
 import _Session from "./Session.js";
 import _Cookie from "./Cookie.js";
-import _WebSocket from "./WebSocket/WebSocket.js";
-import _Router from "./Router/Router.js";
+import _WebSocket from "./websocket/Websocket.js";
+import _Router from "./router/Router.js";
 import _ServerError from "./ServerError.js";
 
 export { LoggerManager } from './LoggerManager.js';
 export { DebugUI } from './DebugUI.js';
-export { Config } from './Config/Config.js';
+export { Config } from './config/Config.js';
 export { Request } from "./Request.js";
 export { Response } from "./Response.js";
 export { Session } from "./Session.js";
 export { Cookie } from "./Cookie.js";
-export { WebSocket } from "./WebSocket/WebSocket.js";
-export { Router } from "./Router/Router.js";
+export { Websocket as WebSocket } from "./websocket/Websocket.js";
+export { Router } from "./router/Router.js";
 export { ServerError } from "./ServerError.js";
 
 const logger = _LoggerManager.getInstance();

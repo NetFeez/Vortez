@@ -9,7 +9,7 @@ import ServerError from '../../ServerError.js';
 import LoggerManager from '../../LoggerManager.js';
 import WsRule from '../WsRule.js';
 import Middleware from './Middleware.js';
-import WebSocket from '../../WebSocket/WebSocket.js';
+import Websocket from '../../websocket/Websocket.js';
 
 const logger = LoggerManager.getInstance();
 
@@ -22,7 +22,7 @@ export class WsMiddleware extends Middleware<WsRule> {
      * @param action The action to execute after the middleware pipeline.
      * @param state The state to pass to the middleware and action.
      */
-    public async run(request: Request, client: WebSocket, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
+    public async run(request: Request, client: Websocket, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (error?: unknown) => {
@@ -42,7 +42,7 @@ export class WsMiddleware extends Middleware<WsRule> {
             else return this.runError(error, request, client, state);
         }
     }
-    public async runError(error: unknown, request: Request, client: WebSocket, state: Middleware.State = {}): Promise<void> {
+    public async runError(error: unknown, request: Request, client: Websocket, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (caughtError?: unknown) => {
@@ -54,7 +54,7 @@ export class WsMiddleware extends Middleware<WsRule> {
             await next();
         } catch(error) { return this.errorHandler(error, request, client); }
     }
-    protected async errorHandler(error: unknown, request: Request, client: WebSocket): Promise<void> {
+    protected async errorHandler(error: unknown, request: Request, client: Websocket): Promise<void> {
         if (error instanceof ServerError) {
             if (error.isSended) return;
             if (client.isClosed) return void logger.error(error);

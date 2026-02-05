@@ -5,7 +5,7 @@
  */
 
 import Config from "./Config.js";
-import Logger from "../../Logger/Logger.js";
+import Logger from "../../logger/Logger.js";
 
 const logger = new Logger({ prefix: 'Config' });
 
