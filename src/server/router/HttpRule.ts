@@ -13,7 +13,7 @@ export class HttpRule extends BaseRule<HttpRule.action> {
      * @param middleware - The middleware to clone.
      */
     public constructor(
-        public readonly method: Request.Method,
+        public method: Request.Method,
         urlRule: string, action: HttpRule.action,
         public readonly middleware: HttpMiddleware = new HttpMiddleware()
     ) { super(urlRule, action); }

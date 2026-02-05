@@ -2,12 +2,11 @@ import Request from '../Request.js';
 import Websocket from '../websocket/Websocket.js';
 import Middleware from './middleware/Middleware.js';
 import WsMiddleware from './middleware/WsMiddleware.js';
-import BaseRule from './Rule.js';
+import Rule from './Rule.js';
 
-export class WsRule extends BaseRule<WsRule.action> {
+export class WsRule extends Rule<WsRule.action> {
     public constructor(
-        public readonly urlRule: string,
-        public readonly action: WsRule.action,
+        urlRule: string, action: WsRule.action,
         public readonly middleware: WsMiddleware = new WsMiddleware()
     ) { super(urlRule, action); }
     public exec(request: Request, client: Websocket, state?: Middleware.State): void {

@@ -9,7 +9,7 @@ import { Duplex } from 'stream';
 
 import _Rule from './Rule.js';
 import _WsRule from './WsRule.js';
-import _HttpRule from './HttpRule.js';
+import _HttpRule, { HttpRule } from './HttpRule.js';
 import _WsMiddleware from './middleware/WsMiddleware.js';
 import _HttpMiddleware from './middleware/HttpMiddleware.js';
 import _Middleware from './middleware/Middleware.js';
@@ -29,12 +29,14 @@ const logger = LoggerManager.getInstance();
 export class Router {
     public httpRules: Router.HttpRule[] = [];
     public wsRules: Router.WsRule[] = [];
-	public subRouters: Router[] = [];
 	public readonly httpMiddleware: Router.HttpMiddleware;
 	public readonly wsMiddleware: Router.WsMiddleware;
-
-    constructor(
-		public config: Config,
+	/**
+	 * Creates a router for rule management.
+	 * @param config - The server configuration.
+	 */
+    public constructor(
+		public config: Config = new Config(),
 		rules: Router.rules[] = [],
 		middlewares: Router.MiddlewareOptions = {}
 	) {
@@ -96,16 +98,10 @@ export class Router {
 	 * @param response - The server response handler.
 	 */
 	public async routeRequest(request: Request, response: Response): Promise<boolean> {
-		let rule = this.httpRules.find((rule) => rule.test(request));
-		if (rule) {
-			rule.exec(request, response);
-			return true;
-		}
-		for (const router of this.subRouters) {
-			const isRouted = await router.routeRequest(request, response);
-			if (isRouted) return true;
-		}
-		return false;
+		const rule = this.httpRules.find((rule) => rule.test(request));
+		if (!rule) return false;
+		rule.exec(request, response);
+		return true;
 	}
 	/**
 	 * Routes WebSocket connection requests.
@@ -114,15 +110,9 @@ export class Router {
 	 */
 	public async routeWebSocket(request: Request, webSocket: Websocket): Promise<boolean> {
 		const rule = this.wsRules.find((rule) => rule.test(request));
-		if (rule) {
-			rule.exec(request, webSocket);
-			return true;
-		}
-		for (const router of this.subRouters) {
-			const isRouted = await router.routeWebSocket(request, webSocket);
-			if (isRouted) return true;
-		}
-		return false;
+		if (!rule) return false;
+		rule.exec(request, webSocket);
+		return true;
 	}
 	/**
 	 * Adds one or more routing rules to the server.
@@ -144,6 +134,24 @@ export class Router {
 			rule.middleware.mergeAtStart(this.httpMiddleware);
 			this.httpRules.push(rule);
 		}
+		return this;
+	}
+	/**
+	 * Mount a router in this router
+	 * this action merge the rules adding the provided url rule as a prefix to all rules.
+	 * @param router - The router to mount.
+	 * @param urlRule - The url rule to mount the router.
+	 */
+	public mount(router: Router, urlRule?: string): this {
+		const httpRules = router.httpRules.map((rule) => {
+			const newUrlRule = urlRule ? `${urlRule}/${rule.urlRule}` : rule.urlRule;
+			return new Router.HttpRule(rule.method, newUrlRule, rule.action, rule.middleware.clone());
+		});
+		const wsRules = router.wsRules.map((rule) => {
+			const newUrlRule = urlRule ? `${urlRule}/${rule.urlRule}` : rule.urlRule;
+			return new Router.WsRule(newUrlRule, rule.action, rule.middleware.clone());
+		});
+		this.addRules(...httpRules, ...wsRules);
 		return this;
 	}
 	/**
@@ -188,18 +196,10 @@ export class Router {
 		return rule;
 	}
 	/**
-	 * Creates a new sub-router.
-	 * - this sub route heredes the middleware actions of the parent router.
-	 * - has independent middleware actions.
-	 * @param config - The configuration for the new sub-router.
+	 * Creates a new router.
+	 * @returns A new router.
 	 */
-	public subRouter(config: Config = this.config): Router {
-		const router = new Router(config);
-		this.subRouters.push(router);
-		router.wsMiddleware.mergeAtStart(this.wsMiddleware);
-		router.httpMiddleware.mergeAtStart(this.httpMiddleware);
-		return router;
-	}
+	public createRouter(): Router { return new Router(this.config); }
 }
 export namespace Router {
     export import Rule = _Rule;

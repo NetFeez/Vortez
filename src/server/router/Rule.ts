@@ -10,23 +10,29 @@ import Websocket from '../websocket/Websocket.js';
 
 export abstract class Rule<T extends any> {
     /** The UrlRule with which the routing rule was created */
-    public urlRule: string;
+    private _urlRule: string;
     /** The regular expression for the routing rule */
-    public expression: RegExp;
+    private _expression: RegExp;
     /** The executable content for the routing rule */
-    public action: T;
+    public readonly action: T;
     /**
      * Creates a routing rule for Vortez.
      * @param urlRule - The URL rule adopted by this Rule instance.
      * @param action - The executable content of the rule.
      */
     public constructor(urlRule: string, action: T) {
-        if (!urlRule.startsWith('/')) urlRule = '/' + urlRule;
-        if (urlRule.endsWith('/')) urlRule = urlRule.slice(0, -1);
-        this.urlRule = urlRule;
-        this.expression = this.createExpression(urlRule);
+        urlRule = Rule.cleanUrlRule(urlRule);
+        this._urlRule = urlRule;
+        this._expression = this.createExpression(urlRule);
         this.action = action;
     }
+    public get urlRule(): string { return this._urlRule; }
+    public set urlRule(urlRule: string) {
+        urlRule = Rule.cleanUrlRule(urlRule);
+        this._urlRule = urlRule;
+        this._expression = this.createExpression(urlRule);
+    }
+    public get expression(): RegExp { return this._expression; }
     /**
      * Executes the rule's content.
      * @param request - The Request that matched the rule.
@@ -38,13 +44,13 @@ export abstract class Rule<T extends any> {
      * Also sets the Request.ruleParams.
      * @param request - The incoming request.
      */
-    public test(request: Request): boolean { return this.expression.test(request.url); }
+    public test(request: Request): boolean { return this._expression.test(request.url); }
     /**
      * Retrieves the ruleParams from the routing rule if available.
      * @param path - The URL to resolve.
      */
     public getParams(path: string): Rule.ruleParams {
-        const math = this.expression.exec(path);
+        const math = this._expression.exec(path);
         if (!math) return {};
         return { ...math.groups };
     }
@@ -63,6 +69,16 @@ export abstract class Rule<T extends any> {
      */
     public createExpression(urlRule: string): RegExp {
         return Rule.createExpression(urlRule);
+    }
+    /**
+     * Cleans the URL rule.
+     * @param urlRule - The URL rule to clean.
+     */
+    private static cleanUrlRule(urlRule: string): string {
+        if (!urlRule.startsWith('/')) urlRule = '/' + urlRule;
+        if (urlRule.endsWith('/')) urlRule = urlRule.slice(0, -1);
+        urlRule = urlRule.replace(/\/+/g, '/');
+        return urlRule;
     }
     /**
      * Creates a regular expression for route matching.
