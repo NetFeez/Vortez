@@ -1,25 +1,27 @@
 # version (5.0.0)
 ## 📒 Notes
 ## ➕ Added
+- **(Server/Middleware)**: Created middleware system.
+  - Implemented middleware system in Router for global middlewares.
+  - Implemented middleware system in Rule for custom middlewares in single rule.
 ## ❌ Removed
 ## 🐞 Fixes
 ## ✏️ Changes
 - **(Debug)**: Added new properties and refactored methods:
- - Debug now supports multiline formatting in prints.
- - Debug now have static default and static defaultID attributes.
- - Debug now return directly Debug.default when use getInstance without params or with id === Debug.defaultID;
-- **(Config)**: Introduced a new configuration system:
+  - Debug now supports multiline formatting in prints.
+  - Debug now have static default and static defaultID attributes.
+  - Debug now return directly Debug.default when use getInstance without params or with id === Debug.defaultID;
+- **(Server/Config)**: Introduced a new configuration system:
   - The config system is based on a `.json` file.
   - You can load config from a specific file or use the default.
   - You can still configure everything dynamically (like in older versions).
   - Using the config system is optional, not required.
   - Documentation is available in the `README.md`.
-- **(Router)**: Refactored Rule to support async authExec and optional parameters in url rules.
+- **(Server/Router)**: Refactored Rule to support async authExec and optional parameters in url rules.
   - The rules now can accept async authExec.
   - Url rules now accept `$?<name>` as optional param `$<name>` continue as required param.
-- **(Server/Middleware)**: Major refactor of the middleware architecture.
-  - Introduced an abstract `Middleware` base class to create a solid and extensible foundation for request processing.
-  - This new structure enforces a clear contract for all middleware implementations (`HttpMiddleware`, `WsMiddleware`), requiring `run()` and `clone()` methods.
+  - Added support for global middlewares.
+  - added support for sub routers.
 - **(Server/WebSocket)**: Overhauled the WebSocket connection lifecycle for improved security and developer experience.
   - The `WebSocket` class no longer accepts connections in its constructor. Instead, it waits in a `pending` state.
   - Added `accept()` and `reject()` methods to give the framework full control over the connection handshake.
