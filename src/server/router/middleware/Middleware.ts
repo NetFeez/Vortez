@@ -67,6 +67,20 @@ export abstract class Middleware<Rule extends HttpRule | WsRule> {
      * @param args - The arguments to pass to the action.
      */
     public abstract runError(...args: any[]): Promise<void>;
+    /**
+     * Gets the middleware names.
+     * @returns The middleware names.
+     */
+    public get middlewareNames(): string[] {
+        return this.pipeline.map(action => action.name);
+    }
+    /**
+     * Gets the error middleware names.
+     * @returns The error middleware names.
+     */
+    public get errorMiddlewareNames(): string[] {
+        return this.errorPipeline.map(action => action.name);
+    }
 }
 export namespace Middleware {
     export interface State {
