@@ -126,5 +126,6 @@ server.router.addWebSocket('/WebSocket/$?username', (request, socket) => {
     if (username === 'system') return next(new Vortez.ServerError('you cant use system as username', 400));
     return next();
 });
-
+const cli = new Vortez.ServerDebug(server);
+cli.start();
 server.start();
