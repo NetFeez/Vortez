@@ -1,12 +1,19 @@
 # version (5.0.0)
 ## 📒 Notes
+- **Breaking Change**: The server's debugging interface has been refactored. Users interacting with the old `DebugUI` will need to adapt to the new `ServerDebug` module.
 ## ➕ Added
+- **(Utilities/DebugUI)**: Introduced a new generic, reusable `DebugUI` class for creating command-line interfaces.
+- **(Server/ServerDebug)**: Added a new `ServerDebug` module to provide server-specific commands, built upon the new generic `DebugUI`.
 - **(Server/Middleware)**: Created middleware system.
   - Implemented middleware system in Router for global middlewares.
   - Implemented middleware system in Rule for custom middlewares in single rule.
 ## ❌ Removed
+- **(Server/DebugUI)**: Deleted the old `DebugUI.ts` which was tightly coupled with the `Server` class.
 ## 🐞 Fixes
 ## ✏️ Changes
+- **(Vortez/DebugUI)**: The entire debugging system has been refactored for modularity. **This is a breaking change.**
+  - The `DebugUI` is no longer part of the `Server` class but is now composed of a generic `DebugUI` from utilities and a specific `ServerDebug` module.
+  - This decoupling allows other packages to leverage the `DebugUI` from `vortez`.
 - **(Debug)**: Added new properties and refactored methods:
   - Debug now supports multiline formatting in prints.
   - Debug now have static default and static defaultID attributes.

@@ -10,7 +10,7 @@ import HTTPS from 'https';
 
 import Utilities from '../utilities/Utilities.js';
 import _LoggerManager from './LoggerManager.js';
-import _DebugUI from './DebugUI.js';
+import _ServerDebug from './ServerDebug.js';
 import _Config from './config/Config.js';
 import _Request from "./Request.js";
 import _Response from "./Response.js";
@@ -21,7 +21,7 @@ import _Router from "./router/Router.js";
 import _ServerError from "./ServerError.js";
 
 export { LoggerManager } from './LoggerManager.js';
-export { DebugUI } from './DebugUI.js';
+export { ServerDebug } from './ServerDebug.js';
 export { Config } from './config/Config.js';
 export { Request } from "./Request.js";
 export { Response } from "./Response.js";
@@ -198,7 +198,7 @@ export namespace Server {
     export import WebSocket = _WebSocket
     export import Router = _Router;
 	export import LoggerManager = _LoggerManager;
-	export import DebugUI = _DebugUI;
+	export import ServerDebug = _ServerDebug;
 	export import ServerError = _ServerError;
     export interface Certificates {
         cert: Buffer | string,
