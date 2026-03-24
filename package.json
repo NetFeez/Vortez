@@ -5,10 +5,11 @@
   "type": "module",
   "main": "build/Vortez.js",
   "scripts": {
-    "dev": "tsc --watch",
-    "test": "node tests/test.js",
-    "compile": "rm -rf build && tsc",
-    "dev.publish": "npm run compile && npm publish --tag dev"
+    "compile": "bash scripts/compile.sh",
+    "test": "bash scripts/test.sh",
+    "publish": "bash scripts/publish.sh",
+    "dev": "bash scripts/dev.sh",
+    "dev.publish": "bash scripts/publish.sh"
   },
   "author": {
     "name": "NetFeez",
