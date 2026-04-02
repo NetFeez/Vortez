@@ -1,20 +1,16 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "declaration": true,
     "esModuleInterop": true,
-    "strict": true,
     "sourceMap": true,
+    "strict": true,
     "strictNullChecks": true,
     "rootDir": "src",
     "outDir": "build",
-    "types": [
-        "node"
-    ]
+    "types": [ "node" ]
   },
-  "include": [
-    "src/**/*"
-  ],
+  "include": [ "src/**/*" ]
 }
