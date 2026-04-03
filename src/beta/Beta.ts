@@ -5,5 +5,5 @@
  * @license Apache-2.0
  */
 
-export { JwtManager } from './JwtManager.js';
+export { JwtManager } from './JwtManager/JwtManager.js';
 export { Mail } from './Mail.js';
