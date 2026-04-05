@@ -14,8 +14,8 @@ export class Jwt implements Jwt.Jwt {
      * @returns `true` if the JWT has expired; otherwise, `false`.
      */
     public get expired(): boolean {
-        if (!this.header.exp) return false;
-        return Jwt.isExpired(this.header.exp);
+        if (this.payload.exp == null) return false;
+        return Jwt.isExpired(this.payload.exp);
     }
     
     public toJSON(): Jwt.Jwt {
@@ -33,7 +33,7 @@ export class Jwt implements Jwt.Jwt {
      * @returns `true` if the current time is greater than or equal to the expiration time; otherwise, `false`.
      */
     public static isExpired(exp: number): boolean {
-        const now = Math.floor(Date.now() / 1000);
+        const now = JwtUtils.nowInSeconds();
         return now >= exp;
     }
 }
@@ -46,10 +46,11 @@ export namespace Jwt {
     export interface Header {
         alg: JwtManager.AlgorithmName;
         typ: 'jwt';
-        exp?: number;
+        kid?: string;
         [key: string]: any;
     }
     export interface Payload {
+        exp?: number;
         [key: string]: any;
     }
 }
