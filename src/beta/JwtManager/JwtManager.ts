@@ -32,7 +32,7 @@ export class JwtManager {
      * @param header The header to be included in the JWT, represented as a JavaScript object. The `alg` property will be automatically set based on the manager's algorithm.
      * @returns The complete JWT as a string, consisting of the base64url-encoded header, payload, and signature.
      */
-    public sign(payload: JwtManager.Jwt.Payload, header: Partial<JwtManager.Jwt.Header>): string {
+    public sign(payload: JwtManager.Jwt.Payload, header: Partial<JwtManager.Jwt.Header> = {}): string {
         header = { ...header, alg: this.algorithmName };
         
         const encodedHeader = JwtManager.JwtUtils.objectToBase64Url(header);

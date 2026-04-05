@@ -1,6 +1,6 @@
 {
   "name": "vortez",
-  "version": "5.0.0-dev.16",
+  "version": "5.0.0-dev.17",
   "description": "a module for web server creation",
   "type": "module",
   "main": "build/Vortez.js",
