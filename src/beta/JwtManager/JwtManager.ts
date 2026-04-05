@@ -3,6 +3,8 @@ import HMAC from "./algorithm/HMAC.js";
 import ECDSA from "./algorithm/ECDSA.js";
 import RSAPSS from "./algorithm/RSAPSS.js";
 
+import HeaderValidator from "./HeaderValidator.js";
+
 import _KeyGenerator from "./KeyGenerator.js";
 import _JwtUtils from "./JwtUtils.js";
 import _Algorithm from "./algorithm/Algorithm.js";
@@ -46,12 +48,15 @@ export class JwtManager {
     public parse(token: string): JwtManager.Jwt {
         const parts = token.split('.');
         if (parts.length !== 3) throw new Error('Invalid JWT format');
-        const [encodedHeader, encodedPayload, signature] = parts;
+
+        const [ encodedHeader, encodedPayload, signature ] = parts;
 
         const verified = this.algorithm.verify(`${encodedHeader}.${encodedPayload}`, signature);
         if (!verified) throw new Error('Invalid JWT signature');
     
         const header = JwtManager.JwtUtils.base64UrlToObject<JwtManager.Jwt.Header>(encodedHeader);
+        HeaderValidator.validate(header);
+
         const payload = JwtManager.JwtUtils.base64UrlToObject<JwtManager.Jwt.Payload>(encodedPayload);
         return new JwtManager.Jwt(header, payload, signature, this);
     }
