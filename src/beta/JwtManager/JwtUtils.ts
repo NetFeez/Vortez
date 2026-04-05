@@ -3,6 +3,13 @@ import type JwtManager from "./JwtManager.js";
 
 export class JwtUtils {
     /**
+     * Returns the current time in seconds since the Unix epoch. This is commonly used for setting the `iat` (issued at) and `exp` (expiration) claims in JWTs.
+     * @returns The current time in seconds since January 1, 1970 (Unix epoch).
+     */
+    public static nowInSeconds(): number {
+        return Math.floor(Date.now() / 1000);
+    }
+    /**
      * Converts a JavaScript object to a base64url-encoded string.
      * @param obj The object to be converted.
      * @returns The base64url-encoded string representation of the object.
