@@ -1,90 +1,115 @@
-import RSA from "./algorithm/RSA.js";
-import HMAC from "./algorithm/HMAC.js";
-import ECDSA from "./algorithm/ECDSA.js";
-import RSAPSS from "./algorithm/RSAPSS.js";
 
 import HeaderValidator from "./HeaderValidator.js";
 
 import _KeyGenerator from "./KeyGenerator.js";
-import _JwtUtils from "./JwtUtils.js";
 import _Algorithm from "./algorithm/Algorithm.js";
+import _JwtUtils from "./JwtUtils.js";
+import _KIDEntry from "./KIDEntry.js";
 import _Jwt from "./Jwt.js";
 
 export { KeyGenerator } from "./KeyGenerator.js";
 export { Algorithm } from "./algorithm/Algorithm.js";
 export { JwtUtils } from "./JwtUtils.js";
+export { KIDEntry } from "./KIDEntry.js";
 export { Jwt } from "./Jwt.js";
 
-export const AlgorithmMap = {
-    HS: HMAC,
-    RS: RSA,
-    PS: RSAPSS,
-    ES: ECDSA
-};
+export class JwtManager {    
+    protected KIDMap: JwtManager.KIDMap = {};
+    protected defaultEntry: JwtManager.KIDEntry;
 
-export class JwtManager {
-    protected readonly algorithm: JwtManager.Algorithm;
     public constructor(
-        public readonly algorithmName: JwtManager.AlgorithmName,
-        key: JwtManager.Algorithm.Key | JwtManager.Algorithm.KeyOptions
-    ) { this.algorithm = JwtManager.getAlgorithm(algorithmName, key); }
+        entry: JwtManager.KIDOption,
+        ...entries: JwtManager.KIDOption[]
+    ) {
+        this.defaultEntry = JwtManager.normalizeEntry(entry);
+        entries = [entry, ...entries];
+        for (const e of entries) { this.addKey(e); }
+    }
+    /**
+     * Adds a new key entry to the manager's KID map.
+     * The provided entry can be either an instance of `KIDEntry` or an object containing the necessary properties to create a new `KIDEntry`.
+     * The method normalizes the entry using the `normalizeEntry` static method and then adds it to the KID map using the entry's `kid` property as the key.
+     * @param entry The key entry to be added, which can be either an instance of `KIDEntry` or an object containing the properties needed to create a new `KIDEntry`.
+     */
+    public addKey(entry: JwtManager.KIDOption): void {
+        const kidEntry = JwtManager.normalizeEntry(entry);
+        this.KIDMap[kidEntry.kid] = kidEntry;
+    }
+    /**
+     * Removes the key associated with the specified key ID (kid) from the manager's KID map.
+     * If the specified kid does not exist in the map, this method does nothing.
+     * @param kid The key ID of the key to be removed from the manager's KID map.
+     */
+    public delKey(kid: string): void { delete this.KIDMap[kid]; }
     /**
      * Signs the given payload with the specified header using the configured algorithm and key.
      * @param payload The payload to be signed, represented as a JavaScript object.
-     * @param header The header to be included in the JWT, represented as a JavaScript object. The `alg` property will be automatically set based on the manager's algorithm.
+     * @param header The header to be included in the JWT, represented as a JavaScript object.
+     *   - The `alg` property will be automatically set based on the manager's algorithm.
      * @returns The complete JWT as a string, consisting of the base64url-encoded header, payload, and signature.
      */
     public sign(payload: JwtManager.Jwt.Payload, header: Partial<JwtManager.Jwt.Header> = {}): string {
-        header = { ...header, alg: this.algorithmName };
+        const kid = header.kid || this.defaultEntry.kid;
+        const entry = this.KIDMap[kid];
+        if (!entry) throw new Error(`No key found for kid: ${kid}`);
+
+        const { signer, alg } = entry;
+
+        header = { ...header, alg, kid, typ: 'jwt' };
         
         const encodedHeader = JwtManager.JwtUtils.objectToBase64Url(header);
         const encodedPayload = JwtManager.JwtUtils.objectToBase64Url(payload);
-
         const content = `${encodedHeader}.${encodedPayload}`;
-        const signature = this.algorithm.sign(content);
+        
+        const signature = signer.sign(content);
 
         return `${content}.${signature}`;
     }
     public parse(token: string): JwtManager.Jwt {
-        const parts = token.split('.');
-        if (parts.length !== 3) throw new Error('Invalid JWT format');
+        const {
+            header, payload, signature,
+            encodedHeader, encodedPayload
+        } = JwtManager.JwtUtils.getJwtParts(token);
 
-        const [ encodedHeader, encodedPayload, signature ] = parts;
+        const kid = header.kid || this.defaultEntry.kid;
+        const entry = this.KIDMap[kid];
+        if (!entry) throw new Error(`No key found for kid: ${kid}`);
 
-        const verified = this.algorithm.verify(`${encodedHeader}.${encodedPayload}`, signature);
-        if (!verified) throw new Error('Invalid JWT signature');
-    
-        const header = JwtManager.JwtUtils.base64UrlToObject<JwtManager.Jwt.Header>(encodedHeader);
-        HeaderValidator.validate(header);
+        const signer = entry.signer;
+        const content = `${encodedHeader}.${encodedPayload}`;
+        if (!signer.verify(content, signature)) throw new Error('Invalid signature'); 
 
-        const payload = JwtManager.JwtUtils.base64UrlToObject<JwtManager.Jwt.Payload>(encodedPayload);
-        return new JwtManager.Jwt(header, payload, signature, this);
+        const jwt = new JwtManager.Jwt(header, payload, signature, signer);
+        if (jwt.expired) throw new Error('Token has expired');
+
+        return jwt; 
     }
 
-    toJSON(): object { return { algorithm: this.algorithmName }; }
-    toString(): string { return `Jwt manager with algorithm ${this.algorithmName}`; }
+    // toJSON(): object { return { algorithm: this.algorithmName }; }
+    // toString(): string { return `Jwt manager with algorithm ${this.algorithmName}`; }
 
     /**
-     * Determines the appropriate algorithm class based on the provided options and creates an instance of it.
-     * @param algorithm The name of the algorithm to be used for signing and verifying JWTs (e.g., "HS256", "RS384", "ES512").
-     * @param key The secret key or private key to be used for signing and verifying JWTs.
-     * @returns An instance of the corresponding Algorithm subclass.
+     * Normalizes a given key entry option into a `KIDEntry` instance. If the provided entry is already an instance of `KIDEntry`, it is returned as-is.
+     * If the entry is provided as an object containing the necessary properties to create a new `KIDEntry`.
+     * @param entry The key entry option to be normalized, which can be either an instance of `KIDEntry` or an object containing the properties needed to create a new `KIDEntry`.
+     * @returns A `KIDEntry` instance corresponding to the provided entry option.
      */
-    protected static getAlgorithm(algorithm: JwtManager.AlgorithmName, key: JwtManager.Algorithm.Key | JwtManager.Algorithm.KeyOptions): JwtManager.Algorithm {
-        const prefix = JwtManager.JwtUtils.getAlgPrefix(algorithm);
-        const hashLength = JwtManager.JwtUtils.getHashLength(algorithm);
-
-        const alg = AlgorithmMap[prefix];
-        return new alg(hashLength, key);
+    public static normalizeEntry(entry: JwtManager.KIDOption): JwtManager.KIDEntry {
+        if (entry instanceof JwtManager.KIDEntry) return entry;
+        const { algorithm, key, kid } = entry;
+        return new JwtManager.KIDEntry(algorithm, key, kid);
     }
 }
 export namespace JwtManager {
     export import Algorithm = _Algorithm;
     export import KeyGenerator = _KeyGenerator;
     export import JwtUtils = _JwtUtils;
+    export import KIDEntry = _KIDEntry;
     export import Jwt = _Jwt;
 
-    export type AlgPrefix = 'HS' | 'RS' | 'ES' | 'PS';
-    export type AlgorithmName = `${AlgPrefix}${JwtManager.Algorithm.HashLength}`;
+    export type KIDOption =  KIDEntry | KIDEntry.KIDEntryOptions; 
+    export interface KIDMap {
+        [kid: string]: KIDEntry;
+    }
 }
 export default JwtManager;

@@ -1,4 +1,5 @@
-import type JwtManager from './JwtManager.js';
+import type Algorithm from './algorithm/Algorithm.js';
+import type KIDEntry from './KIDEntry.js';
 
 import JwtUtils from './JwtUtils.js';
 
@@ -7,7 +8,7 @@ export class Jwt implements Jwt.Jwt {
         public readonly header: Jwt.Header,
         public readonly payload: Jwt.Payload,
         public readonly signature: string,
-        protected readonly manager: JwtManager
+        protected readonly signer: Algorithm
     ) {}
     /**
      * Checks if the JWT has expired based on the `exp` claim in the payload. If the `exp` claim is not present, it returns `false`, indicating that the token is not considered expired. If the `exp` claim is present, it compares the current time (in seconds since the Unix epoch) with the expiration time specified in the `exp` claim and returns `true` if the token has expired, or `false` otherwise.
@@ -17,7 +18,7 @@ export class Jwt implements Jwt.Jwt {
         if (this.payload.exp == null) return false;
         return Jwt.isExpired(this.payload.exp);
     }
-    
+
     public toJSON(): Jwt.Jwt {
         return { header: this.header, payload: this.payload, signature: this.signature };
     }
@@ -44,7 +45,7 @@ export namespace Jwt {
         signature: string;
     }
     export interface Header {
-        alg: JwtManager.AlgorithmName;
+        alg: KIDEntry.AlgorithmName;
         typ: 'jwt';
         kid?: string;
         [key: string]: any;

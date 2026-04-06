@@ -1,5 +1,7 @@
 import type Algorithm from "./algorithm/Algorithm.js";
-import type JwtManager from "./JwtManager.js";
+import type KIDEntry from "./KIDEntry.js";
+import type Jwt from './Jwt.js';
+import HeaderValidator from "./HeaderValidator.js";
 
 export class JwtUtils {
     /**
@@ -35,12 +37,12 @@ export class JwtUtils {
      * @returns The algorithm prefix (e.g., "HS", "RS", "ES", "PS").
      * @throws An error if the algorithm is unsupported.
      */
-    public static getAlgPrefix(alg: JwtManager.AlgorithmName): JwtManager.AlgPrefix {
+    public static getAlgPrefix(alg: KIDEntry.AlgorithmName): KIDEntry.AlgPrefix {
         const prefix = alg.slice(0, 2);
         if (!['HS', 'RS', 'ES', 'PS'].includes(prefix)) {
             throw new Error(`Unsupported algorithm: ${alg}`);
         }
-        return prefix as JwtManager.AlgPrefix;
+        return prefix as KIDEntry.AlgPrefix;
     }
     /**
      * Extracts the hash length from the given algorithm name and validates it.
@@ -48,13 +50,33 @@ export class JwtUtils {
      * @returns The hash length as a string ("256", "384", or "512").
      * @throws An error if the algorithm is unsupported or if the hash length is invalid.
      */
-    public static getHashLength(alg: JwtManager.AlgorithmName): Algorithm.HashLength {
+    public static getHashLength(alg: KIDEntry.AlgorithmName): Algorithm.HashLength {
         const hashLength = alg.slice(2);
         if (!['256', '384', '512'].includes(hashLength)) {
             throw new Error(`Unsupported algorithm: ${alg}`);
         }
         return hashLength as Algorithm.HashLength;
     }
+    public static getJwtParts(token: string): JwtUtils.JwtParts {
+        const parts = token.split('.');
+        if (parts.length !== 3) throw new Error('Invalid JWT format');
+
+        const [ encodedHeader, encodedPayload, signature ] = parts;
+        const header = this.base64UrlToObject<Jwt.Header>(encodedHeader);
+        HeaderValidator.validate(header);
+
+        const payload = this.base64UrlToObject<Jwt.Payload>(encodedPayload);
+
+        return { encodedHeader, encodedPayload, signature, header, payload };
+    }
 }
-export namespace JwtUtils {}
+export namespace JwtUtils {
+    export interface JwtParts {
+        encodedHeader: string;
+        encodedPayload: string;
+        signature: string;
+        header: Jwt.Header;
+        payload: Jwt.Payload;
+    }
+}
 export default JwtUtils;
