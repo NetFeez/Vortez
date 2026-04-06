@@ -56,18 +56,21 @@ export class KeyGenerator {
      * If no modulus length is provided, it defaults to 2048 bits.
      * @param modulusLength The length of the RSA modulus in bits (e.g., 2048, 4096). Defaults to 2048 if not specified.
      * @returns An object containing the generated private key ("key") and public key ("pub") as strings, both in PEM format.
+     * 
+     * NOTE: Standard JWT libraries (RFC 7518) use the same RSA key pair for both RSASSA-PKCS1-v1_5 (RS*)
+     * and RSASSA-PSS (PS*) algorithms. The difference is in signature padding/salt, not in key generation.
+     * The code below was an initial attempt to generate 'rsa-pss' keys separately, but proved unnecessary.
+     * Kept as a historical reference of that misunderstanding.
      */
     protected static RSAPSS(modulusLength: number = 2048): KeyGenerator.KeyObject {
         return this.RSA(modulusLength);
-        // Standard jwt libraries typically use the same RSA key pair for both RSASSA-PKCS1-v1_5 and RSASSA-PSS algorithms, as the key generation process is the same for both.
-        // The difference lies in how the signature is created and verified, not in the key itself.
-        // Therefore, we can reuse the RSA key generation method for RSAPSS as well.
-        const { privateKey, publicKey } = generateKeyPairSync('rsa-pss', {
-            modulusLength: modulusLength,
-            publicKeyEncoding: { type: 'spki', format: 'pem' },
-            privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-        });
-        return { key: privateKey, pub: publicKey };
+        // Initial implementation attempt (unreachable code - left as historical reference):
+        // const { privateKey, publicKey } = generateKeyPairSync('rsa-pss', {
+        //     modulusLength: modulusLength,
+        //     publicKeyEncoding: { type: 'spki', format: 'pem' },
+        //     privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+        // });
+        // return { key: privateKey, pub: publicKey };
     }
     /**
      * Generates an Elliptic Curve (EC) key pair using the specified named curve.

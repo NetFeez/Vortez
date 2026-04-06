@@ -1,28 +1,26 @@
 
-import HeaderValidator from "./HeaderValidator.js";
-
 import _KeyGenerator from "./KeyGenerator.js";
 import _Algorithm from "./algorithm/Algorithm.js";
 import _JwtUtils from "./JwtUtils.js";
-import _KIDEntry from "./KIDEntry.js";
+import _KeyEntry from "./KeyEntry.js";
 import _Jwt from "./Jwt.js";
 
 export { KeyGenerator } from "./KeyGenerator.js";
 export { Algorithm } from "./algorithm/Algorithm.js";
 export { JwtUtils } from "./JwtUtils.js";
-export { KIDEntry } from "./KIDEntry.js";
+export { KeyEntry as KIDEntry } from "./KeyEntry.js";
 export { Jwt } from "./Jwt.js";
 
 export class JwtManager {    
     protected KIDMap: JwtManager.KIDMap = {};
-    protected defaultEntry: JwtManager.KIDEntry;
+    protected defaultEntry: JwtManager.KeyEntry;
 
     public constructor(
-        entry: JwtManager.KIDOption,
-        ...entries: JwtManager.KIDOption[]
+        entry: JwtManager.KeyOption,
+        ...entries: JwtManager.KeyOption[]
     ) {
         this.defaultEntry = JwtManager.normalizeEntry(entry);
-        entries = [entry, ...entries];
+        entries = [this.defaultEntry, ...entries];
         for (const e of entries) { this.addKey(e); }
     }
     /**
@@ -31,7 +29,7 @@ export class JwtManager {
      * The method normalizes the entry using the `normalizeEntry` static method and then adds it to the KID map using the entry's `kid` property as the key.
      * @param entry The key entry to be added, which can be either an instance of `KIDEntry` or an object containing the properties needed to create a new `KIDEntry`.
      */
-    public addKey(entry: JwtManager.KIDOption): void {
+    public addKey(entry: JwtManager.KeyOption): void {
         const kidEntry = JwtManager.normalizeEntry(entry);
         this.KIDMap[kidEntry.kid] = kidEntry;
     }
@@ -94,22 +92,22 @@ export class JwtManager {
      * @param entry The key entry option to be normalized, which can be either an instance of `KIDEntry` or an object containing the properties needed to create a new `KIDEntry`.
      * @returns A `KIDEntry` instance corresponding to the provided entry option.
      */
-    public static normalizeEntry(entry: JwtManager.KIDOption): JwtManager.KIDEntry {
-        if (entry instanceof JwtManager.KIDEntry) return entry;
-        const { algorithm, key, kid } = entry;
-        return new JwtManager.KIDEntry(algorithm, key, kid);
+    public static normalizeEntry(entry: JwtManager.KeyOption): JwtManager.KeyEntry {
+        if (entry instanceof JwtManager.KeyEntry) return entry;
+        const { alg: algorithm, key, kid } = entry;
+        return new JwtManager.KeyEntry(algorithm, key, kid);
     }
 }
 export namespace JwtManager {
     export import Algorithm = _Algorithm;
     export import KeyGenerator = _KeyGenerator;
     export import JwtUtils = _JwtUtils;
-    export import KIDEntry = _KIDEntry;
+    export import KeyEntry = _KeyEntry;
     export import Jwt = _Jwt;
 
-    export type KIDOption =  KIDEntry | KIDEntry.KIDEntryOptions; 
+    export type KeyOption =  KeyEntry | KeyEntry.KeyEntryOptions; 
     export interface KIDMap {
-        [kid: string]: KIDEntry;
+        [kid: string]: KeyEntry;
     }
 }
 export default JwtManager;

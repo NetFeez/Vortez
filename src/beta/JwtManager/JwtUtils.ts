@@ -1,5 +1,5 @@
 import type Algorithm from "./algorithm/Algorithm.js";
-import type KIDEntry from "./KIDEntry.js";
+import type KeyEntry from "./KeyEntry.js";
 import type Jwt from './Jwt.js';
 import HeaderValidator from "./HeaderValidator.js";
 
@@ -37,12 +37,12 @@ export class JwtUtils {
      * @returns The algorithm prefix (e.g., "HS", "RS", "ES", "PS").
      * @throws An error if the algorithm is unsupported.
      */
-    public static getAlgPrefix(alg: KIDEntry.AlgorithmName): KIDEntry.AlgPrefix {
+    public static getAlgPrefix(alg: KeyEntry.AlgorithmName): KeyEntry.AlgPrefix {
         const prefix = alg.slice(0, 2);
         if (!['HS', 'RS', 'ES', 'PS'].includes(prefix)) {
             throw new Error(`Unsupported algorithm: ${alg}`);
         }
-        return prefix as KIDEntry.AlgPrefix;
+        return prefix as KeyEntry.AlgPrefix;
     }
     /**
      * Extracts the hash length from the given algorithm name and validates it.
@@ -50,7 +50,7 @@ export class JwtUtils {
      * @returns The hash length as a string ("256", "384", or "512").
      * @throws An error if the algorithm is unsupported or if the hash length is invalid.
      */
-    public static getHashLength(alg: KIDEntry.AlgorithmName): Algorithm.HashLength {
+    public static getHashLength(alg: KeyEntry.AlgorithmName): Algorithm.HashLength {
         const hashLength = alg.slice(2);
         if (!['256', '384', '512'].includes(hashLength)) {
             throw new Error(`Unsupported algorithm: ${alg}`);

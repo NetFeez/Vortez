@@ -1,5 +1,5 @@
 import type Algorithm from './algorithm/Algorithm.js';
-import type KIDEntry from './KIDEntry.js';
+import type KeyEntry from './KeyEntry.js';
 
 import JwtUtils from './JwtUtils.js';
 
@@ -45,7 +45,7 @@ export namespace Jwt {
         signature: string;
     }
     export interface Header {
-        alg: KIDEntry.AlgorithmName;
+        alg: KeyEntry.AlgorithmName;
         typ: 'jwt';
         kid?: string;
         [key: string]: any;

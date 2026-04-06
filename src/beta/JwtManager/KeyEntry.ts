@@ -8,7 +8,7 @@ import RSA from "./algorithm/RSA.js";
 
 import JwtUtils from "./JwtUtils.js";
 
-export class KIDEntry {
+export class KeyEntry {
     protected static AlgorithmMap = { HS: HMAC, RS: RSA, ES: ECDSA, PS: RSAPSS };
 
     public readonly kid: string;
@@ -23,11 +23,11 @@ export class KIDEntry {
      * @param kid An optional key ID to uniquely identify the key. If not provided, a random one will be generated.
      */
     public constructor(
-        public readonly alg: KIDEntry.AlgorithmName,
-        key: KIDEntry.Signer, kid?: string,
+        public readonly alg: KeyEntry.AlgorithmName,
+        key: KeyEntry.Signer, kid?: string,
     ) {
         this.kid = kid || `${alg}-${Math.random().toString(36).substring(2, 8)}`;
-        this.signer = key instanceof Algorithm ? key : KIDEntry.createSigner(alg, key);
+        this.signer = key instanceof Algorithm ? key : KeyEntry.createSigner(alg, key);
     }
     /**
      * Creates an instance of the appropriate signing algorithm based on the provided algorithm name and key.
@@ -38,7 +38,7 @@ export class KIDEntry {
      * @param key The key or key options to be used for signing, which can be an instance of `Algorithm` or an object containing key options.
      * @returns An instance of the appropriate signing algorithm initialized with the specified hash length and key.
      */
-    public static createSigner(alg: KIDEntry.AlgorithmName, key: Algorithm.Key | Algorithm.KeyOptions): Algorithm {
+    public static createSigner(alg: KeyEntry.AlgorithmName, key: Algorithm.Key | Algorithm.KeyOptions): Algorithm {
         const prefix = JwtUtils.getAlgPrefix(alg);
         const hashLength = JwtUtils.getHashLength(alg);
 
@@ -46,21 +46,21 @@ export class KIDEntry {
         return new algorithm(hashLength, key);
     }
 }
-export namespace KIDEntry {
+export namespace KeyEntry {
     export type AlgPrefix = 'HS' | 'RS' | 'ES' | 'PS';
     export type AlgorithmName = `${AlgPrefix}${JwtManager.Algorithm.HashLength}`;
 
     export type Signer = Algorithm | Algorithm.Key | Algorithm.KeyOptions;
     
-    export interface KIDEntryOptions {
+    export interface KeyEntryOptions {
         key: Signer;
+        alg: AlgorithmName;
         kid?: string;
-        algorithm: AlgorithmName;
     }
-    export interface KIDEntry {
+    export interface KeyEntry extends KeyEntryOptions {
         kid: string;
         signer: Algorithm
         alg: AlgorithmName;
     }
 }
-export default KIDEntry;
+export default KeyEntry;
