@@ -15,7 +15,7 @@ await Utilities.Env.load('tests/test.env');
 // Utilities.Env.loadSync('tests/test.env');
 
 /* | CREATING SERVER | */
-const server = new Vortez({ port: 3000 });
+const server = new Vortez({ port: 8001 });
 
 /* | FILE RULE TEST | */
 server.router.addFile('/File', 'changes.md')
@@ -62,7 +62,7 @@ server.router.addAction('ALL', '/RuleParams/$?param1/$?b/$?c/*', (Rq, Rs) => {
 
 /* | WEBSOCKET RULE TEST | */
 /**
- * @typedef {import('../build/Server/WebSocket/WebSocket.js').WebSocket} WebSocket
+ * @typedef {import('../build/server/websocket/Websocket.js').Websocket} WebSocket
  */
 /** @type {Set<WebSocket>} */
 const clients = new Set();
