@@ -10,11 +10,13 @@ import _Path from './Path.js';
 import _Env from './Env.js';
 import _ConsoleUI from './ConsoleUI.js';
 import _DebugUI from './DebugUI.js';
+import _Schema from './schema/Schema.js';
 
 export { Path } from './Path.js';
 export { Env } from './Env.js';
 export { ConsoleUI } from './ConsoleUI.js';
 export { DebugUI } from './DebugUI.js';
+export { Schema } from './schema/Schema.js';
 
 export class Utilities {
     /**
@@ -124,6 +126,8 @@ export namespace Utilities {
     export import Env = _Env;
     export import ConsoleUI = _ConsoleUI;
     export import DebugUI = _DebugUI;
+    export import Schema = _Schema;
+
     export namespace Types {
         type NumListAdd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
         type strToNum<str extends string> = str extends `${infer num extends number}` ? num : never;
