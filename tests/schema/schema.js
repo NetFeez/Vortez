@@ -260,6 +260,47 @@ function testJsonSchemaArrayMapping() {
 }
 
 /**
+ * Ensures string enum validation accepts only allowed values.
+ */
+function testStringEnumValidation() {
+    try {
+        const schema = new Schema({
+            mode: { type: 'string', required: true, enum: ['A', 'B'] }
+        });
+
+        const valid = schema.processData({ mode: 'A' });
+        assert.equal(valid.mode, 'A');
+
+        assert.throws(() => schema.processData({ mode: 'C' }), SchemaError);
+
+        logTestResult('string - Enum validation', true);
+    } catch (error) {
+        logTestResult('string - Enum validation', false, error);
+    }
+}
+
+/**
+ * Ensures JSON Schema output contains enum for string properties.
+ */
+function testJsonSchemaStringEnumMapping() {
+    try {
+        const schema = new Schema({
+            mode: { type: 'string', enum: ['A', 'B'] }
+        });
+
+        const json = schema.jsonSchema;
+        const mode = json.properties?.mode;
+
+        assert.equal(mode?.type, 'string');
+        assert.deepEqual(mode?.enum, ['A', 'B']);
+
+        logTestResult('jsonSchema - String enum mapping', true);
+    } catch (error) {
+        logTestResult('jsonSchema - String enum mapping', false, error);
+    }
+}
+
+/**
  * Ensures nested unique keys are listed with dot notation.
  */
 function testUniqueKeyCollection() {
@@ -311,6 +352,8 @@ function runTests() {
     testPartialUnknownRootKey();
     testObjectRejectsArrayValue();
     testJsonSchemaArrayMapping();
+    testStringEnumValidation();
+    testJsonSchemaStringEnumMapping();
     testUniqueKeyCollection();
     testInvalidSchemaDefinition();
 
