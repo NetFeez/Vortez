@@ -11,12 +11,14 @@ import _Env from './Env.js';
 import _ConsoleUI from './ConsoleUI.js';
 import _DebugUI from './DebugUI.js';
 import _Schema from './schema/Schema.js';
+import _Flatten from './Flatten.js';
 
 export { Path } from './Path.js';
 export { Env } from './Env.js';
 export { ConsoleUI } from './ConsoleUI.js';
 export { DebugUI } from './DebugUI.js';
 export { Schema } from './schema/Schema.js';
+export { Flatten } from './Flatten.js';
 
 export class Utilities {
     /**
@@ -55,20 +57,7 @@ export class Utilities {
      * @returns The flattened object.
      */
     public static flattenObject<T extends object, D extends number = 10>(object: T, depth: D = 10 as D): Utilities.Flatten.Object<T, D> {
-        return this.flattenCore(object, depth);
-    }
-    private static flattenCore(object: any, depth: number = 10, prefix: string = ''): any {
-        const result: any = {};
-        for (const key in object) {
-            const newKey = prefix ? `${prefix}.${key}` : key;
-            const value = object[key];
-            if (typeof value === 'object' && !Array.isArray(value) && value !== null && depth > 0) {
-                Object.assign(result, Utilities.flattenCore(value, depth - 1, newKey));
-            } else {
-                result[newKey] = value;
-            }
-        }
-        return result;
+        return Utilities.Flatten.object(object as Utilities.Types.Document, depth) as Utilities.Flatten.Object<T, D>;
     }
     /**
      * Reconstructs a nested object from a flattened object with dot notation keys.
@@ -77,23 +66,7 @@ export class Utilities {
      * @returns The unflattened object.
      */
     public static unFlattenObject<Result extends any = any>(obj: any): Result {
-        const result: any = {};
-        for (const key in obj) {
-            const value = obj[key];
-            const [first, ...rest] = key.split('.');
-            if (rest.length === 0) result[first] = value;
-            else {
-                const last = rest.pop() as string;
-                const subObj: any = result[first] ?? {};
-                let current: any = subObj;
-                rest.forEach((k) => {
-                    current = current[k] ?? (current[k] = {});
-                });
-                current[last] = value;
-                result[first] = subObj;
-            }
-        }
-        return result;
+        return Utilities.Flatten.unObject<Result>(obj as Utilities.Flatten.Document);
     }
     /**
      * Pauses the execution of the program for a specified duration.
@@ -127,6 +100,7 @@ export namespace Utilities {
     export import ConsoleUI = _ConsoleUI;
     export import DebugUI = _DebugUI;
     export import Schema = _Schema;
+    export import Flatten = _Flatten;
 
     export namespace Types {
         type NumListAdd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
@@ -179,98 +153,7 @@ export namespace Utilities {
             [key: string]: any;
         };
     }
-    export namespace Flatten {
-        type ResourceIndexes<Length extends number, Current extends number[] = []> = (
-            Current['length'] extends Length
-            ? Current[number]
-            : ResourceIndexes<Length, [...Current, Current['length']]>
-        );
-        /**
-         * Generates a union of all possible flattened keys for a given object type and depth.
-         * @template T the object to flatten.
-         * @template depth - The maximum depth to flatten.
-         * @template index - The current recursion index (internal use).
-         * @returns A union type of the flattened keys.
-         */
-        type ResourceKeys<T extends Types.Document, depth extends number = 5, index extends number = 1> = {
-            [K in keyof T]-?:
-            depth extends index
-            ? K & string
-            : Exclude<T[K], undefined> extends infer U
-                ? U extends any[]
-                    ? K & string
-                    : U extends object
-                        ? `${K & string}.${ResourceKeys<U, depth, Types.Inc<index>>}`
-                        : K & string
-                : "fail_in_flatten_inference"
-        }[keyof T];
-        /**
-         * Recursively retrieves the type of a value based on a flattened key path.
-         * @template T the object to flatten.
-         * @template Keys - The flattened key path string.
-         * @returns The type of the value at the specified key path, or `never` if the path is invalid.
-         */
-        type RecurseObject<T extends Types.Document, Keys extends string> = (
-            Keys extends `${infer K}.${infer Rest}`
-            ? K extends keyof T
-                ? undefined extends T[K]
-                    ? RecurseObject<Exclude<T[K], undefined>, Rest> | undefined
-                    : RecurseObject<T[K], Rest>
-                : never
-            : undefined extends T
-                ? Keys extends keyof Exclude<T, undefined>
-                    ? Exclude<T, undefined>[Keys] | undefined
-                    : never
-                : Keys extends keyof T
-                    ? T[Keys]
-                    : never
-        );
-        /**
-         * Represents the type of a flattened object up to a specified depth.
-         * @template T the object to flatten.
-         * @template depth - The maximum depth of flattening.
-         * @template index the current index.
-         * @returns the flattened object.
-         */
-        export type Object<T extends Types.Document, depth extends number = 5, index extends number = 1> = Types.undefinedToPartial<{
-            [P in ResourceKeys<T, depth, index>]: RecurseObject<T, P>;
-        }>;
-        type test = Object<{
-            a?: {b:{c:{d:"XD"}}}
-        }, 20>;
-    }
-    export namespace UnFlatten {
-        /**
-         * Splits a string into a tuple of strings based on a delimiter.
-         * @template S - The string to split.
-         * @template Delimiter - The delimiter to split by.
-         * @returns the split string.
-         */
-        type Split<S extends string, Delimiter extends string> = (
-            S extends `${infer T}${Delimiter}${infer U}` 
-            ? [T, ...Split<U, Delimiter>] 
-            : [S]
-        );
-        /**
-         * Builds a nested object type from a string path and a value type.
-         * @template Path - The path of keys as a string array.
-         * @template Value - The type of the value at the end of the path.
-         * @returns the nested object.
-         */
-        type BuildNestedObject<Path extends string[], Value> = (
-            Path extends [infer Head extends string, ...infer Tail extends string[]]
-            ? Types.undefinedToPartial<{ [K in Head]: BuildNestedObject<Tail, Value> }>
-            : Value
-        );
-        /**
-         * Represents the type of a nested object reconstructed from a flattened object.
-         * @template T - The type of the flattened object.
-         * @returns the unFlattened object.
-         */
-        export type Object<T extends Types.Document> = Types.UnionToIntersection<Types.undefinedToPartial<({
-            [K in keyof T]-?: BuildNestedObject<Split<Extract<K, string>, ".">, T[K]>
-        }[keyof T])>>;
-    }
+    export type FlattenObject<T extends Types.Document, depth extends number = 5> = Flatten.Object<T, depth>;
     export interface env {
         [key: string]: string;
     }
