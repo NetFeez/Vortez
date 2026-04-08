@@ -229,7 +229,7 @@ export class Router {
 	 * @param action - The action to be executed when a WebSocket connection is established on the specified URL path.
 	 * @returns The created WebSocket rule.
 	 */
-	public addWebSocket(urlRule: string, action: Router.WsRule.action): Router.WsRule {
+	public addWebsocket(urlRule: string, action: Router.WsRule.action): Router.WsRule {
 		const rule = new Router.WsRule(urlRule, action);
 		this.addRules(rule);
 		return rule;
