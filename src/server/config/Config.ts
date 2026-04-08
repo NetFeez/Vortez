@@ -33,6 +33,9 @@ export const SCHEMA_HANDLER = new Schema({
     host: { type: 'string', default: 'localhost' },
     port: { type: 'number', default: 80, minimum: 0, maximum: 65535 },
     ssl: { type: 'object', nullable: true, default: null, schema: SCHEMA_SSL.schema },
+    routing: { type: 'object', default: {
+        algorithm: 'FIFO'
+    }, schema: SCHEMA_ROUTING.schema },
     templates: { type: 'object', default: {
             folder: './global/Template/Folder.vhtml',
             error: './global/Template/Error.vhtml'
@@ -44,10 +47,7 @@ export const SCHEMA_HANDLER = new Schema({
         request: { show: true, save: true },
         response: { show: true, save: true },
         websocket: { show: true, save: true }
-    }, schema: SCHEMA_LOGGER.schema },
-    routing: { type: 'object', default: {
-        algorithm: 'FIFO'
-    }, schema: SCHEMA_ROUTING.schema }
+    }, schema: SCHEMA_LOGGER.schema }
 });
 
 export type SCHEMA_HANDLER = typeof SCHEMA_HANDLER;

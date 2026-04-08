@@ -40,6 +40,11 @@ export class ServerDebug extends DebugUI {
         this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
         this.out.info(`&C(255,180,220)│ &C3Port: &C6${config.get('port')}`);
         this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.get('host')}`);
+        this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.get('host')}`);
+
+        this.out.info(`&C(255,180,220)│ &C3routing options`);
+        this.out.info(`&C(255,180,220)│   - &C3algorithm: &C6${config.get('routing.algorithm')}`);
+
         if (config.data.ssl) {
             this.out.info(`&C(255,180,220)│ &C3ssl options`);
             this.out.info(`&C(255,180,220)│   - &C3enabled: &C6${config.get('ssl.port') ?? 443}`);
