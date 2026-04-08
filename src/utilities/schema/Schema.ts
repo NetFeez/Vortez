@@ -21,11 +21,19 @@ export class Schema<S extends Schema.Schema> {
         public readonly schema: S
     ) { this.validateStructure(); }
     /**
-     * get the infered schema as an object
-     * is only to be used for testing purposes
-     * this method only returns an empty object with the respective infered type
-     * this method is not able to be used out of development
-     * @returns the infered schema
+     * Get the inferred type of the schema.
+     * 
+     * ⚠️ IMPORTANT: This getter returns an EMPTY object. It is designed ONLY for type inference.
+     * 
+     * Usage: Use with `typeof` to extract the inferred type:
+     * ```typescript
+     * type infered = typeof schemaInstance.infer;
+     * ```
+     * 
+     * DO NOT use the returned value at runtime - it's always an empty object.
+     * This is purely a TypeScript type utility.
+     * 
+     * @returns An empty object with the inferred type
      */
     public get infer(): Schema.Infer<this['schema']> {
         return {} as Schema.Infer<this['schema']>;
