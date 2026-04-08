@@ -47,7 +47,7 @@ export class Router {
 	 * @param options - Additional options for configuring the router, including middleware and algorithm choice.
 	 */
 	public constructor(
-		public config: Config = new Config(),
+		public config: Config = new Config({}),
 		rules: Router.rules[] = [],
 		options: Router.Options = {}
 	) {
@@ -100,7 +100,7 @@ export class Router {
 	 */
 	public requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): void {
 		const request = new Request(HttpRequest);
-		const response = new Response(request, HttpResponse, this.config.templates);
+		const response = new Response(request, HttpResponse, this.config.data.templates);
 		const sessionID = request.cookies.get('Session');
 		logger.request.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeRequest(request, response);

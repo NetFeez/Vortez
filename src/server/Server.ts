@@ -46,8 +46,8 @@ export class Server {
 	 * @param host - The host the server will bind to.
 	 * @param sslOptions - The SSL configuration.
 	 */
-	public constructor(options?: Server.Config.options | Server.Config) {
-		this.config = options instanceof Server.Config ? options : new Server.Config(options);
+	public constructor(config: Server.Config | Server.Config.toProcess = {}) {
+		this.config = config instanceof Server.Config ? config : new Server.Config(config);
 		this.router = new Server.Router(this.config);
 		this.HttpServer = null;
 		this.HttpsServer = null;
@@ -59,7 +59,7 @@ export class Server {
 	 * Starts the server.
 	 */
 	public async start(): Promise<void> {
-		const { port, host, ssl: sslOptions } = this.config;
+		const { port, host, ssl: sslOptions } = this.config.data;
 		this.protocol = sslOptions ? 'HTTP/S' : 'HTTP';
 		logger.info('&C(255,180,220)╭─────────────────────────────────────────────');
 		logger.info('&C(255,180,220)│ &C1Vortez by NetFeez');
@@ -166,8 +166,8 @@ export class Server {
 	 * @param name - The name of the template.
 	 * @param path - The path to the `.vhtml` template file.
 	 */
-	public setTemplate(name: keyof Server.Config.Templates, path: string): Server {
-		this.config.templates[name] = path;
+	public setTemplate(name: keyof Server.Config['data']['templates'], path: string): Server {
+		this.config.data.templates[name] = path;
 		return this;
 	}
 	/**

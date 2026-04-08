@@ -38,29 +38,29 @@ export class ServerDebug extends DebugUI {
         this.out.info('&C(255,180,220)╭─────────────────────────────────────────────');
         this.out.info('&C(255,180,220)│ &C2 Server Configuration');
         this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
-        this.out.info(`&C(255,180,220)│ &C3Port: &C6${config.port}`);
-        this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.host}`);
-        if (config.ssl) {
+        this.out.info(`&C(255,180,220)│ &C3Port: &C6${config.get('port')}`);
+        this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.get('host')}`);
+        if (config.data.ssl) {
             this.out.info(`&C(255,180,220)│ &C3ssl options`);
-            this.out.info(`&C(255,180,220)│   - &C3enabled: &C6${config.ssl.port ?? 443}`);
-            this.out.info(`&C(255,180,220)│   - &C3cert: &C6${config.ssl.pubKey}`);
-            this.out.info(`&C(255,180,220)│   - &C3key: &C6${config.ssl.privKey}`);
+            this.out.info(`&C(255,180,220)│   - &C3enabled: &C6${config.get('ssl.port') ?? 443}`);
+            this.out.info(`&C(255,180,220)│   - &C3cert: &C6${config.get('ssl.pubKey')}`);
+            this.out.info(`&C(255,180,220)│   - &C3key: &C6${config.get('ssl.privKey')}`);
         }
         this.out.info(`&C(255,180,220)│ &C3server templates`);
-        for (const name in config.templates) {
-            const path = config.templates[name];
+        for (const name in config.data.templates) {
+            const path = config.data.templates[name as keyof Server.Config['data']['templates']] ?? 'undefined';
             this.out.info(`&C(255,180,220)│   - &C3${name}: &C6${path}`);
         }
         this.out.info(`&C(255,180,220)│ &C3Debug options`);
-        this.out.info(`&C(255,180,220)│   - &C3 showAll: &C6${config.showAll}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show server logs: &C6${config.logger.server.show}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save server logs: &C6${config.logger.server.save}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show requests logs: &C6${config.logger.request.show}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save requests logs: &C6${config.logger.request.save}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show responses logs: &C6${config.logger.response.show}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save responses logs: &C6${config.logger.response.save}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show websockets logs: &C6${config.logger.webSocket.show}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save websockets logs: &C6${config.logger.webSocket.save}`);
+        this.out.info(`&C(255,180,220)│   - &C3 showAll: &C6${config.get('logger.showAll')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 show server logs: &C6${config.get('logger.server.show')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 save server logs: &C6${config.get('logger.server.save')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 show requests logs: &C6${config.get('logger.request.show')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 save requests logs: &C6${config.get('logger.request.save')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 show responses logs: &C6${config.get('logger.response.show')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 save responses logs: &C6${config.get('logger.response.save')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 show websockets logs: &C6${config.get('logger.websocket.show')}`);
+        this.out.info(`&C(255,180,220)│   - &C3 save websockets logs: &C6${config.get('logger.websocket.save')}`);
         this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
     }
 }

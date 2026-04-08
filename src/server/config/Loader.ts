@@ -8,31 +8,28 @@ import { promises as FSP } from "fs";
 import Logger from "../../logger/Logger.js";
 import Config from "./Config.js";
 import Utilities from "../../utilities/Utilities.js";
-import { ConfigValidator } from "./ConfigValidator.js";
 
 const logger = new Logger({ prefix: 'Config' });
 
-export class ConfigLoader {
+export class Loader {
     /**
      * Loads the config from the given path.
      * @param path - The path to the config file.
-     * @param defaultConfig - The default config to use if the config file does not exist.
      * @returns A promise that resolves with the loaded config.
      */
-    public static async load(path: string, defaultConfig: Config | Config.options = {}): Promise<Config> {
+    public static async load(path: string): Promise<Config> {
         logger.log(`loading config from &C6[${path}]`);
         if (!await Utilities.fileExists(path)) {
-            const config = new Config(defaultConfig);
+            const config = new Config({});
             logger.log(`config file &C6[${path}]&R does not exist, creating it`);
-            await ConfigLoader.save(path, config);
+            await Loader.save(path, config);
             logger.log(`config file &C6[${path}]&R &C2was created successfully`);
             return config;
         }
         try {
             const content = await FSP.readFile(path, 'utf8');
             const data = JSON.parse(content);
-            const validatedConfig = ConfigValidator.validate(data);
-            return new Config(validatedConfig);
+            return new Config(data);
         } catch (error) {
             logger.error(`config file &C6[${path}]&R &C1could not be loaded`);
             throw error;
@@ -51,5 +48,5 @@ export class ConfigLoader {
         await FSP.writeFile(path, content, 'utf8');
     }
 }
-export namespace ConfigLoader {}
-export default ConfigLoader;
+export namespace Loader {}
+export default Loader;

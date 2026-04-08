@@ -20,7 +20,7 @@ export class Response {
 	/** Contains the request received by the server. */
 	public request: Request;
 	/** Contains the list of server response templates. */
-	private templates: Config.Templates;
+	private templates: Config['data']['templates'];
 	/** Contains the response to be sent by the server. */
 	public httpResponse: HTTP.ServerResponse;
 	private _isSended: boolean = false;
@@ -30,7 +30,7 @@ export class Response {
 	 * @param httpResponse - The response to be sent by the server.
 	 * @param templates - The list of server response templates.
 	 */
-	public constructor(request: Request, httpResponse: HTTP.ServerResponse, templates: Config.Templates = {}) {
+	public constructor(request: Request, httpResponse: HTTP.ServerResponse, templates: Config['data']['templates']) {
         this.request = request;
         this.templates = templates;
         this.httpResponse = httpResponse;
