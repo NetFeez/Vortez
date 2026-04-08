@@ -15,19 +15,30 @@ export const SCHEMA_HANDLER = new Schema({
             port: { type: 'number', default: 443, minimum: 0, maximum: 65535 }
         }
     },
-    templates: { type: 'object', default: {}, schema: {
+    templates: { type: 'object', default: {
+            folder: './global/Template/Folder.vhtml',
+            error: './global/Template/Error.vhtml'
+        }, schema: {
             folder: { type: 'string', default: './global/Template/Folder.vhtml' },
             error: { type: 'string', default: './global/Template/Error.vhtml' }
         }
     },
-    logger: { type: 'object', default: {}, schema: {
+    logger: { type: 'object', default: {
+        showAll: false,
+        server: { show: true, save: true },
+        request: { show: true, save: true },
+        response: { show: true, save: true },
+        websocket: { show: true, save: true }
+    }, schema: {
         showAll: { type: 'boolean', default: false },
         server: { type: 'object', default: {}, schema: SCHEMA_LOGGER.schema },
         request: { type: 'object', default: {}, schema: SCHEMA_LOGGER.schema },
         response: { type: 'object', default: {}, schema: SCHEMA_LOGGER.schema },
         websocket: { type: 'object', default: {}, schema: SCHEMA_LOGGER.schema }
     } },
-    routing: { type: 'object', default: {}, schema: {
+    routing: { type: 'object', default: {
+        algorithm: 'FIFO'
+    }, schema: {
         algorithm: { type: 'string', enum: ['FIFO', 'Tree'], default: 'FIFO' }
     } }
 });
