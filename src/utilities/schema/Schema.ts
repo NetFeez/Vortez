@@ -16,7 +16,7 @@ export { JSONSchema } from './JSONSchema.js';
 export { SchemaIntrospection } from './SchemaIntrospection.js';
 export { SchemaStructureValidator } from './SchemaStructureValidator.js';
 
-export class Schema<S extends Schema.Schema> {
+export class Schema<const S extends Schema.Schema> {
     constructor(
         public readonly schema: S
     ) { this.validateStructure(); }
@@ -224,6 +224,9 @@ export class Schema<S extends Schema.Schema> {
     protected validateString(value: string, prop: Schema.Property.String, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'string') throw new Schema.SchemaError(`Property ${key} must be a string`);
+        if (prop.enum !== undefined && !prop.enum.includes(value)) {
+            throw new Schema.SchemaError(`Property ${key} must be one of: ${prop.enum.join(', ')}`);
+        }
         if (prop.minLength !== undefined && value.length < prop.minLength) {
             throw new Schema.SchemaError(`Property ${key} must have a minimum length of ${prop.minLength}`);
         }
@@ -365,6 +368,7 @@ export namespace Schema {
             default?: TypeMap[T] | null;
         }
         export interface String extends Base<'string'> {
+            enum?: readonly string[];
             pattern?: RegExp;
             minLength?: number;
             maxLength?: number;
@@ -406,7 +410,11 @@ export namespace Schema {
         );
 
         export type propertyType<P extends Schema.property, M extends Mode = 'complete'> = (
-            P extends Property.String  ? string  :
+            P extends Property.String
+                ? P extends { enum: readonly (infer E extends string)[] }
+                    ? E
+                    : string
+                :
             P extends Property.Number  ? number  :
             P extends Property.Boolean ? boolean :
             P extends Property.Object

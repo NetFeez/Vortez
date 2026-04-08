@@ -44,6 +44,7 @@ export class SchemaIntrospection {
             }
             switch (prop.type) {
                 case 'string': {
+                    if (prop.enum !== undefined) subSch.enum = [...prop.enum];
                     if (prop.minLength !== undefined) subSch.minLength = prop.minLength;
                     if (prop.maxLength !== undefined) subSch.maxLength = prop.maxLength;
                     if (prop.pattern !== undefined) subSch.pattern = prop.pattern.source;

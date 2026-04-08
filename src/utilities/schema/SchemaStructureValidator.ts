@@ -65,6 +65,14 @@ export class SchemaStructureValidator {
      * @param key The key of the property, used for error messages
      */
     public static validateStringProperty(prop: Schema.Property.String, key: string): void {
+        if (prop.enum !== undefined) {
+            if (!Array.isArray(prop.enum) || prop.enum.length === 0) {
+                throw new SchemaError(`Property '${key}' enum must be a non-empty array`);
+            }
+            if (prop.enum.some((value) => typeof value !== 'string')) {
+                throw new SchemaError(`Property '${key}' enum values must be strings`);
+            }
+        }
         if (prop.maxLength !== undefined && prop.minLength !== undefined && prop.maxLength < prop.minLength) {
             throw new SchemaError(`Property '${key}' maxLength must be greater than or equal to minLength`);
         }
@@ -110,6 +118,9 @@ export class SchemaStructureValidator {
     private static validateString(value: string, prop: Schema.Property.String, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'string') throw new SchemaError(`Property ${key} must be a string`);
+        if (prop.enum !== undefined && !prop.enum.includes(value)) {
+            throw new SchemaError(`Property ${key} must be one of: ${prop.enum.join(', ')}`);
+        }
         if (prop.minLength !== undefined && value.length < prop.minLength) {
             throw new SchemaError(`Property ${key} must have a minimum length of ${prop.minLength}`);
         }
