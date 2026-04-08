@@ -86,7 +86,7 @@ server.router.addAction('ALL', 'WebSocket', (Rq, Rs) => {
     });
 });
 
-server.router.addWebSocket('/WebSocket/$?username', (request, socket) => {
+server.router.addWebsocket('/WebSocket/$?username', (request, socket) => {
     const username = request.ruleParams.username;
     if (!username) {
         socket.send('error: no username');
