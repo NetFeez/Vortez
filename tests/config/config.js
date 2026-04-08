@@ -68,13 +68,13 @@ function testNestedSslDefaultPort() {
     try {
         const config = new Config({
             ssl: {
-                pubKey: 'pub-key',
-                privKey: 'priv-key'
+                cert: 'cert-path',
+                key: 'key-path'
             }
         });
 
-        assert.equal(config.get('ssl.pubKey'), 'pub-key');
-        assert.equal(config.get('ssl.privKey'), 'priv-key');
+        assert.equal(config.get('ssl.cert'), 'cert-path');
+        assert.equal(config.get('ssl.key'), 'key-path');
         assert.equal(config.get('ssl.port'), 443);
 
         logTestResult('constructor - Nested defaults inside ssl', true);

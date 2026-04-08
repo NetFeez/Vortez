@@ -122,8 +122,8 @@ export class ServerDebug extends DebugUI {
         if (config.data.ssl) {
             this.out.info(`&C(255,180,220)│ &C3ssl options`);
             this.out.info(`&C(255,180,220)│   - &C3enabled: &C6${config.get('ssl.port') ?? 443}`);
-            this.out.info(`&C(255,180,220)│   - &C3cert: &C6${config.get('ssl.pubKey')}`);
-            this.out.info(`&C(255,180,220)│   - &C3key: &C6${config.get('ssl.privKey')}`);
+            this.out.info(`&C(255,180,220)│   - &C3cert: &C6${config.get('ssl.cert')}`);
+            this.out.info(`&C(255,180,220)│   - &C3key: &C6${config.get('ssl.key')}`);
         }
         this.out.info(`&C(255,180,220)│ &C3server templates`);
         for (const name in config.data.templates) {

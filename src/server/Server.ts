@@ -155,7 +155,7 @@ export class Server {
 	 */
 	private async initHTTPS(host: string, sslOptions: Server.SSLOptions): Promise<HTTP.Server> {
 		const port = sslOptions.port ?? 443;
-		const cert = await Server.loadCertificates(sslOptions.pubKey, sslOptions.privKey);
+		const cert = await Server.loadCertificates(sslOptions.cert, sslOptions.key);
 		const https = HTTPS.createServer(cert);
 		https.on('request', this.router.requestManager.bind(this.router));
 		https.on('upgrade', this.router.upgradeManager.bind(this.router));
@@ -205,8 +205,8 @@ export namespace Server {
         key: Buffer | string
     }
 	export type SSLOptions = {
-        pubKey: string,
-		privKey: string,
+		cert: string,
+		key: string,
 		port?: number
     };
     export type Protocol = 'HTTP' | 'HTTPS' | 'HTTP/S';

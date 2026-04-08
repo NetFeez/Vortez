@@ -15,8 +15,8 @@ export const SCHEMA_LOGGER = new Schema({
 });
 
 export const SCHEMA_SSL = new Schema({
-    pubKey: { type: 'string', required: true },
-    privKey: { type: 'string', required: true },
+    cert: { type: 'string', required: true },
+    key: { type: 'string', required: true },
     port: { type: 'number', default: 443, minimum: 0, maximum: 65535 }
 });
 
