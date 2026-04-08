@@ -198,6 +198,40 @@ The main separator is `/` which indicates a new sub-route:
 
 ---
 
+## Middleware Execution Model
+
+Vortez uses a snapshot middleware composition model.
+
+- Global middleware from `router.use(...)` and `router.useError(...)` is copied into each rule when the rule is added.
+- Existing rules are not updated retroactively if you add more global middleware later.
+- `mount(...)` keeps middleware already attached to child rules and prepends destination router middleware.
+
+Execution and composition examples:
+
+```js
+const routerA = new Vortez.Router();
+const routerB = new Vortez.Router();
+
+routerA.use(httpM1).use(httpM2).use(httpM3);
+routerA.addAction('GET', '/old', actionOld); // old -> [M1, M2, M3]
+
+routerA.use(httpM4);
+routerA.addAction('GET', '/new', actionNew); // new -> [M1, M2, M3, M4]
+
+routerB.use(httpA).use(httpB).use(httpC);
+routerB.addAction('GET', '/child', actionChild); // child -> [A, B, C]
+
+routerA.mount(routerB, '/api');
+// mounted child in routerA -> [M1, M2, M3, M4, A, B, C]
+```
+
+Practical recommendation:
+
+- Register global middleware first, then add rules.
+- If you need new global middleware to affect old rules, rebuild/remount those rules.
+
+---
+
 ## Rules
 
 In **Vortez**, there are four types of routers:

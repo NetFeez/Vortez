@@ -75,6 +75,7 @@ export class Router {
 	/**
 	 * Adds middleware actions to the router.
 	 * @param middleware - The middleware to be added.
+	 * @remarks Applies to rules added after this call.
 	 */
 	public use(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
 		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.use(middleware);
@@ -84,6 +85,7 @@ export class Router {
 	/**
 	 * Adds middleware error actions to the router.
 	 * @param middleware - The middleware to be added.
+	 * @remarks Applies to rules added after this call.
 	 */
 	public useError(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
 		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.useError(middleware);
@@ -160,6 +162,7 @@ export class Router {
 	 * @param rule - The rule to be added.
 	 * @returns The current router instance for chaining.
 	 * @remarks This method integrates the new rule into the routing algorithm and ensures that any associated middleware is properly merged.
+	 * Middleware is snapshotted at registration time; later global middleware additions do not mutate this rule.
 	 */
 	public addRule(rule: Router.rules): this {
 		if (rule instanceof Router.WsRule) rule.middleware.mergeAtStart(this.wsMiddleware);
@@ -175,6 +178,7 @@ export class Router {
 	 * @returns The current router instance for chaining.
 	 * @remarks This method allows you to compose routers together, enabling modular route management.
 	 * When a URL path is specified, all routes from the mounted router will be prefixed with that path.
+	 * Mounted rules keep their existing middleware order and then receive this router middleware at start through addRule().
 	 */
 	public mount(router: Router, urlRule?: string): this {
 		const httpRules = router.httpRules.map((rule) => {
