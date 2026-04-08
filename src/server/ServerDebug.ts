@@ -24,6 +24,15 @@ export class ServerDebug extends DebugUI {
 		this.out.info('&C(255,180,220)╭─────────────────────────────────────────────');
         this.out.info('&C(255,180,220)│ &C2 Rules added to server router');
 		this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
+        const algorithm = this.server.config.get('routing.algorithm') ?? 'FIFO';
+        this.out.info(`&C(255,180,220)│ &C3 algorithm: &C6${algorithm}`);
+
+        if (algorithm === 'Tree') {
+            this.printTreeRules();
+            this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
+            return;
+        }
+
         for (const rule of this.server.router.httpRules) {
             this.out.info(`&C(255,180,220)│ &C3 http rule: &C2${rule.method.padStart(5, ' ')} &R-> &C6${rule.urlRule}`);
         }
@@ -31,6 +40,71 @@ export class ServerDebug extends DebugUI {
             this.out.info(`&C(255,180,220)│ &C3 ws rule: &C6${rule.urlRule}`);
         }
         this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
+    }
+
+    private printTreeRules() {
+        const root: ServerDebug.RouteTreeNode = { children: new Map(), rules: [] };
+
+        for (const rule of this.server.router.httpRules) {
+            this.addRuleToTree(root, rule.urlRule, `http ${rule.method}`);
+        }
+        for (const rule of this.server.router.wsRules) {
+            this.addRuleToTree(root, rule.urlRule, 'ws');
+        }
+
+        this.out.info('&C(255,180,220)│ &C3 tree nodes:');
+        const topEntries = [...root.children.entries()].sort(([a], [b]) => a.localeCompare(b));
+        if (!topEntries.length) {
+            this.out.info('&C(255,180,220)│   (empty)');
+            return;
+        }
+
+        for (let index = 0; index < topEntries.length; index++) {
+            const [label, node] = topEntries[index];
+            const isLast = index === topEntries.length - 1;
+            this.printTreeNode(label, node, '', isLast);
+        }
+    }
+
+    private addRuleToTree(root: ServerDebug.RouteTreeNode, urlRule: string, ruleLabel: string) {
+        const segments = urlRule.split('/').filter(Boolean);
+        let current = root;
+
+        for (const segment of segments) {
+            const label = this.formatSegmentLabel(segment);
+            const next = current.children.get(label) ?? { children: new Map(), rules: [] };
+            current.children.set(label, next);
+            current = next;
+        }
+        current.rules.push(ruleLabel);
+    }
+
+    private printTreeNode(label: string, node: ServerDebug.RouteTreeNode, prefix: string, isLast: boolean) {
+        const branch = isLast ? '└─ ' : '├─ ';
+        this.out.info(`&C(255,180,220)│ ${prefix}${branch}&C6${label}`);
+
+        const nextPrefix = `${prefix}${isLast ? '   ' : '│  '}`;
+        const rules = [...node.rules].sort();
+        const children = [...node.children.entries()].sort(([a], [b]) => a.localeCompare(b));
+        const total = rules.length + children.length;
+
+        let index = 0;
+        for (const rule of rules) {
+            index++;
+            const leafBranch = index === total ? '└─ ' : '├─ ';
+            this.out.info(`&C(255,180,220)│ ${nextPrefix}${leafBranch}&C2${rule}`);
+        }
+        for (const [childLabel, childNode] of children) {
+            index++;
+            this.printTreeNode(childLabel, childNode, nextPrefix, index === total);
+        }
+    }
+
+    private formatSegmentLabel(segment: string): string {
+        if (segment === '*') return '*';
+        if (segment.startsWith('$?')) return `param?(${segment.slice(2)})`;
+        if (segment.startsWith('$')) return `param(${segment.slice(1)})`;
+        return segment;
     }
     /** Prints the server configuration to the console. */
     public showConfig() {
@@ -69,5 +143,11 @@ export class ServerDebug extends DebugUI {
         this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
     }
 }
-export namespace ServerDebug {}
+
+export namespace ServerDebug {
+    export interface RouteTreeNode {
+        children: Map<string, RouteTreeNode>;
+        rules: string[];
+    }
+}
 export default ServerDebug;
