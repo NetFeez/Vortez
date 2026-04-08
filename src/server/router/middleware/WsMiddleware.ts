@@ -14,7 +14,7 @@ import Websocket from '../../websocket/Websocket.js';
 const logger = LoggerManager.getInstance();
 
 export class WsMiddleware extends Middleware<WsRule> {
-    public clone(): WsMiddleware { return new WsMiddleware(this.pipeline); }
+    public clone(): WsMiddleware { return new WsMiddleware(this.pipeline, this.errorPipeline); }
     /**
      * Runs the middleware pipeline.
      * @param request The request received by the server.
