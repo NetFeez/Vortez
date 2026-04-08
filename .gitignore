@@ -1,5 +1,10 @@
-node_modules/
-build/
-.**/*
+# Build setting
+**/node_modules/
+**/build/
+**/.**
 **/*.log
 **/*.env
+!.gitignore
+
+# Work space setting to Project IDX
+!.vscode/
