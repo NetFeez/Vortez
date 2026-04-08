@@ -11,4 +11,5 @@ export { Utilities } from "./utilities/Utilities.js";
 export * as Beta from "./beta/Beta.js";
 export { ServerError } from "./server/ServerError.js";
 export { Router } from "./server/router/Router.js";
+export { Config } from "./server/config/Config.js";
 export { Server as default, Server as Vortez } from "./server/Server.js";
