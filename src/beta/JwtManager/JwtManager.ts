@@ -4,12 +4,14 @@ import _Algorithm from "./algorithm/Algorithm.js";
 import _JwtUtils from "./JwtUtils.js";
 import _KeyEntry from "./KeyEntry.js";
 import _Jwt from "./Jwt.js";
+import _JwtError from "./JwtError.js";
 
 export { KeyGenerator } from "./KeyGenerator.js";
 export { Algorithm } from "./algorithm/Algorithm.js";
 export { JwtUtils } from "./JwtUtils.js";
 export { KeyEntry as KIDEntry } from "./KeyEntry.js";
 export { Jwt } from "./Jwt.js";
+export { JwtError } from "./JwtError.js";
 
 export class JwtManager {    
     protected KIDMap: JwtManager.KIDMap = {};
@@ -49,7 +51,7 @@ export class JwtManager {
     public sign(payload: JwtManager.Jwt.Payload, header: Partial<JwtManager.Jwt.Header> = {}): string {
         const kid = header.kid || this.defaultEntry.kid;
         const entry = this.KIDMap[kid];
-        if (!entry) throw new Error(`No key found for kid: ${kid}`);
+        if (!entry) throw new JwtManager.JwtError('KEY_NOT_FOUND', `No key found for kid: ${kid}`);
 
         const { signer, alg } = entry;
 
@@ -59,26 +61,40 @@ export class JwtManager {
         const encodedPayload = JwtManager.JwtUtils.objectToBase64Url(payload);
         const content = `${encodedHeader}.${encodedPayload}`;
         
-        const signature = signer.sign(content);
+        let signature = '';
+        try {
+            signature = signer.sign(content);
+        } catch (error) {
+            throw new JwtManager.JwtError('SIGN_FAILED', 'Failed to sign token', { cause: error });
+        }
 
         return `${content}.${signature}`;
     }
     public parse(token: string): JwtManager.Jwt {
+        let tokenParts: JwtManager.JwtUtils.JwtParts;
+        try {
+            tokenParts = JwtManager.JwtUtils.getJwtParts(token);
+        } catch (error) {
+            throw new JwtManager.JwtError('TOKEN_INVALID', 'Invalid token', { cause: error });
+        }
+
         const {
             header, payload, signature,
             encodedHeader, encodedPayload
-        } = JwtManager.JwtUtils.getJwtParts(token);
+        } = tokenParts;
 
         const kid = header.kid || this.defaultEntry.kid;
         const entry = this.KIDMap[kid];
-        if (!entry) throw new Error(`No key found for kid: ${kid}`);
+        if (!entry) throw new JwtManager.JwtError('KEY_NOT_FOUND', `No key found for kid: ${kid}`);
 
         const signer = entry.signer;
         const content = `${encodedHeader}.${encodedPayload}`;
-        if (!signer.verify(content, signature)) throw new Error('Invalid signature'); 
+        if (!signer.verify(content, signature)) {
+            throw new JwtManager.JwtError('INVALID_SIGNATURE', 'Invalid signature');
+        }
 
         const jwt = new JwtManager.Jwt(header, payload, signature, signer);
-        if (jwt.expired) throw new Error('Token has expired');
+        if (jwt.expired) throw new JwtManager.JwtError('TOKEN_EXPIRED', 'Token has expired');
 
         return jwt; 
     }
@@ -104,6 +120,7 @@ export namespace JwtManager {
     export import JwtUtils = _JwtUtils;
     export import KeyEntry = _KeyEntry;
     export import Jwt = _Jwt;
+    export import JwtError = _JwtError;
 
     export type KeyOption =  KeyEntry | KeyEntry.KeyEntryOptions; 
     export interface KIDMap {
