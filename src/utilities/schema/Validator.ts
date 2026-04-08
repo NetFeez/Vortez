@@ -8,7 +8,7 @@ import type { Schema } from './Schema.js';
 
 import { SchemaError } from './SchemaError.js';
 
-export class SchemaStructureValidator {
+export class Validator {
     /**
      * Validates the structure of a schema, used for validating the structure of a schema and nested objects.
      * @param schema The schema to validate
@@ -115,7 +115,7 @@ export class SchemaStructureValidator {
      * @param prop The string property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateString(value: string, prop: Schema.Property.String, key: string) {
+    public static validateString(value: string, prop: Schema.Property.String, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'string') throw new SchemaError(`Property ${key} must be a string`);
         if (prop.enum !== undefined && !prop.enum.includes(value)) {
@@ -137,7 +137,7 @@ export class SchemaStructureValidator {
      * @param prop The number property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateNumber(value: number, prop: Schema.Property.Number, key: string) {
+    public static validateNumber(value: number, prop: Schema.Property.Number, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'number') throw new SchemaError(`Property ${key} must be a number`);
         if (prop.minimum !== undefined && value < prop.minimum) {
@@ -153,7 +153,7 @@ export class SchemaStructureValidator {
      * @param prop The boolean property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateBoolean(value: boolean, prop: Schema.Property.Boolean, key: string) {
+    public static validateBoolean(value: boolean, prop: Schema.Property.Boolean, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'boolean') throw new SchemaError(`Property ${key} must be a boolean`);
     }
@@ -163,7 +163,7 @@ export class SchemaStructureValidator {
      * @param prop The object property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateObject(value: any, prop: Schema.Property.Object, key: string) {
+    public static validateObject(value: any, prop: Schema.Property.Object, key: string) {
         if (value == null && prop.nullable === true) return;
         if (typeof value !== 'object' || Array.isArray(value)) {
             throw new SchemaError(`Property ${key} must be an object`);
@@ -176,7 +176,7 @@ export class SchemaStructureValidator {
      * @param prop The array property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateArray(value: any, prop: Schema.Property.Array, key: string) {
+    public static validateArray(value: any, prop: Schema.Property.Array, key: string) {
         if (value == null && prop.nullable === true) return;
         if (!Array.isArray(value)) throw new SchemaError(`Property ${key} must be an array`);
         if (prop.minimum !== undefined && value.length < prop.minimum) {
@@ -195,7 +195,7 @@ export class SchemaStructureValidator {
      * @param prop The property definition to validate against
      * @param key The key of the property, used for error messages
      */
-    private static validateValue(value: any, prop: Schema.property, key: string) {
+    public static validateValue(value: any, prop: Schema.property, key: string) {
         switch (prop.type) {
             case 'string': this.validateString(value, prop, key); break;
             case 'number': this.validateNumber(value, prop, key); break;
@@ -206,5 +206,5 @@ export class SchemaStructureValidator {
         }
     }
 }
-export namespace SchemaStructureValidator {}
-export default SchemaStructureValidator;
+export namespace Validator {}
+export default Validator;

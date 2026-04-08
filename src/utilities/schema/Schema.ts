@@ -8,18 +8,18 @@ import type Utilities from '../Utilities.js';
 
 import _SchemaError from './SchemaError.js';
 import _JSONSchema from './JSONSchema.js';
-import _SchemaIntrospection from './SchemaIntrospection.js';
-import _SchemaStructureValidator from './SchemaStructureValidator.js';
+import _Introspection from './Introspection.js';
+import _Validator from './Validator.js';
 
 export { SchemaError } from './SchemaError.js';
 export { JSONSchema } from './JSONSchema.js';
-export { SchemaIntrospection } from './SchemaIntrospection.js';
-export { SchemaStructureValidator } from './SchemaStructureValidator.js';
+export { Introspection } from './Introspection.js';
+export { Validator } from './Validator.js';
 
 export class Schema<const S extends Schema.Schema> {
     constructor(
         public readonly schema: S
-    ) { this.validateStructure(); }
+    ) { Schema.Validator.validateStructure(schema); }
     /**
      * Get the inferred type of the schema.
      * 
@@ -39,11 +39,17 @@ export class Schema<const S extends Schema.Schema> {
         return {} as Schema.Infer<this['schema']>;
     }
     /**
-     * get the infered schema to process as an object
-     * is only to be used for testing purposes
-     * this method only returns an empty object with the respective infered type
-     * this method is not able to be used out of development
-     * @returns the infered schema
+     * Get the inferred type of the schema for processing (i.e., before applying defaults and handling optional properties).
+     * 
+     * ⚠️ IMPORTANT: This getter returns an EMPTY object. It is designed ONLY for type inference.
+     * 
+     * Usage: Use with `typeof` to extract the inferred type for processing:
+     * ```typescript
+     * type inferedToProcess = typeof schemaInstance.inferToProcess;
+     * ```
+     * 
+     * DO NOT use the returned value at runtime - it's always an empty object.
+     * This is purely a TypeScript type utility.
      */
     public get inferToProcess(): Schema.InferToProcess<this['schema']> {
         return {} as Schema.InferToProcess<this['schema']>;
@@ -63,47 +69,6 @@ export class Schema<const S extends Schema.Schema> {
      * @returns the list of unique keys
      */
     public get uniques(): string[] { return this.listUniques(); }
-    /**
-     * Validates the overall structure of the schema.
-     * @param schema Optional partial schema to validate, defaults to the full schema.
-     * @param parentKey The key path to the current schema, used for error reporting.
-     */
-    protected validateStructure(schema?: Schema.Schema, parentKey?: string) {
-        const useSchema = schema ?? this.schema;
-        Schema.SchemaStructureValidator.validateStructure(useSchema, parentKey);
-    }
-    /**
-     * Validates a single property within the schema.
-     * @param prop The property to validate.
-     * @param key The key of the property, used for error reporting.
-     */
-    protected validateProperty(prop: Schema.property, key: string): void {
-        Schema.SchemaStructureValidator.validateProperty(prop, key);
-    }
-    /**
-     * Validates the default value of a property.
-     * @param prop The property to validate.
-     * @param key The key of the property, used for error reporting.
-    */
-    protected validateDefaultValue(prop: Schema.property, key: string) {
-        Schema.SchemaStructureValidator.validateDefaultValue(prop, key);
-    }
-    /**
-     * Validates a string property.
-     * @param prop The string property definition.
-     * @param key The key of the property, used for error reporting.
-     */
-    protected validateStringProperty(prop: Schema.Property.String, key: string): void {
-        Schema.SchemaStructureValidator.validateStringProperty(prop, key);
-    }
-    /**
-     * Validates a number property.
-     * @param prop The number property definition.
-     * @param key The key of the property, used for error reporting.
-     */
-    protected validateNumberProperty(prop: Schema.Property.Number, key: string): void {
-        Schema.SchemaStructureValidator.validateNumberProperty(prop, key);
-    }
     /**
      * process the provided data
      * @param data the data to process
@@ -181,11 +146,11 @@ export class Schema<const S extends Schema.Schema> {
             else return undefined;
         }
         switch (prop.type) {
-            case 'string': this.validateString(data, prop, key); return data;
-            case 'number': this.validateNumber(data, prop, key); return data;
-            case 'boolean': this.validateBoolean(data, prop, key); return data;
-            case 'array': this.validateArray(data, prop, key); return this.processArray(data, prop, key);
-            case 'object': this.validateObject(data, prop, key, partial); return this.processObject(data, prop, key, partial);
+            case 'string': Schema.Validator.validateString(data, prop, key); return data;
+            case 'number': Schema.Validator.validateNumber(data, prop, key); return data;
+            case 'boolean': Schema.Validator.validateBoolean(data, prop, key); return data;
+            case 'array': Schema.Validator.validateArray(data, prop, key); return this.processArray(data, prop, key);
+            case 'object': Schema.Validator.validateObject(data, prop, key); return this.processObject(data, prop, key, partial);
             default: throw new Schema.SchemaError(`Unknown type in property ${key}`);
         }
     }
@@ -215,71 +180,6 @@ export class Schema<const S extends Schema.Schema> {
         catch (error) { throw new Schema.SchemaError(`Property ${key} is not valid: ${error}`); }
     }
     /**
-     * validate a string
-     * @param value the value to validate
-     * @param prop the property to validate
-     * @param key the key of the property
-     * @throws schemaError if the data is not valid
-     */
-    protected validateString(value: string, prop: Schema.Property.String, key: string) {
-        if (value == null && prop.nullable === true) return;
-        if (typeof value !== 'string') throw new Schema.SchemaError(`Property ${key} must be a string`);
-        if (prop.enum !== undefined && !prop.enum.includes(value)) {
-            throw new Schema.SchemaError(`Property ${key} must be one of: ${prop.enum.join(', ')}`);
-        }
-        if (prop.minLength !== undefined && value.length < prop.minLength) {
-            throw new Schema.SchemaError(`Property ${key} must have a minimum length of ${prop.minLength}`);
-        }
-        if (prop.maxLength !== undefined && value.length > prop.maxLength) {
-            throw new Schema.SchemaError(`Property ${key} must have a maximum length of ${prop.maxLength}`);
-        }
-        if (prop.pattern && !prop.pattern.test(value)) {
-            throw new Schema.SchemaError(`Property ${key} must match the pattern ${prop.pattern}`);
-        }
-    }
-    /**
-     * validate a number
-     * @param value the value to validate
-     * @param prop the property to validate
-     * @param key the key of the property
-     * @throws schemaError if the data is not valid
-     */
-    protected validateNumber(value: number, prop: Schema.Property.Number, key: string) {
-        if (value == null && prop.nullable === true) return;
-        if (typeof value !== 'number') throw new Schema.SchemaError(`Property ${key} must be a number`);
-        if (prop.minimum !== undefined && value < prop.minimum) {
-            throw new Schema.SchemaError(`Property ${key} must be greater than or equal to ${prop.minimum}`);
-        }
-        if (prop.maximum !== undefined && value > prop.maximum) {
-            throw new Schema.SchemaError(`Property ${key} must be less than or equal to ${prop.maximum}`);
-        }
-    }
-    /**
-     * validate a boolean
-     * @param value the value to validate
-     * @param prop the property to validate
-     * @param key the key of the property
-     * @throws schemaError if the data is not valid
-     */
-    protected validateBoolean(value: boolean, prop: Schema.Property.Boolean, key: string) {
-        if (value == null && prop.nullable === true) return;
-        if (typeof value !== 'boolean') throw new Schema.SchemaError(`Property ${key} must be a boolean`);
-    }
-    /**
-     * validate a object
-     * @param value the value to validate
-     * @param prop the property to validate
-     * @param key the key of the property
-     * @throws schemaError if the data is not valid
-    */
-    protected validateObject(value: any, prop: Schema.Property.Object, key: string, partial = true) {
-        if (value == null && prop.nullable === true) return;
-        if (typeof value !== 'object' || Array.isArray(value)) {
-            throw new Schema.SchemaError(`Property ${key} must be an object`);
-        }
-        this.validateStructure(prop.schema, key);
-    }
-    /**
      * validate a array
      * @param value the value to validate
      * @param prop the property to validate
@@ -304,7 +204,7 @@ export class Schema<const S extends Schema.Schema> {
     */
     protected listUniques(doc?: Schema.Schema, parentKey?: string): string[] {
         const useDoc = doc ?? this.schema;
-        return Schema.SchemaIntrospection.listUniques(useDoc, parentKey);
+        return Schema.Introspection.listUniques(useDoc, parentKey);
     }
     /**
      * convert a schema to a JSON schema
@@ -313,7 +213,7 @@ export class Schema<const S extends Schema.Schema> {
     */
     protected toJsonSchema(schema?: Schema.Schema): Schema.JSONSchema.schema {
         const useSchema = schema ?? this.schema;
-        return Schema.SchemaIntrospection.toJsonSchema(useSchema);
+        return Schema.Introspection.toJsonSchema(useSchema);
     }
     /**
      * -- TYPE GUARD --
@@ -331,8 +231,8 @@ export class Schema<const S extends Schema.Schema> {
 export namespace Schema {
     export import SchemaError = _SchemaError;
     export import JSONSchema = _JSONSchema;
-    export import SchemaIntrospection = _SchemaIntrospection;
-    export import SchemaStructureValidator = _SchemaStructureValidator;
+    export import Introspection = _Introspection;
+    export import Validator = _Validator;
 
     export type Infer<S extends Schema> = Schema.Infer.schema<S>;
     export type InferToProcess<S extends Schema> = Schema.Infer.schemaToProcess<S>;

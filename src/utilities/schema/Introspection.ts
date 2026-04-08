@@ -7,7 +7,7 @@
 import type { JSONSchema } from './JSONSchema.js';
 import type { Schema } from './Schema.js';
 
-export class SchemaIntrospection {
+export class Introspection {
     /**
      * Lists all unique properties in a schema, including nested unique properties, and returns their full paths.
      * @param doc The schema to list unique properties from
@@ -76,5 +76,5 @@ export class SchemaIntrospection {
         return sch;
     }
 }
-export namespace SchemaIntrospection {}
-export default SchemaIntrospection;
+export namespace Introspection {}
+export default Introspection;
