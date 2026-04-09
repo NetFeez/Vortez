@@ -17,15 +17,15 @@ export class Request {
 	public headers: Request.Headers;
 	/** Contains the request cookies. */
 	public cookies: Cookie;
-	/** Contains the POST data sent. */
+	/** Contains the query string parameters sent. */
 	public searchParams: Request.SearchParams;
 	/** Contains the IP address of the requester. */
 	public ip?: string | string[];
 	/** Contains the request method. */
 	public method: Request.Method;
-	/** Contains the POSTParser. */
-	public session: Session;
 	/** Contains the session of the device that made the request. */
+	public session: Session;
+	/** Contains the request body parser. */
 	private body: Request.BodyParser;
 	/** Contains the HTTP request received by the server. */
 	private httpRequest: HTTP.IncomingMessage;

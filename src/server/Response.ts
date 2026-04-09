@@ -149,10 +149,10 @@ export class Response {
         relativePath = relativePath.endsWith('/') ? relativePath.slice(0, -1) : relativePath;
 		const path = Utilities.Path.normalize(basePath + relativePath);
         try {
-			if (!await this.fileExist(path)) return void this.sendError(404, 'The requested URL was not fount');
+			if (!await this.fileExist(path)) return void this.sendError(404, 'The requested URL was not found');
             const details = await FS.promises.stat(path);
             if (details.isFile()) return this.sendFile(path);
-            if (!details.isDirectory()) return this.sendError(404, 'The requested URL was not fount');
+			if (!details.isDirectory()) return this.sendError(404, 'The requested URL was not found');
             const folder = await FS.promises.readdir(path);
             if (this.templates.folder) {
                 this.sendTemplate(this.templates.folder, {
