@@ -35,7 +35,7 @@ export class Response {
         this.templates = templates;
         this.httpResponse = httpResponse;
         this.httpResponse.setHeader('X-Powered-By', 'MyNetFeez-Labs Vortez');
-        this.httpResponse.setHeader('X-Version', '3.7.0-dev.18');
+		this.httpResponse.setHeader('X-Version', '5.0.0-dev.19');
     }
 	/** Checks if the response has been sent. */
 	public get isSended(): boolean { return this._isSended || this.httpResponse.writableEnded || this.httpResponse.headersSent; }
