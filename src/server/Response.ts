@@ -17,6 +17,7 @@ import Config from './config/Config.js';
 const logger = new Logger({ prefix: 'Response' });
 
 export class Response {
+	private static readonly version = Response.loadVersion();
 	/** Contains the request received by the server. */
 	public request: Request;
 	/** Contains the list of server response templates. */
@@ -35,7 +36,7 @@ export class Response {
         this.templates = templates;
         this.httpResponse = httpResponse;
         this.httpResponse.setHeader('X-Powered-By', 'MyNetFeez-Labs Vortez');
-		this.httpResponse.setHeader('X-Version', '5.0.0-dev.19');
+		this.httpResponse.setHeader('X-Version', Response.version);
     }
 	/** Checks if the response has been sent. */
 	public get isSended(): boolean { return this._isSended || this.httpResponse.writableEnded || this.httpResponse.headersSent; }
@@ -155,7 +156,15 @@ export class Response {
 				this.send(stream, { status: 206, headers });
             }
         } catch(error) {
-            this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File does not exist.');
+			const status = this.getFsErrorStatus(error);
+			const message = status === 404
+				? 'The requested URL was not found'
+				: status === 403
+					? 'Access denied to requested resource'
+					: error instanceof Error
+						? error.message
+						: '[Response Error] - File does not exist.';
+			await this.sendError(status, message);
 			logger.error(`error sending file ${this.request.session.id}`, error);
 		}
 	}
@@ -187,7 +196,15 @@ export class Response {
                 });
             }
         } catch(error) {
-            this.sendError(500, error instanceof Error ? error.message : '[Response Error] - File/Directory does not exist.');
+			const status = this.getFsErrorStatus(error);
+			const message = status === 404
+				? 'The requested URL was not found'
+				: status === 403
+					? 'Access denied to requested resource'
+					: error instanceof Error
+						? error.message
+						: '[Response Error] - File/Directory does not exist.';
+			await this.sendError(status, message);
 			logger.error(`error sending folder ${this.request.session.id}`, error);
 		}
 	}
@@ -206,7 +223,15 @@ export class Response {
 			const headers = options.headers || this.generateHeaders('html');
 			this.send(template, { status, headers });
         } catch(error) {
-            this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Template does not exist.');
+			const status = this.getFsErrorStatus(error);
+			const message = status === 404
+				? 'Template not found'
+				: status === 403
+					? 'Access denied to template resource'
+					: error instanceof Error
+						? error.message
+						: '[Response Error] - Template does not exist.';
+			await this.sendError(status, message);
 			logger.error(`error sending template ${this.request.session.id}`, error);
 		}
 	}
@@ -247,12 +272,36 @@ export class Response {
                 this.send(template, { status: status, headers });
             }
         } catch(error) {
-			console.error(error);
 			const headers = this.generateHeaders('txt');
             this.send(`Error: ${status} -> ${message}`, { status: status, headers });
 			logger.error(`error sending error: ${this.request.session.id}`, error);
 		}
 	}
+
+	private getFsErrorStatus(error: unknown): number {
+		if (!(error instanceof Error)) return 500;
+		const withCode = error as Error & { code?: string };
+		if (withCode.code === 'ENOENT' || withCode.code === 'ENOTDIR') return 404;
+		if (withCode.code === 'EACCES' || withCode.code === 'EPERM') return 403;
+		return 500;
+	}
+
+	private static loadVersion(): string {
+		const envVersion = process.env.npm_package_version;
+		if (envVersion) return envVersion;
+
+		try {
+			const packagePath = Utilities.Path.normalize(`${Utilities.Path.moduleDir}/package.json`);
+			const raw = FS.readFileSync(packagePath, 'utf8');
+			const data = JSON.parse(raw) as { version?: string };
+			if (typeof data.version === 'string' && data.version.length > 0) return data.version;
+		} catch {
+			/* Keep fallback when package metadata is unavailable. */
+		}
+
+		return 'unknown';
+	}
+
 	private async fileExist(path: string): Promise<boolean> {
 		try { await FS.promises.stat(path); return true; }
 		catch(error) { return false; }
