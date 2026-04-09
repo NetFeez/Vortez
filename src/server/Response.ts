@@ -190,7 +190,7 @@ export class Response {
                     folder
                 });
             } else {
-                this.sendTemplate(Utilities.Path.relative('./global/Template/Folder.vhtml'), {
+				this.sendTemplate(Utilities.Path.relative('./global/template/folder.vhtml'), {
                     Url: this.request.url,
                     folder
                 });
@@ -265,7 +265,7 @@ export class Response {
 				const headers = this.generateHeaders('html');
                 this.send(template, { status: status, headers });
             } else {
-                const template = await Template.load(Utilities.Path.relative('./global/Template/Error.vhtml'), {
+				const template = await Template.load(Utilities.Path.relative('./global/template/error.vhtml'), {
                     status, message
                 });
 				const headers = this.generateHeaders('html');
