@@ -162,6 +162,10 @@ const server = new Vortez(config);
 await server.start();
 ```
 
+> [!NOTE]
+> Template defaults are absolute by design and point to this module's bundled `global/Template/*` files.
+> If you set `templates.error` or `templates.folder` yourself, you can still use paths relative to your own project.
+
 This workflow is also covered in the dedicated examples repository.
 
 ### Examples Repository
@@ -562,6 +566,12 @@ server.config.set('ssl', {
 ```
 
 The framework will automatically create an HTTPS server alongside the HTTP server.
+
+### Template Path Behavior
+
+- `templates.error` and `templates.folder` default to absolute module paths inside Vortez's own `global/Template` directory.
+- This is intentional so defaults work consistently regardless of where your app is executed from.
+- When you provide your own template paths, relative paths are allowed and resolved from your app/project context.
 
 ### Available Configuration Keys
 

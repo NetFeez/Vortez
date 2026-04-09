@@ -1,5 +1,8 @@
-import { Schema, Flatten } from "../../utilities/Utilities.js";
+import Utilities, { Schema, Flatten } from "../../utilities/Utilities.js";
 import _Loader from "./Loader.js";
+
+export const DEFAULT_FOLDER_TEMPLATE = Utilities.Path.normalize(`${Utilities.Path.moduleDir}/global/Template/Folder.vhtml`);
+export const DEFAULT_ERROR_TEMPLATE = Utilities.Path.normalize(`${Utilities.Path.moduleDir}/global/Template/Error.vhtml`);
 
 export const SCHEMA_LOGGER_PROP = new Schema({
     show: { type: 'boolean', default: true },
@@ -21,8 +24,8 @@ export const SCHEMA_SSL = new Schema({
 });
 
 export const SCHEMA_TEMPLATES = new Schema({
-    folder: { type: 'string', default: './global/Template/Folder.vhtml' },
-    error: { type: 'string', default: './global/Template/Error.vhtml' }
+    folder: { type: 'string', default: DEFAULT_FOLDER_TEMPLATE },
+    error: { type: 'string', default: DEFAULT_ERROR_TEMPLATE }
 });
 
 export const SCHEMA_ROUTING = new Schema({
@@ -37,8 +40,8 @@ export const SCHEMA_HANDLER = new Schema({
         algorithm: 'FIFO'
     }, schema: SCHEMA_ROUTING.schema },
     templates: { type: 'object', default: {
-            folder: './global/Template/Folder.vhtml',
-            error: './global/Template/Error.vhtml'
+            folder: DEFAULT_FOLDER_TEMPLATE,
+            error: DEFAULT_ERROR_TEMPLATE
         }, schema: SCHEMA_TEMPLATES.schema
     },
     logger: { type: 'object', default: {
