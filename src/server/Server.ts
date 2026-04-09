@@ -92,7 +92,11 @@ export class Server {
 		try {
 			logger.info('&C(255,180,220)╭─────────────────────────────');
 			logger.info('&C(255,180,220)│ &C1Stopping server...');
-			if (!this.HttpServer && !this.HttpsServer) throw Error('No server to stop');
+			if (!this.HttpServer && !this.HttpsServer) {
+				logger.info('&C(255,180,220)│ &C3No active servers to stop');
+				logger.info('&C(255,180,220)╰─────────────────────────────');
+				return;
+			}
 			if (this.HttpServer) {
 				await this.stopHTTP();
 				this.HttpServer = null;
