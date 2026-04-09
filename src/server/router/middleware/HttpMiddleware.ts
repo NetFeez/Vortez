@@ -15,7 +15,7 @@ import Middleware from './Middleware.js';
 const logger = LoggerManager.getInstance();
 
 export class HttpMiddleware extends Middleware<HttpRule> {
-    public clone(): HttpMiddleware { return new HttpMiddleware(this.pipeline, this.errorPipeline); }
+    public clone(): HttpMiddleware { return new HttpMiddleware([...this.pipeline], [...this.errorPipeline]); }
     /**
      * Runs the middleware pipeline.
      * @param request - The request received by the server.
