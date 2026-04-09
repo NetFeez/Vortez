@@ -114,18 +114,39 @@ export class Response {
 				headers['content-length'] = details.size.toString();
 				this.send(stream, { status: 200, headers });
             } else {
-                const info = /bytes=(\d*)?-?(\d*)?/i.exec(this.request.headers.range);
-                if (!info) return this.sendError(416, 'Requested range exceeds file size');
-				const [startString, endString] = info.slice(1);
-                if (!startString) return this.sendError(416, 'Requested range exceeds file size');
-                const start = Number(startString);
-				const maxSize = start + 1024 * 1000;
-                const end = endString
-					? Number(endString)
-					: maxSize >= details.size
-						? details.size - 1
-						: maxSize;
-				if (start > details.size || end > details.size) return this.sendError(416, 'Requested range exceeds file size');
+				const rangeHeader = this.request.headers.range;
+				const info = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader);
+				if (!info) return this.sendError(416, 'Requested range exceeds file size');
+
+				const [, startString, endString] = info;
+				let start: number;
+				let end: number;
+
+				if (startString && endString) {
+					start = Number(startString);
+					end = Number(endString);
+				} else if (startString) {
+					start = Number(startString);
+					const maxSize = start + 1024 * 1000;
+					end = maxSize >= details.size ? details.size - 1 : maxSize;
+				} else if (endString) {
+					const suffixSize = Number(endString);
+					if (!Number.isInteger(suffixSize) || suffixSize <= 0) {
+						return this.sendError(416, 'Requested range exceeds file size');
+					}
+					start = Math.max(details.size - suffixSize, 0);
+					end = details.size - 1;
+				} else return this.sendError(416, 'Requested range exceeds file size');
+
+				if (
+					!Number.isInteger(start) ||
+					!Number.isInteger(end) ||
+					start < 0 ||
+					end < start ||
+					start >= details.size ||
+					end >= details.size
+				) return this.sendError(416, 'Requested range exceeds file size');
+				
 				const size = end - start + 1;
 				const stream = FS.createReadStream(path, { start, end });
 				const headers = this.generateHeaders(PATH.extname(path));
