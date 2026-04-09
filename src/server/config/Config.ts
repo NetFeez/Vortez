@@ -70,7 +70,7 @@ export class Config {
     }
     public set<T extends keyof Config.props>(path: T, value: Config.props[T]): void {
         this.props[path] = value;
-        this.props[path] = value;
+        this.data = Flatten.unObject(this.props);
     }
     /**
      * Saves the config to the specified path.
