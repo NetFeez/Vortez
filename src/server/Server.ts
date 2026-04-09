@@ -82,7 +82,7 @@ export class Server {
 		} catch(error) {
 			logger.error(`&C(255,180,220)│ &C1✖ Error starting server: &R&C6${error instanceof Error ? error.message : error}`);
 			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
-			this.stop();
+			await this.stop();
 		}
 	}
 	/**
@@ -145,7 +145,17 @@ export class Server {
 		const http = HTTP.createServer();
 		http.on('request', this.router.requestManager.bind(this.router));
 		http.on('upgrade', this.router.upgradeManager.bind(this.router));
-		return new Promise((resolve) => http.listen(port, host, () => resolve(http)));
+		return new Promise((resolve, reject) => {
+			const errorHandler = (error: Error): void => {
+				http.off('error', errorHandler);
+				reject(error);
+			};
+			http.once('error', errorHandler);
+			http.listen(port, host, () => {
+				http.off('error', errorHandler);
+				resolve(http);
+			});
+		});
 	}
 	/**
 	 * Initializes the HTTPS server.
@@ -159,7 +169,17 @@ export class Server {
 		const https = HTTPS.createServer(cert);
 		https.on('request', this.router.requestManager.bind(this.router));
 		https.on('upgrade', this.router.upgradeManager.bind(this.router));
-		return new Promise((resolve) => https.listen(port, host, () => resolve(https)));
+		return new Promise((resolve, reject) => {
+			const errorHandler = (error: Error): void => {
+				https.off('error', errorHandler);
+				reject(error);
+			};
+			https.once('error', errorHandler);
+			https.listen(port, host, () => {
+				https.off('error', errorHandler);
+				resolve(https);
+			});
+		});
 	}
 	/**
 	 * Defines default `.vhtml` templates for the server.
