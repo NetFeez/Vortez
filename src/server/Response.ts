@@ -44,10 +44,10 @@ export class Response {
 	 * More types will be supported over time.
 	 * @param extension - The file extension.
 	 */
-	public generateHeaders(extension: string): Request.Headers {
+	public generateHeaders(extension: string): HTTP.OutgoingHttpHeaders {
 		extension = extension.startsWith('.') ? extension.slice(1) : extension;
         extension = extension.toLowerCase();
-		const headers: Request.Headers = {};
+		const headers: HTTP.OutgoingHttpHeaders = {};
 		const contentTypeMap: Response.contentTypeMap = {
             'html': 'text/html',
             'js': 'text/javascript',
@@ -78,7 +78,7 @@ export class Response {
 	 * @param code - The HTTP status code.
 	 * @param headers - The headers to send.
 	 */
-	private sendHeaders(code: number, headers: Request.Headers): void {
+	private sendHeaders(code: number, headers: HTTP.OutgoingHttpHeaders): void {
 		const cookieSetters = this.request.cookies.getSetters();
 		if (cookieSetters.length > 0) headers['set-cookie'] = cookieSetters;
 		this.httpResponse.writeHead(code, headers);
@@ -241,7 +241,7 @@ export class Response {
 export namespace Response {
 	export interface options {
 		status?: number;
-		headers?: Request.Headers; 
+		headers?: HTTP.OutgoingHttpHeaders; 
 		encode?: BufferEncoding;
 	}
 	export interface contentTypeMap {
