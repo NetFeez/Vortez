@@ -41,7 +41,8 @@ export class BodyParser {
             this.httpRequest.on('end', () => resolve(Buffer.concat(chunks)));
             this.httpRequest.on('error', (error) => reject(Error('fail parsing request body', { cause: error })));
             this.httpRequest.on('data', (chunk) => {
-                if(chunks.length > 1e+8) return void this.httpRequest.destroy();
+                const size = chunks.reduce((total, current) => total + current.length, 0) + chunk.length;
+                if (size > 1e+8) return void this.httpRequest.destroy(Error('Request body is too large'));
                 chunks.push(chunk);
             });
         });
@@ -86,7 +87,8 @@ export class BodyParser {
 		const fragments = decoded.split('&');
 		fragments.forEach((pair) => {
 		    const [key, value] = pair.split('=');
-		    content[decodeURIComponent(key)] = decodeURIComponent(value);
+		    const normalizedKey = this.safeDecodeURIComponent(key.replace(/\+/g, ' '));
+		    content[normalizedKey] = this.safeDecodeURIComponent((value ?? '').replace(/\+/g, ' '));
 		});
         return {
             mimeType: 'application/x-www-form-urlencoded',
@@ -149,6 +151,15 @@ export class BodyParser {
 		if (result == null) return null;
 		return result[1];
 	}
+    /** 
+	 * Safely decodes a URI component, returning the original value if decoding fails.
+	 * @param value - The value to decode.
+	 * @returns The decoded value or the original if decoding fails.
+	 */
+    private safeDecodeURIComponent(value: string): string {
+        try { return decodeURIComponent(value); }
+        catch { return value; }
+    }
 }
 export namespace BodyParser {
 	export namespace Body {
