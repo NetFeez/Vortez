@@ -11,6 +11,7 @@ import Chunk from './Chunk.js';
 import Cookie from '../Cookie.js';
 import Request from '../Request.js';
 import LoggerManager from '../LoggerManager.js';
+import ServerError from '../ServerError.js';
 
 const logger = LoggerManager.getInstance().webSocket;
 
@@ -35,8 +36,9 @@ export class Websocket extends EVENTS {
      * Accepts the connection with the client.
      */
     public accept(): void  {
-        this._status = 'accepted';
         const key = this.request.headers['sec-websocket-key']?.trim();
+        if (!key) throw new ServerError('Missing Sec-WebSocket-Key header', 400);
+        this._status = 'accepted';
         const acceptToken = CRYPTO.createHash('SHA1').update(
             key + Websocket.WEBSOCKET_GUID
         ).digest('base64');
