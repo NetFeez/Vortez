@@ -100,13 +100,13 @@ export class Router {
 	 * @remarks This method attempts to route the incoming HTTP request using the routing algorithm.
 	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
 	 */
-	public requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): void {
+	public async requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): Promise<void> {
 		const request = new Request(HttpRequest);
 		const response = new Response(request, HttpResponse, this.config.data.templates);
 		const sessionID = request.cookies.get('Session');
 		logger.request.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeRequest(request, response);
-		if (!isRouted) response.sendError(400, `No router for: ${request.method} -> ${request.url}`);
+		if (!isRouted) await response.sendError(404, `No route for: ${request.method} -> ${request.url}`);
 	}
 
 	/**
@@ -123,7 +123,7 @@ export class Router {
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeWebSocket(request, webSocket);
-		if (!isRouted) webSocket.reject(400, `No router for: ${request.method} -> ${request.url}`);
+		if (!isRouted) webSocket.reject(404, `No route for: ${request.method} -> ${request.url}`);
 	}
 	/**
 	 * Routes incoming HTTP requests to be processed.
