@@ -8,13 +8,13 @@ export class Path {
     public static readonly rootDir: string = process.cwd();
 
     /**
-     * Normalizes a path, resolving '..' and '.' segments and removing redundant slashes.
-     * @param path - The path to normalize.
-     * @return The normalized path.
+     * Normalizes a file path by replacing multiple slashes with a single separator and ensuring consistent use of separators.
+     * @param path - The file path to normalize.
+     * @return The normalized file path.
      */
     public static normalize(path: string): string {
-        path = path.replace(/(?:\/|\\)+/g, PATH.sep);
-        return PATH.normalize(path);
+        path = path.replace(/[\\/]+/g, PATH.sep);
+        return path;
     }
     /**
      * Resolves an absolute path from the root of the user project.

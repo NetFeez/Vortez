@@ -13,6 +13,7 @@ import Logger from '../logger/Logger.js';
 import Utilities from '../utilities/Utilities.js';
 import Template from '../Template.js';
 import Config from './config/Config.js';
+import PathSecurity from './security/PathSecurity.js';
 
 const logger = new Logger({ prefix: 'Response' });
 
@@ -175,21 +176,21 @@ export class Response {
 	 * @throws If the folder does not exist or is invalid.
 	 */
 	public async sendFolder(base: string, plus: string = ''): Promise<void> {
-		base = Utilities.Path.resolve(base || Utilities.Path.rootDir);
-		const path = Utilities.Path.resolve(Utilities.Path.join(base, plus));
+		const basePath = Utilities.Path.resolve(base || Utilities.Path.rootDir);
+		const path = await PathSecurity.resolveInsideBase(basePath, plus);
 
-		const secureBase = base.endsWith('/') ? base : base + '/';
-		const securePath = path.endsWith('/') ? path : path + '/';
-
-		if (!securePath.startsWith(secureBase)) {
-            logger.error(`[Vortez Security] Intento de Path Traversal bloqueado:`);
-            logger.error(` - Base: ${base}`);
-            logger.error(` - Intento: ${plus}`);
-            return void this.sendError(403, 'Forbidden: Outside of sandbox');
-        }
-
+		if (!path) {
+			logger.warn(`&C2[Vortez Security] &C3Intento de Path Traversal bloqueado:`);
+			logger.warn(` &C3- IP: &C6${this.request.ip}`);
+			logger.warn(` &C3- Session ID: &C6${this.request.session.id}`);
+			logger.warn(` &C3- URL: &C6${this.request.url}`);
+			logger.warn(` &C3- Base: &C6${basePath}`);
+			logger.warn(` &C3- Intento: &C6${plus}`);
+			return void this.sendError(403, 'Forbidden: Outside of sandbox');
+		}
+		
         try {
-			if (!await this.fileExist(path)) return void this.sendError(404, 'The requested URL was not found');
+			if (!await Utilities.fileExists(path)) return void this.sendError(404, 'The requested URL was not found');
             const details = await FS.promises.stat(path);
             if (details.isFile()) return this.sendFile(path);
 			if (!details.isDirectory()) return this.sendError(404, 'The requested URL was not found');
@@ -305,16 +306,9 @@ export class Response {
 			const raw = FS.readFileSync(packagePath, 'utf8');
 			const data = JSON.parse(raw) as { version?: string };
 			if (typeof data.version === 'string' && data.version.length > 0) return data.version;
-		} catch {
-			/* Keep fallback when package metadata is unavailable. */
-		}
+		} catch {}
 
 		return 'unknown';
-	}
-
-	private async fileExist(path: string): Promise<boolean> {
-		try { await FS.promises.stat(path); return true; }
-		catch(error) { return false; }
 	}
 }
 
