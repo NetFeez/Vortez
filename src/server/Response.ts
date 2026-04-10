@@ -170,14 +170,24 @@ export class Response {
 	}
 	/**
 	 * Sends the listing of a folder as a response.
-	 * @param basePath - The routing rule base path.
-	 * @param relativePath - The relative path received in the request.
+	 * @param base - The routing rule base path.
+	 * @param plus - The relative path received in the request.
 	 * @throws If the folder does not exist or is invalid.
 	 */
-	public async sendFolder(basePath: string, relativePath: string): Promise<void> {
-        basePath = basePath.endsWith('/') ? basePath : basePath + '/';
-        relativePath = relativePath.endsWith('/') ? relativePath.slice(0, -1) : relativePath;
-		const path = Utilities.Path.normalize(basePath + relativePath);
+	public async sendFolder(base: string, plus: string = ''): Promise<void> {
+		base = Utilities.Path.resolve(base || Utilities.Path.rootDir);
+		const path = Utilities.Path.resolve(Utilities.Path.join(base, plus));
+
+		const secureBase = base.endsWith('/') ? base : base + '/';
+		const securePath = path.endsWith('/') ? path : path + '/';
+
+		if (!securePath.startsWith(secureBase)) {
+            logger.error(`[Vortez Security] Intento de Path Traversal bloqueado:`);
+            logger.error(` - Base: ${base}`);
+            logger.error(` - Intento: ${plus}`);
+            return void this.sendError(403, 'Forbidden: Outside of sandbox');
+        }
+
         try {
 			if (!await this.fileExist(path)) return void this.sendError(404, 'The requested URL was not found');
             const details = await FS.promises.stat(path);
@@ -190,7 +200,7 @@ export class Response {
                     folder
                 });
             } else {
-				this.sendTemplate(Utilities.Path.relative('./global/template/folder.vhtml'), {
+				this.sendTemplate(Utilities.Path.module('global/template/folder.vhtml'), {
                     Url: this.request.url,
                     folder
                 });
@@ -265,7 +275,7 @@ export class Response {
 				const headers = this.generateHeaders('html');
                 this.send(template, { status: status, headers });
             } else {
-				const template = await Template.load(Utilities.Path.relative('./global/template/error.vhtml'), {
+				const template = await Template.load(Utilities.Path.module('global/template/error.vhtml'), {
                     status, message
                 });
 				const headers = this.generateHeaders('html');
@@ -291,7 +301,7 @@ export class Response {
 		if (envVersion) return envVersion;
 
 		try {
-			const packagePath = Utilities.Path.normalize(`${Utilities.Path.moduleDir}/package.json`);
+			const packagePath = Utilities.Path.module('package.json');
 			const raw = FS.readFileSync(packagePath, 'utf8');
 			const data = JSON.parse(raw) as { version?: string };
 			if (typeof data.version === 'string' && data.version.length > 0) return data.version;
