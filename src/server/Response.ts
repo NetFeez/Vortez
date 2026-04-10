@@ -18,6 +18,24 @@ import PathSecurity from './security/PathSecurity.js';
 const logger = new Logger({ prefix: 'Response' });
 
 export class Response {
+	public static readonly contentTypeMap: Response.contentTypeMap = {
+        'html': 'text/html',
+        'js':   'text/javascript',
+        'css':  'text/css',
+        'json': 'application/json',
+        'xml':  'application/xml',
+        'txt':  'text/plain',
+        'svg':  'image/svg+xml',
+        'png':  'image/png',
+        'jpg':  'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'mp3':  'audio/mpeg',
+        'wav':  'audio/x-wav',
+        'mp4':  'video/mp4',
+    };
+	public static readonly acceptRangeFormats = [
+		'svg', 'png', 'jpg', 'jpeg', 'mp3', 'wav', 'mp4'
+	];
 	private static readonly version = Response.loadVersion();
 	/** Contains the request received by the server. */
 	public request: Request;
@@ -50,27 +68,9 @@ export class Response {
 		extension = extension.startsWith('.') ? extension.slice(1) : extension;
         extension = extension.toLowerCase();
 		const headers: HTTP.OutgoingHttpHeaders = {};
-		const contentTypeMap: Response.contentTypeMap = {
-            'html': 'text/html',
-            'js': 'text/javascript',
-            'css': 'text/css',
-            'json': 'application/json',
-            'xml': 'application/xml',
-            'txt': 'text/plain',
-            'svg': 'image/svg+xml',
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'mp3': 'audio/mpeg',
-            'wav': 'audio/x-wav',
-            'mp4': 'video/mp4',
-        };
-		const acceptRangeFormats = [
-			'svg', 'png', 'jpg', 'jpeg', 'mp3', 'wav', 'mp4'
-		];
-		const type = contentTypeMap[extension];
-		if (type) headers['Content-Type'] = type;
-		if (acceptRangeFormats.includes(extension)) {
+		const type = Response.contentTypeMap[extension];
+		if (type) headers['Content-Type'] = type ?? 'application/octet-stream';
+		if (Response.acceptRangeFormats.includes(extension)) {
             headers['Accept-Ranges'] = 'bytes';
         }
 		return headers;
