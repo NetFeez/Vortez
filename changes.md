@@ -32,6 +32,10 @@
 - **(Server/WebSocket)**: Overhauled the WebSocket connection lifecycle for improved security and developer experience.
   - The `WebSocket` class no longer accepts connections in its constructor. Instead, it waits in a `pending` state.
   - Added `accept()` and `reject()` methods to give the framework full control over the connection handshake.
+- **(Server/Response)**: The `send()`, `sendJson()`, `sendFile()`, `sendFolder()`, and `sendTemplate()` methods are now **async** and return `Promise<void>`. **This is a breaking change.**
+  - All response methods now require `await` in calling code for proper error handling.
+  - Added `sendReadable()` for streaming responses with backpressure support via `stream/promises`.
+  - HTTP range requests (206 Partial Content) are now properly handled in streaming contexts.
 
 # version (4.1.0)
 ## ➕ Added

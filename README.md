@@ -26,6 +26,7 @@ The package exports a default `Vortez` server class, plus named exports for `Rou
 - [Installation](#installation)
 - [Getting Started](#getting-started)
 - [Configuration Files](#configuration-files)
+- [Architecture Guide](#architecture-guide)
 - [Examples Repository](#examples-repository)
 - [Core Concepts](#core-concepts)
 - [Routing Rules](#routing-rules)
@@ -168,6 +169,10 @@ await server.start();
 
 This workflow is also covered in the dedicated examples repository.
 
+### Architecture Guide
+
+For a comprehensive guide on Vortez's internal architecture, request lifecycle, performance considerations, and deployment patterns, see [Architecture Documentation](docs/ARCHITECTURE.md).
+
 ### Examples Repository
 
 The runnable examples are being moved to a separate repository to keep this package focused.
@@ -221,28 +226,30 @@ server.router.addAction('GET', '/api/$action/$id', (request, response) => {
   console.log(request.headers);       // HTTP headers
   // For body, use: const body = await request.post;
 });
-```
-
-### Response Object
-
-The `response` object provides methods to send data back to the client:
+```. All methods are **async** and must be awaited:
 
 ```js
 // Send JSON
-response.sendJson({ key: 'value' });
+await response.sendJson({ key: 'value' });
 
 // Send HTML/text
-response.send('Hello World');
+await response.send('Hello World');
 
 // Send file
-response.sendFile('path/to/file.html');
+await response.sendFile('path/to/file.html');
 
 // Send with custom status and headers
-response.sendJson({ id: 123 }, {
+await response.sendJson({ id: 123 }, {
   status: 201,
   headers: {
     'X-Test': 'TestHeader'
   }
+});
+
+// The same options shape is supported by send, sendJson, sendFile and sendTemplate
+```
+
+> **Breaking Change in 5.0.0**: All response methods are now async. Update your route handlers to use `await` when calling response methods.
 });
 
 // The same options shape is supported by send, sendJson, sendFile and sendTemplate

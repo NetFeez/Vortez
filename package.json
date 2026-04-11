@@ -1,6 +1,6 @@
 {
   "name": "vortez",
-  "version": "5.0.0-dev.19",
+  "version": "5.0.0",
   "description": "a module for web server creation",
   "type": "module",
   "main": "build/Vortez.js",
@@ -25,7 +25,7 @@
     "build/",
     "examples/",
     "global/",
-    "tests/",
+    "docs/",
     ".gitignore",
     "changes.md",
     "LICENSE",
