@@ -33,6 +33,7 @@ The package exports a default `Vortez` server class, plus named exports for `Rou
 - [Server Configuration](#server-configuration)
 - [Use Cases](#use-cases)
 - [Development Features](#development-features)
+- [Acknowledgments](#acknowledgments)
 
 ---
 
@@ -818,6 +819,12 @@ const mailer = new Mail({
   useStartTLS: true
 });
 ```
+
+---
+
+# Acknowledgments
+
+Special thanks to my girlfriend for helping me identify and report a critical path traversal vulnerability during the 5.0.0 release process. Your support made this release safer for everyone.
 
 > [!WARNING]
 > Beta features are experimental and may change significantly. Use with caution in production.
