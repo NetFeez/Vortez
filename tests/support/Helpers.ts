@@ -7,6 +7,8 @@ import { PassThrough } from 'stream';
 import { EventEmitter } from 'events';
 import PATH from 'path';
 import { promises as FSP } from 'fs';
+import FS from 'fs';
+import { fileURLToPath } from 'url';
 import type HTTP from 'http';
 
 import Request from '../../build/server/Request.js';
@@ -168,6 +170,21 @@ export class Helpers {
      */
     public static buildTempPath(name: string): string {
         return PATH.join(Helpers.tempRoot, name);
+    }
+    /**
+     * Loads the package version dynamically from package.json.
+     * @returns The version string from package.json, or 'unknown' if it cannot be determined.
+     */
+    public static loadPackageVersion(): string {
+        try {
+            const currentFile = fileURLToPath(import.meta.url);
+            const currentDir = PATH.dirname(currentFile);
+            const packagePath = PATH.resolve(currentDir, '../../package.json');
+            const raw = FS.readFileSync(packagePath, 'utf8');
+            const data = JSON.parse(raw) as { version?: string };
+            if (typeof data.version === 'string' && data.version.length > 0) return data.version;
+        } catch {}
+        return 'unknown';
     }
 }
 

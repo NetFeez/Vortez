@@ -159,7 +159,7 @@ export class Server extends TestSuite {
             assert.equal(html['Content-Type'], 'text/html');
             assert.equal(png['Content-Type'], 'image/png');
             assert.equal(png['Accept-Ranges'], 'bytes');
-            assert.equal(rawResponse.headers['x-version'], '5.0.0-dev.19');
+            assert.equal(rawResponse.headers['x-version'], Helpers.loadPackageVersion());
 
             response.sendJson({ ok: true });
             assert.equal(rawResponse.statusCode, 200);
