@@ -1,10 +1,15 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Provides utilities for handling file paths, including normalization and resolution of paths relative to the module and user project.
+ * @license Apache-2.0
+ */
 import PATH from 'path';
 import URL from 'url';
 
 export class Path {
-    // Vortez internal directory (where the source code is located)
+    /** The directory where the Vortez module is located. */
     public static readonly moduleDir: string = PATH.dirname(PATH.dirname(PATH.dirname(URL.fileURLToPath(import.meta.url))));
-    // User project directory (where the user is running the server from)
+    /** The directory where the user is running the server from. */
     public static readonly rootDir: string = process.cwd();
 
     /**

@@ -19,7 +19,7 @@ export class Loader {
      */
     public static async load(path: string): Promise<Config> {
         logger.log(`loading config from &C6[${path}]`);
-        if (!await Utilities.fileExists(path)) {
+        if (!await Utilities.File.exists(path)) {
             const config = new Config({});
             logger.log(`config file &C6[${path}]&R does not exist, creating it`);
             await Loader.save(path, config);

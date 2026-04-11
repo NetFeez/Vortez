@@ -1,6 +1,7 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Provides utilities for console interaction, including text formatting and coloring.
+ * @description Provides a console-based user interface for formatting text with colors and styles, as well as sending messages to the console.
+ * This is useful for enhancing the readability of console output and providing a more engaging user experience when interacting with the command line.
  * @license Apache-2.0
  */
 

@@ -1,8 +1,13 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Provides utilities for environment variable management, including loading from .env files, getting and setting environment variables, and converting objects to .env format. This is useful for managing configuration in a flexible way that can be easily integrated into different environments.
+ * @license Apache-2.0
+ */
 import FS, { promises as FSP } from "fs";
 import PATH from "path";
 
 import Debug from "../logger/Debug.js";
-import Utilities from "./Utilities.js";
+import File from './File.js';
 
 export class Env {
     /**
@@ -23,7 +28,7 @@ export class Env {
         const defaultEnv = options.defaultEnv ?? {};
         const setEnv = options.setEnv ?? true;
 
-        if (!await Utilities.fileExists(path)) {
+        if (!await File.exists(path)) {
             try {
                 Debug.log(`environment variables file &C6[${path}]&R does not exist, creating it`);
                 await FSP.mkdir(PATH.dirname(path), { recursive: true });

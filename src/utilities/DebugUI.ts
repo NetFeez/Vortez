@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Utility to help with debugging tasks and server development.
+ * @description Provides a console-based debugging interface for the Vortez project, allowing developers to execute commands and receive feedback in real-time. This is useful for testing and debugging purposes, providing a simple way to interact with the application through a command-line interface.
  * @license Apache-2.0
  */
 

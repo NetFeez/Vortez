@@ -190,7 +190,7 @@ export class Response {
 		}
 		
         try {
-			if (!await Utilities.fileExists(path)) return void this.sendError(404, 'The requested URL was not found');
+			if (!await Utilities.File.exists(path)) return void this.sendError(404, 'The requested URL was not found');
             const details = await FS.promises.stat(path);
             if (details.isFile()) return this.sendFile(path);
 			if (!details.isDirectory()) return this.sendError(404, 'The requested URL was not found');
