@@ -1,0 +1,6 @@
+<h1><vortez-var name="title" default="Untitled"/></h1>
+<ul>
+<vortez-each name="users" value="active" key="name">
+    <li>{{name}}:{{active}}</li>
+</vortez-each>
+</ul>

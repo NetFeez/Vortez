@@ -1,3 +1,7 @@
 #!/bin/bash
+set -euo pipefail
+
 echo "Running tests...";
-node tests/test.js
+npx tsc --pretty false
+npx tsc -p tsconfig.tests.json --pretty false
+node build-tests/test.js

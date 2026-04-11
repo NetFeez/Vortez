@@ -1,0 +1,42 @@
+&C6 --- [Vortez Engine: Mega Test Suite] --- &R
+
+&C3 1. Variables Globales y Fallbacks &R
+- Existente: {{Url}}
+- Fallback (string): {{nodef || "Default_Activado"}}
+- Tag Existente: <vortez-var name="Url" default="no_url"/>
+- Tag Fallback: <vortez-var name="missing" default="Fallback_Tag"/>
+
+&C3 2. Lógica Condicional (If/Else) &R
+<vortez-if name="role" condition="==" expected="admin">
+    &C2 [ADMIN] Acceso total al sistema. &R
+<vortez-else />
+    &C1 [USER] Acceso restringido. &R
+</vortez-if>
+
+<vortez-if name="currentPath" condition="==" expected="{{Url}}">
+    &C2 Coincidencia de ruta detectada. &R
+</vortez-if>
+
+<vortez-if name="isLogged">
+    Sesión iniciada como: {{username}}
+</vortez-if>
+
+&C3 3. Iteración y Contexto (Each) &R
+<vortez-each name="folder" value="val" key="id">
+    &C4 * Nodo: {{id}} &R
+    <vortez-if name="id" condition="==" expected="secret.txt">
+        > &C1 [ALERTA] Archivo oculto detectado: {{val}} &R
+    <vortez-else />
+        > Público: {{val}}
+    </vortez-if>
+</vortez-each>
+
+&C3 4. Casos de Bucle Vacío o Inexistente &R
+<vortez-each name="emptyList" value="item">
+    Este texto no debería aparecer: {{item}}
+</vortez-each>
+
+&C3 5. Variables dentro de Atributos &R
+<vortez-if name="userType" condition="==" expected="{{adminType}}">
+    &C2 Coincidencia de tipo dinámica exitosa. &R
+</vortez-if>

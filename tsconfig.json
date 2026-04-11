@@ -12,5 +12,8 @@
     "outDir": "build",
     "types": [ "node" ]
   },
-  "include": [ "src/**/*" ]
+  "include": [ "src/**/*" ],
+  "references": [
+    { "path": "tsconfig.tests.json" }
+  ]
 }
