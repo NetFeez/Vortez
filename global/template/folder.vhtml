@@ -5,34 +5,47 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/vortez:global/style/template/template.css">
-        <title>[SA-ML] - Dir</title>
+        <title>[Vortez] - Folder</title>
     </head>
     <body>
-        <div id="Carpeta" class="Centrar-X">
-            <div class="Contenido">
-                <h1 class="Ruta">Carpeta: ${Url}</h1>
-                <div class="Opciones">
-                    <a class="Atrás" href="${Url}../">Atrás</a>
-                    <input id="Carpeta_Ruta" type="search" placeholder="Cambiar de ruta... ${Url}" value="${Url}"/>
-                    <input id="Carpeta_Cambiar"type="button" value="Cambiar Ruta"/>
+        <div id="folder" class="center-X">
+            <div class="content">
+                <h1 class="path">Folder: {{Url}}</h1>
+                <div class="options">
+                    <vortez-if name="Url" condition="!=" expected="/">
+                        <a class="back" href="{{Url}}/../">Back</a>
+                    <vortez-else />
+                        <span class="back disabled">Back</span>
+                    </vortez-if>
+                    <input id="input-path" type="search" placeholder="enter the path... {{Url}}" value="{{Url}}"/>
+                    <input id="input-change"type="button" value="change"/>
                 </div>
-                <ul class="Lista">
-                    $(folder,, name) {
+                <ul class="list">
+                    <vortez-each name="folder" value="name">
                         <li>
-                            <a class="Elemento" href="${Url}%name%">%name%</a>
+                            <vortez-if name="Url" condition="==" expected="/">
+                                <a class="item" href="./{{name}}">
+                                    <vortez-if name="name" condition="==" expected="style">
+                                        <span class="folder">[Folder]</span>
+                                    </vortez-if>
+                                    {{name}}
+                                </a>
+                            <vortez-else />
+                                <a class="item" href="{{Url}}/{{name}}">{{name}}</a>
+                            </vortez-if>
                         </li>
-                    }
+                    </vortez-each>
                 </ul>
             </div>
             <script>
-                const Carpeta_Cambiar = document.querySelector('#Carpeta_Cambiar');
-                const Carpeta_Ruta = document.querySelector('#Carpeta_Ruta');
-                Carpeta_Cambiar.addEventListener('click', () => {
-                    window.location.href = Carpeta_Ruta.value;
+                const inputChange = document.querySelector('#input-change');
+                const inputPath = document.querySelector('#input-path');
+                inputChange.addEventListener('click', () => {
+                    window.location.href = inputPath.value;
                 });
-                Carpeta_Ruta.addEventListener('keydown', (Evento) => {
-                    Carpeta_Ruta.value.length <= '${Url}'.length && Evento.key == 'Backspace'
-                    ? Evento.preventDefault()
+                inputPath.addEventListener('keydown', (event) => {
+                    inputPath.value.length <= '{{Url}}'.length && event.key == 'Backspace'
+                    ? event.preventDefault()
                     : false;
                 })
             </script>

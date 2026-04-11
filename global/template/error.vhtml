@@ -5,21 +5,21 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="/vortez:global/style/template/template.css">
-        <title>[SV-C] - ${status}</title>
+        <title>[Vortez] - {{status}}</title>
     </head>
     <body>
-        <div id="Error" class="Centrar-X Centrar-Y">
-            <div class="Información">
-                <h1 class="Código">Error: ${status}</h1>
-                <p class="Mensaje">${message}</p>
-                <div class="Centrar-X Centrar-Y">
-                    <div class="Carga">
-                        <div class="C_Fondo"></div>
-                        <div class="C_Fondo2"></div>
+        <div id="error" class="center-X center-Y">
+            <div class="content">
+                <h1 class="code">Status: {{status}}</h1>
+                <p class="message">{{message}}</p>
+                <div class="center-X center-Y">
+                    <div class="loading">
+                        <div class="background-1"></div>
+                        <div class="background-2"></div>
                         <picture>
                             <source srcset="/vortez:global/source/logo_SM_960.png"/>
                             <source srcset="/favicon.ico"/>
-                            <img class="C_Logo">
+                            <img class="logo">
                         </picture>
                     </div>
                 </div>

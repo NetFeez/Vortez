@@ -7,11 +7,12 @@
 import HTTP from 'http';
 import FS from 'fs';
 import PATH from 'path';
+import { Readable } from 'stream';
 
 import Request from './Request.js';
 import Logger from '../logger/Logger.js';
 import Utilities from '../utilities/Utilities.js';
-import Template from '../Template.js';
+import Template from '../Template/Template.js';
 import Config from './config/Config.js';
 import PathSecurity from './security/PathSecurity.js';
 
@@ -229,7 +230,7 @@ export class Response {
 	public async sendTemplate(path: string, data: object, options: Response.options = {}): Promise<void> {
 		path = Utilities.Path.normalize(path);
         try {
-            const template = await Template.load(path, data);
+            const template = await Template.stream(path, data);
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('html');
 			this.send(template, { status, headers });
@@ -321,7 +322,7 @@ export namespace Response {
 	export interface contentTypeMap {
 		[key: string]: string | undefined;
 	}
-	export type data = string | Buffer | FS.ReadStream;
+	export type data = string | Buffer | Readable | FS.ReadStream;
     export type Extensions = (
         'HTML' | 'JS' | 'CSS' | 'JSON' | 'XML' | 'TXT' |
         'SVG' | 'PNG' | 'JPG' | 'JPEG' | 'MP3' | 'WAV' | 'MP4'

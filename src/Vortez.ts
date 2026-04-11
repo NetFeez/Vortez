@@ -6,7 +6,7 @@
  */
 
 export { Logger } from "./logger/Logger.js";
-export { Template } from "./Template.js";
+export { Template } from "./Template/Template.js";
 export { Utilities } from "./utilities/Utilities.js";
 export * as Beta from "./beta/Beta.js";
 export { ServerError } from "./server/ServerError.js";
