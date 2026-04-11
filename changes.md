@@ -1,6 +1,7 @@
 # version (5.0.0)
 ## 📒 Notes
 - **Breaking Change**: The server's debugging interface has been refactored. Users interacting with the old `DebugUI` will need to adapt to the new `ServerDebug` module.
+- **Acknowledgment**: Special thanks to my girlfriend for helping identify a critical path traversal vulnerability before this stable release.
 ## ➕ Added
 - **(Utilities/DebugUI)**: Introduced a new generic, reusable `DebugUI` class for creating command-line interfaces.
 - **(Server/ServerDebug)**: Added a new `ServerDebug` module to provide server-specific commands, built upon the new generic `DebugUI`.
