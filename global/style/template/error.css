@@ -1,0 +1,29 @@
+#error {
+    --color-bg: rgb(255,180,220);
+    --color-code: rgb(255,0,0);
+    --color-message: rgb(0,0,0);
+    --color-bg-image: rgba(255,0,0,0.1);
+
+    background: var(--color-bg);
+    height: 100%;
+    position: fixed;
+    width: 100%;
+    overflow: visible;
+    & > .content {
+        text-align: center;
+        width: 90%;
+        overflow: visible;
+    }
+    & > .code {
+        color: var(--color-code);
+        font-size: 3em;
+    }
+    & > .message {
+        color: var(--color-message);
+        font-size: 1em;
+        margin-bottom: 1em;
+    }
+    & > .loading {
+        width: 30%;
+    }
+}

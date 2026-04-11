@@ -1,0 +1,79 @@
+#folder {
+    --color-bg: rgb(255,180,220);
+    --color-bg-content: rgba(255,0,0,0.1);
+    --color-bg-back: rgba(180,220,255,0.5);
+    --color-bg-back-action: rgba(180,220,255,0.75);
+    --color-bg-search: rgba(255,180,220,0.5);
+    --color-bg-search-action: rgba(255,180,220,0.75);
+    --color-bg-item: rgba(220,255,180,0.25);
+    --color-bg-item-action: rgba(220,255,180,0.5);
+    --color-border-search-action: rgb(180,220,255);
+
+    align-items: center;
+    background: var(--color-bg);
+    height: 100%;
+    overflow: visible scroll;
+    position: fixed;
+    width: 100%;
+
+    & > .content {
+        background: var(--color-bg-content);
+        border-radius: 2em;
+        margin-top: 2em;
+        padding: 2em;
+        text-align: center;
+        width: 70%;
+
+        & > .options {
+            display: flex;
+            text-align: start;
+            
+            & > #input-path:focus {
+                border: var(--color-border-search-action) 3px double;
+                margin: calc(0.5em - 3px);
+                outline: none;
+            }
+            & > #input-path:focus,
+            & > #input-change:hover  {
+                background: var(--color-bg-search-action);
+            }
+            & > #input-change {
+                cursor: pointer;
+            }
+            & > .back,
+            & > #input-path,
+            & > #input-change {
+                background: var(--color-bg-back);
+                border-radius: 1em;
+                color: rgb(0,0,0);
+                display: inline-block;
+                margin: 0.5em;
+                padding: 1em;
+                text-decoration: none;
+            }
+            & > #input-path,
+            & > #input-change {
+                background: var(--color-bg-search);
+                border: none;
+            }
+            & > .back:hover  {
+                background: var(--color-bg-back-action);
+            }
+        }
+        & > .list {
+            list-style: none;
+            & .item {
+                background: var(--color-bg-item);
+                border-radius: 1em;
+                color: rgb(0,0,0);
+                display: block;
+                margin: 0.25em;
+                padding: 1em;
+                text-decoration: none;
+                &:hover {
+                    background: var(--color-bg-item-action);
+                }
+            }
+        }
+    }
+}

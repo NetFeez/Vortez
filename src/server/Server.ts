@@ -1,0 +1,239 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Adds a simple way to create HTTP/S and WS/S servers.
+ * @license Apache-2.0
+ */
+
+import HTTP from 'http';
+import FS from 'fs';
+import HTTPS from 'https';
+
+import Utilities from '../utilities/Utilities.js';
+import _LoggerManager from './LoggerManager.js';
+import _ServerDebug from './ServerDebug.js';
+import _Config from './config/Config.js';
+import _Request from "./Request.js";
+import _Response from "./Response.js";
+import _Session from "./Session.js";
+import _Cookie from "./Cookie.js";
+import _WebSocket from "./websocket/Websocket.js";
+import _Router from "./router/Router.js";
+import _ServerError from "./ServerError.js";
+
+export { LoggerManager } from './LoggerManager.js';
+export { ServerDebug } from './ServerDebug.js';
+export { Config } from './config/Config.js';
+export { Request } from "./Request.js";
+export { Response } from "./Response.js";
+export { Session } from "./Session.js";
+export { Cookie } from "./Cookie.js";
+export { Websocket as WebSocket } from "./websocket/Websocket.js";
+export { Router } from "./router/Router.js";
+export { ServerError } from "./ServerError.js";
+
+const logger = _LoggerManager.getInstance();
+
+export class Server {
+	private protocol: Server.Protocol | null;
+	private HttpServer: HTTP.Server | null;
+	private HttpsServer: HTTP.Server | null;
+	public router: Server.Router;
+	public config: Server.Config;
+	public logger: Server.LoggerManager;
+	/**
+	 * Creates an HTTP/S server.
+	 * @param port - The port the server will listen on.
+	 * @param host - The host the server will bind to.
+	 * @param sslOptions - The SSL configuration.
+	 */
+	public constructor(config: Server.Config | Server.Config.toProcess = {}) {
+		this.config = config instanceof Server.Config ? config : new Server.Config(config);
+		this.router = new Server.Router(this.config);
+		this.HttpServer = null;
+		this.HttpsServer = null;
+		this.protocol = null;
+		this.logger = _LoggerManager.getInstance();
+		this.router.addFolder('/vortez:global', Utilities.Path.module('global'));
+	}
+	/**
+	 * Starts the server.
+	 */
+	public async start(): Promise<void> {
+		const { port, host, ssl: sslOptions } = this.config.data;
+		this.protocol = sslOptions ? 'HTTP/S' : 'HTTP';
+		logger.info('&C(255,180,220)╭─────────────────────────────────────────────');
+		logger.info('&C(255,180,220)│ &C1Vortez by NetFeez');
+		logger.info('&C(255,180,220)│ &C1Server starting...');
+		logger.info('&C(255,180,220)├─────────────────────────────────────────────');
+		try {
+			this.HttpServer = await this.initHTTP(port, host);
+			logger.info(`&C(255,180,220)│ &C3Protocol: &R${this.protocol}`);
+			logger.info(`&C(255,180,220)│ &C3Host: &R${host}`);
+			logger.info(`&C(255,180,220)│ &C3HTTP Port: &R${port}`);
+			logger.info(`&C(255,180,220)│ &C3HTTP URL: &C6http://${host}:${port}`);
+			try { if (sslOptions) {
+				this.HttpsServer = await this.initHTTPS(host, sslOptions);
+				logger.info(`&C(255,180,220)│ &C3HTTPS Port: &R${sslOptions.port ?? 443}`);
+				logger.info(`&C(255,180,220)│ &C3HTTPS URL: &C6https://${host}:${sslOptions.port ?? 443}`);
+			} } catch(error) {
+				throw Error('Certificate error ' + (error instanceof Error ? error.message : error), { cause: error });
+			}
+			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
+		} catch(error) {
+			logger.error(`&C(255,180,220)│ &C1✖ Error starting server: &R&C6${error instanceof Error ? error.message : error}`);
+			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
+			await this.stop();
+		}
+	}
+	/**
+	 * Stops the server.
+	 */
+	public async stop(): Promise<void> {
+		try {
+			logger.info('&C(255,180,220)╭─────────────────────────────');
+			logger.info('&C(255,180,220)│ &C1Stopping server...');
+			if (!this.HttpServer && !this.HttpsServer) {
+				logger.info('&C(255,180,220)│ &C3No active servers to stop');
+				logger.info('&C(255,180,220)╰─────────────────────────────');
+				return;
+			}
+			if (this.HttpServer) {
+				await this.stopHTTP();
+				this.HttpServer = null;
+				logger.info('&C(255,180,220)│   &C3✔ HTTP server stopped');
+			}
+			if (this.HttpsServer) {
+				await this.stopHTTPS();
+				this.HttpsServer = null;
+				logger.info('&C(255,180,220)│   &C3✔ HTTPS server stopped');
+			}
+			logger.info('&C(255,180,220)│ &C2✔ All servers stopped successfully');
+			logger.info('&C(255,180,220)╰─────────────────────────────');
+		} catch(error) {
+			logger.error('&C(255,180,220)│ &C1✖ Error stopping server: &R&C6' + (error instanceof Error ? error.message : error));
+			logger.info('&C(255,180,220)╰─────────────────────────────');
+		}
+	}
+	/**
+	 * Stops the HTTP server.
+	 */
+	private async stopHTTP(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (this.HttpServer) this.HttpServer.close((error) => error ? reject(error) : resolve());
+			else resolve();
+		});
+	}
+	/**
+	 * Stops the HTTPS server.
+	 */
+	private async stopHTTPS(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (this.HttpsServer) this.HttpsServer.close((error) => error ? reject(error) : resolve());
+			else resolve();
+		});
+	}
+	/**
+	 * Restarts the server.
+	 */
+	public async restart(): Promise<void> {
+		await this.stop();
+		await this.start();
+	}
+	/**
+	 * Initializes the HTTP server.
+	 * @param port - The port the HTTP server will listen on.
+	 * @param host - The host the HTTP server will bind to.
+	 * @returns A promise that resolves with the created HTTP server.
+	 */
+	private async initHTTP(port: number, host: string): Promise<HTTP.Server> {
+		const http = HTTP.createServer();
+		http.on('request', this.router.requestManager.bind(this.router));
+		http.on('upgrade', this.router.upgradeManager.bind(this.router));
+		return new Promise((resolve, reject) => {
+			const errorHandler = (error: Error): void => {
+				http.off('error', errorHandler);
+				reject(error);
+			};
+			http.once('error', errorHandler);
+			http.listen(port, host, () => {
+				http.off('error', errorHandler);
+				resolve(http);
+			});
+		});
+	}
+	/**
+	 * Initializes the HTTPS server.
+	 * @param host - The host the HTTPS server will bind to.
+	 * @param sslOptions - The SSL configuration.
+	 * @returns A promise that resolves with the created HTTPS server.
+	 */
+	private async initHTTPS(host: string, sslOptions: Server.SSLOptions): Promise<HTTP.Server> {
+		const port = sslOptions.port ?? 443;
+		const cert = await Server.loadCertificates(sslOptions.cert, sslOptions.key);
+		const https = HTTPS.createServer(cert);
+		https.on('request', this.router.requestManager.bind(this.router));
+		https.on('upgrade', this.router.upgradeManager.bind(this.router));
+		return new Promise((resolve, reject) => {
+			const errorHandler = (error: Error): void => {
+				https.off('error', errorHandler);
+				reject(error);
+			};
+			https.once('error', errorHandler);
+			https.listen(port, host, () => {
+				https.off('error', errorHandler);
+				resolve(https);
+			});
+		});
+	}
+	/**
+	 * Defines default `.vhtml` templates for the server.
+	 * @param name - The name of the template.
+	 * @param path - The path to the `.vhtml` template file.
+	 */
+	public setTemplate(name: keyof Server.Config['data']['templates'], path: string): Server {
+		this.config.data.templates[name] = path;
+		return this;
+	}
+	/**
+	 * Loads the SSL key and certificate and returns their content as strings.
+	 * @param pathCert Path to the SSL certificate.
+	 * @param pathKey Path to the SSL key.
+	 * @returns An object containing the certificate and key as Buffers.
+	 */
+	public static async loadCertificates(pathCert: string, pathKey: string): Promise<Server.Certificates> {
+    	pathCert = Utilities.Path.normalize(pathCert);
+        pathKey = Utilities.Path.normalize(pathKey);
+        const certInfo = await FS.promises.stat(pathCert);
+        const keyInfo = await FS.promises.stat(pathKey);
+        if (!(certInfo.isFile())) return Promise.reject('The certificate path is not a file');
+        if (!(keyInfo.isFile())) return Promise.reject('The key path is not a file');
+        const cert = await FS.promises.readFile(pathCert);
+        const key = await FS.promises.readFile(pathKey);
+        return { cert, key };
+  	}
+}
+
+export namespace Server {
+	export import Config = _Config;
+    export import Cookie = _Cookie
+    export import Request = _Request
+    export import Response = _Response
+    export import Session = _Session
+    export import WebSocket = _WebSocket
+    export import Router = _Router;
+	export import LoggerManager = _LoggerManager;
+	export import ServerDebug = _ServerDebug;
+	export import ServerError = _ServerError;
+    export interface Certificates {
+        cert: Buffer | string,
+        key: Buffer | string
+    }
+	export type SSLOptions = {
+		cert: string,
+		key: string,
+		port?: number
+    };
+    export type Protocol = 'HTTP' | 'HTTPS' | 'HTTP/S';
+}
+
+export default Server;

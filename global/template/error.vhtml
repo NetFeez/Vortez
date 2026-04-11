@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="/vortez:global/style/template/template.css">
+        <title>[Vortez] - {{status}}</title>
+    </head>
+    <body>
+        <div id="error" class="center-X center-Y">
+            <div class="content">
+                <h1 class="code">Status: {{status}}</h1>
+                <p class="message">{{message}}</p>
+                <div class="center-X center-Y">
+                    <div class="loading">
+                        <div class="background-1"></div>
+                        <div class="background-2"></div>
+                        <picture>
+                            <source srcset="/vortez:global/source/logo_SM_960.png"/>
+                            <source srcset="/favicon.ico"/>
+                            <img class="logo">
+                        </picture>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

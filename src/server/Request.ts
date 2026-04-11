@@ -1,0 +1,99 @@
+/**
+ * @author NetFeez <netfeez.dev@gmail.com>
+ * @description Adds the Request form of `Vortez`.
+ * @license Apache-2.0
+ */
+
+import URI from 'url';
+import HTTP from 'http';
+import Cookie from './Cookie.js';
+import Session from './Session.js';
+import _BodyParser from './BodyParser.js';
+
+export { BodyParser } from './BodyParser.js';
+
+export class Request {
+	/** Contains the request headers. */
+	public headers: Request.Headers;
+	/** Contains the request cookies. */
+	public cookies: Cookie;
+	/** Contains the query string parameters sent. */
+	public searchParams: Request.SearchParams;
+	/** Contains the IP address of the requester. */
+	public ip?: string | string[];
+	/** Contains the request method. */
+	public method: Request.Method;
+	/** Contains the session of the device that made the request. */
+	public session: Session;
+	/** Contains the request body parser. */
+	private body: Request.BodyParser;
+	/** Contains the HTTP request received by the server. */
+	private httpRequest: HTTP.IncomingMessage;
+	/** Contains the request URL. */
+	public url: string;
+	/** The UrlRule parameters */
+	public ruleParams: Request.RuleParams = {};
+	/**
+	 * Creates the request form for `NetFeez-Labs/Server`.
+	 * @param httpRequest - The HTTP request received by the server.
+	 */
+	public constructor(httpRequest: HTTP.IncomingMessage) {
+        const forwardedIP = httpRequest.headers['x-forwarded-for'];
+        const remoteIP = httpRequest.socket.remoteAddress;
+        const method = httpRequest.method ?? 'GET';
+        let url = httpRequest.url       ?? '/'
+		this.httpRequest = httpRequest;
+		this.ip = forwardedIP ? forwardedIP : remoteIP ? remoteIP : '0.0.0.0';
+		this.method = this.getMethod(method);
+		this.url = url.split('?')[0];
+		this.url = this.normalizeUrl(this.url);
+        this.headers = httpRequest.headers;
+		this.cookies = new Cookie(this.headers.cookie);
+		this.session = Session.get(this.cookies);
+		this.searchParams = this.getSearchParams(url);
+		this.body = new Request.BodyParser(this.headers, this.httpRequest);
+	}
+	public get post(): Promise<Request.BodyParser.Body> { return this.body.parse(); }
+	/**
+	 * Defines which method was used to make the request.
+	 * @param method - The method used for the request.
+	 */
+	private getMethod(method: string): Request.Method {
+		method = method.trim().toUpperCase();
+		method = method.length > 0 ? method : 'GET';
+		return method;
+	}
+	/**
+	 * Retrieves the data sent via URL QUERY.
+	 * @param Url - The URL received from the HTTP request.
+	 */
+	private getSearchParams(Url: string): Request.SearchParams {
+		let UrlObject = new URI.URL(`http://x.x${Url}`);
+		const searchParams: Request.SearchParams = {};
+		UrlObject.searchParams.forEach((value, name) => searchParams[name] = value);
+		return searchParams;
+	}
+	private normalizeUrl(url: string): string {
+		url = url.split('?')[0];
+		url = decodeURI(url.endsWith('/') ? url : url + '/');
+		url = url.length > 1 && url.endsWith('/') ? url.slice(0, -1) : url;
+		url = url.startsWith('/') ? url : '/' + url;
+		return url;
+	}
+}
+
+export namespace Request {
+	export import BodyParser = _BodyParser;
+    export interface Document {
+        [name: string]: string | undefined;
+    }
+    export interface RuleParams extends Document {
+		$surplus?: string;
+	}
+	export interface Headers extends HTTP.IncomingHttpHeaders {}
+    export interface SearchParams extends Document {};
+	export type KnownMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS' | 'ALL';
+	export type Method = KnownMethod | (string & {});
+}
+
+export default Request;

@@ -1,372 +1,840 @@
-# Importante
-
-> [!IMPORTANT]
-> La futura versión **3.7.0** será omitida hasta la versión **4.0.0**.
-> La razón de esta decisión fue que hubo cambios que afectan la compatibilidad
-> entre las versiones **3.6.5** y **3.7.0**:
->
-> Se está planteando que las funcionalidades **beta.mail** y **beta.jwt** se muevan a módulos separados.
-> Esta decisión dependerá de qué tan grandes se vuelvan dichas funcionalidades. Por el momento, y para la futura versión **4.0.0**,
-> seguirán estando en el lugar habitual, aunque con ciertos cambios que afectan la compatibilidad con las funciones beta
-> incorporadas en la versión **3.6.5**.
->
-> Recuerda que puedes acceder a la versión de desarrollo descargando la rama **dev** del repositorio o por medio de npm:
-> ```bash
-> npm i vortez@dev
-> ```
->
-> Como último punto, se planea cambiar el nombre del módulo en npm. Se darán detalles cuando se decida cuál será, y se agregará como dependencia a la última versión de **Vortez** que sea desplegada en npm.
-
-
 # Vortez
 
-Hola! soy [NetFeez](https://NetFeez.github.io).<br/>
-Como comente  anteriormente en mi perfil, Vortez permitirá:
+A lightweight, production-ready Node.js web framework for building APIs, websites, single-page applications (SPAs), and progressive web apps (PWAs). Built with TypeScript and designed for simplicity without sacrificing power.
 
-- [x] Crear servidores HTTP y HTTPS.
-- [ ] **En proceso** Sistema de plantillas.
-- [x] Gestionar conexiones WebSocket.
-- [ ] Gestionar negociaciones de WebRTC.
-- [ ] Gestionar notificaciones WebPush.
+The package exports a default `Vortez` server class, plus named exports for `Router`, `Config`, `Template`, `Utilities`, `ServerError`, `Logger`, and `Beta`.
 
-Es posible que algunos de los puntos anteriores se subdividan en proyectos diferentes<br/>
-o que se cree un gestor de paquetes para implementar las funcionalidades dentro del mismo<br/>
+[![npm version](https://img.shields.io/npm/v/vortez?style=flat-square)](https://www.npmjs.com/package/vortez)
+[![License](https://img.shields.io/npm/l/vortez?style=flat-square)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D%2016.0.0-brightgreen?style=flat-square)](https://nodejs.org/)
 
-## Sobre el proyecto
+## Features
 
-Actualmente tengo en local una copia del proyecto con varias de las funcionalidades<br/>
-este comenzó como un proyecto personal y con fines de práctica de pensamiento lógico<br/>
-por lo tanto no tiene las mejores prácticas ni la mejor documentación, sin embargo<br/>
-publicaré el código de esta manera e iré modificando para corregir esto.
+- 🚀 **Fast and Lightweight** — Minimal overhead, maximum performance
+- 📦 **Built with TypeScript** — Full type safety with compiled JavaScript output
+- 🔄 **Flexible Routing** — Pattern-based routing with wildcards and dynamic parameters
+- 🔌 **WebSocket Support** — Real-time bidirectional communication out of the box
+- 🛡️ **HTTPS/SSL Ready** — Secure connections with easy configuration
+- 🎯 **Middleware Pipeline** — Composable, snapshot-based middleware system
+- 📝 **Request/Response Helpers** — Simplified APIs for JSON, files, and text responses
+- ⚙️ **Modular Architecture** — Use what you need, extend what you want
+- 🔐 **Beta Features** — JWT authentication and email support (development version)
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+- [Configuration Files](#configuration-files)
+- [Architecture Guide](#architecture-guide)
+- [Examples Repository](#examples-repository)
+- [Core Concepts](#core-concepts)
+- [Routing Rules](#routing-rules)
+- [Server Configuration](#server-configuration)
+- [Use Cases](#use-cases)
+- [Development Features](#development-features)
+
+---
+
+## Quick Start
+
+### Installation
 
 ```console
-mpm install vortez
+npm install vortez
 ```
 
-**Futuras correcciones**
-
-- [x] Documentar clases y funciones para intellisense.
-- [x] Cambiar los nombres de variables, funciones, clases y descripciones a inglés.
-- [ ] **en proceso** Crear documentación para enseñar a usar el módulo.
-- [ ] **en proceso** Buscar y corregir malas practicas.
-
-Esto es todo por el momento, [NetFeez](https://NetFeez.github.io) se retira.
-
-# Documentación 
-
-Primero debemos instalar el modulo usando
+**Development version** (with beta features):
 
 ```console
-mpm install vortez
+npm install vortez@dev
 ```
 
-También es necesario que en tu package.json este el proyecto como type: module
+### Requirements
+
+- **Node.js** ≥ 16.0.0
+- **ES Modules** — Set `"type": "module"` in your `package.json`
+
 ```json
 {
-  "name": "my-project",
-  "main": "index.js",
-  "type": "module"
+  "name": "my-app",
+  "type": "module",
+  "main": "index.js"
 }
 ```
 
-Una ves tengas Vortez en tu proyecto y lo hayas configurado como modulo debes importarlo<br/>
--->
-- Si en tu package.json tienes la propiedad `"type": "module"`:
-  ```js
-  import Vortez from 'vortez';
-  ```
-- Si no tienes esta propiedad usa:
-  ```js
-  //Actualmente no esta soportado, en futuras versiones se ampliara su compatibilidad
-  ```
+> [!IMPORTANT]
+> CommonJS support will be added in a future release. For now, ES modules are required.
 
-## Servidor HTTP
-
-Para crear un servidor HTTP puedes hacerlo de diferentes maneras:
-
-> [!NOTE]
-> Debes haber importado el modulo primero.
-
-- Solo pasando el puerto
-
-  ```js
-  const Server = new Vortez(80);
-  ```
-
-- Pasando Puerto y Host
-
-  ```js
-  const Server = new Vortez(80, 'MiDominio.com');
-  ```
-
-## Servidor HTTPS
-
-> [!NOTE]
-> - Debes tener un certificado ssl (la clave publica y privada).
-> - Si no quieres especificar un host usa `null`.
-> - Actualmente se inicia el servidor HTTP y HTTPS a la vez en este caso
->   esto se corregirá y se pondrá como característica opcional en futuras versiones.
+### Minimal Example
 
 ```js
-const server = new Vortez(80, null, {
-  pubKey: 'Cert/MiDominio.pem',    //El archivo con la clave publica       (Obligatorio)
-  privKey: 'Cert/MiDominio.key',   //El archivo con la  clave privada      (Obligatorio)
-  port: 443                        //El puerto donde se abrirá el servidor (Opcional)
-});
-```
+import Vortez from 'vortez';
 
-## Agregar enrutador
+const server = new Vortez({ port: 3000 });
 
-En **`Vortez`** existen 4 clases de enrutador:
-
-|Tipo                   |Descripción                                          |
-|----------------------:|:----------------------------------------------------|
-|[Folder](#carpeta)     |Comparte una carpeta y sus sub-carpetas              |
-|[File](#archivo)       |Comparte un único archivo                            |
-|[Action](#acción)      |Te permite trabajar completamente con las solicitudes|
-|[WebSocket](#websocket)|Permite manejar conexiones WebSocket en esa ruta     |
-
-Los Métodos aceptados actualmente son:
-
-|Método|Descripción                                 |
-|-----:|:-------------------------------------------|
-|GET   |El método de petición `GET`.                |
-|POST  |El método de petición `POST`.               |
-|PUT   |El método de petición `PUT`.                |
-|DELETE|El método de petición `DELETE`.             |
-|ALL   |Todos los métodos anteriormente mencionados.|
-
-Como funciona la RuleUrl:<br/>
-
-Actualmente la RuleUrl acepta 2 características
- - Comodín * toma todas las sub rutas incluyendo hasta antes de *
-   - para /test/* tomaría /test y todo lo demás como /test/algo-mas/x
-   - para /test2/*/Algo tomaría /Test2/(cualquier-cosa)/Algo
-     es como el comodín $ solo que no guardara en una variable
- - Toma parámetros de la url usando $ seguido del nombre de la variable
-   y se puede acceder a ellas desde `Request.RuleParams`
-   **Ejemplo**:
-   ```js
-   server.addAction('ALL', '/User/$UserID/Post/$PostID', (request, response) => {
-    response.sendJson({
-      url: request.url,
-      ruleParams: request.ruleParams
-    });
-    /* Esto devolverá lo siguiente si la ruta fuera /User/111111/Post/222222
-      {
-         "Url": "/User/111111/Post/222222"
-         "RuleParams": {
-             "UserID": "111111",
-             "PostID": "222222"
-         }
-      }
-    */
-  });
-   ```
-**AuthExec**
-Es una función que recibe como parámetro la petición del http
-esta debe retornar un valor booleano, true para decir que la petición esta autenticada y false para decir que no lo esta.
-**Ejemplo**:
-```js
-// si la petición se hace con el QueryParam Auth y es igual a AuthYes se confirmara la autenticidad de la petición
-server.addFile('/FileWA', 'changes.md', (Request) => {
-    return Request.queryParams.has('Auth') && Request.queryParams.get('Auth') == 'AuthYes'
-});
-```
-
-
-### Carpeta
-
-Comparte una carpeta y todo su contenido tanto archivos como sub-carpetas
-
-> [!WARNING]
-> - ⚠️No compartas la raíz de tu proyecto, ya que esto daría acceso a **TODO** su contenido.
->   - Datos privados como las llaves privadas de tus certificados.
->   - Contraseñas a bases de datos que estén en los archivos js del lado del servidor.
->   - Tokens de seguridad
->   y en general cualquier otro dato
-> - Esto tomara la ruta que le asignes de forma completa
->   **Ejemplo**: si le asignas la ruta `/src` tomaría todas las sub-rutas como `/src/estilos` 
-
-Para añadir este tipo de regla usa:
-
-```js
-// Usando AddFile
-/*
-  Esta función acepta 3 parámetros:
-  UrlRule, Source, AuthExec.
-    AuthExec es opcional.
-*/
-server.addFolder('/MyFolder', 'Test');
-
-
-// Usando el constructor de la clase Rule:
-// De esta manera tienes mayor control sobre la creación de la regla.
-server.addRules(
-    /*
-      este constructor acepta 5 parámetros para crearse correctamente:
-      Tipo, Método, UrlRule, Content, AuthExec.
-      AuthExec es opcional.
-    */
-    new Vortez.Rule('Folder', 'GET', '/MyFolder/', 'Test/', () => true),
-  );
-
-```
-
-### Archivo
-
-Comparte un archivo especifico
-
-```js
-// Usando AddFolder
-/*
-  Esta función acepta 3 parámetros:
-  UrlRule, Source, AuthExec.
-    AuthExec es opcional.
-*/
-server.addFile('/MyFile', 'changes.md');
-
-
-// Usando el constructor de la clase Rule:
-// De esta manera tienes mayor control sobre la creación de la regla.
-server.addRules(
-  /*
-    este constructor acepta 5 parámetros para crearse correctamente:
-    Tipo, Método, UrlRule, Content, AuthExec.
-    AuthExec es opcional.
-  */
-  new Vortez.Rule('File', 'GET', '/MyFile/*', 'changes.md', () => true),
-);
-```
-
-### Acción
-
-Te permite tener total control sobre esas peticiones:
-
-```js
-// Usando AddAction
-/*
-  Esta función acepta 4 parámetros:
-  Método, UrlRule, Action, AuthExec.
-    AuthExec es opcional.
-*/
-server.addAction('GET', '/', (request, response) => {
-    if (request.cookies.has('User_ID')) {
-      response.send("El User_ID que estas usando es:" + request.cookies.get('User_ID'));
-    } else {
-      response.sendFile('./ErrorUsuario.html');
-    }
-  }
-);
-
-
-// Usando el constructor de la clase Rule:
-// En este caso no hay diferencia a usar AddAction e incluso deberás especificar el tipo.
-Server.AddRules(
-  /*
-    este constructor acepta 5 parámetros para crearse correctamente:
-    Tipo, Método, UrlRule, Content, AuthExec.
-    AuthExec es opcional.
-  */
-  new Vortez.Rule('Action', 'GET', '/', (request, response) => {
-    if (request.cookies.has('User_ID')) {
-      response.send("El User_ID que estas usando es:" + request.cookies.get('User_ID'));
-    } else {
-      response.sendFile('./ErrorUsuario.html');
-    }
-  })
-);
-```
-
-### WebSocket
-
-Esto te permite gestionar una conexión WebSocket completa:
-> [!NOTE]
-> Las url de los web sockets van por medio distinto al de las peticiones de File, Folder y Action por ende
-> no tendrán conflictos si son similares o iguales a ellas
-
-
-```js
-// Usando AddWebSocket
-/*
-  Esta función acepta 3 parámetros:
-  UrlRule, Action, AuthExec.
-    AuthExec es opcional.
-*/
-const Conexiones = new Set();
-server.addWebSocket('/Test/WS-Chat', (request, socket) => {
-  console.log('[WS] CM: Conexión nueva')
-  Conexiones.forEach((Usuario) => Usuario.Send("Un usuario se conecto"));
-  Conexiones.add(socket);
-  socket.on('finish', () => Conexiones.delete(socket));
-  socket.on('error', (error) => console.log('[WS-Error]:', error));
-  socket.on('message', (data, info) => {
-    //console.log(Info.OPCode);
-    if (info.opCode == 1) {
-      console.log('[WS] MSS:', data.toString());
-      Conexiones.forEach((Usuario) => {
-        if (Usuario !== socket) Usuario.Send(data.toString());
-      });
-    } else if (info.opCode == 8) {
-      Conexiones.forEach((Usuario) => Usuario.Send("Un usuario se desconecto"));
-    }
-  });
+// Define a route
+server.router.addAction('GET', '/hello', (request, response) => {
+  response.sendJson({ message: 'Hello World' });
 });
 
-
-// Usando el constructor de la clase Rule:
-// En este caso no hay diferencia a usar AddWebSocket e incluso deberás especificar el tipo y el método.
-const Conexiones = new Set();
-Server.AddRules(
-  /*
-    este constructor acepta 5 parámetros para crearse correctamente:
-    Tipo, Método, UrlRule, Content, AuthExec.
-    AuthExec es opcional.
-    A pesar de recibir el método este no se tomara en cuenta para las conexiones web socket.
-  */
-  new Vortez.Rule('WebSocket', 'GET', '/Test/WS-Chat', (request, socket) => {
-    console.log('[WS] CM: Conexión nueva')
-    Conexiones.forEach((Usuario) => Usuario.Send("Un usuario se conecto"));
-    Conexiones.add(socket);
-    socket.on('finish', () => Conexiones.delete(socket));
-    socket.on('error', (error) => console.log('[WS-Error]:', error));
-    socket.on('message', (data, info) => {
-      //console.log(Info.OPCode);
-      if (info.opCode == 1) {
-        console.log('[WS] MSS:', data.toString());
-        Conexiones.forEach((Usuario) => {
-          if (Usuario !== socket) Usuario.Send(data.toString());
-        });
-      } else if (info.opCode == 8) {
-        Conexiones.forEach((Usuario) => Usuario.Send("Un usuario se desconecto"));
-      }
-    });
-  })
-);
+// Start the server
+await server.start();
+// Server running on http://localhost:3000
 ```
 
-# Version Dev
+---
 
-## En desarrollo
+## Installation
 
-En el momento están en desarrollo:
-- [JsonWT]: El uso de Json Web Tokens.
-- [Mail]: El envió de E-Mails.
-- [Server]: El sistema de autenticación dinámico para las reglas de enrutamiento.
+Vortez is available on npm:
 
-## Instalación
-
-Para instalar la version en desarrollo:
 ```console
-mpm install vortez@dev
+npm install vortez
 ```
-> [!WARNING]
-> - Esta version podría contener errores.
-> - Contiene la version mas reciente del proyecto.
 
-Para acceder a las funciones en desarrollo sin añadir mencionadas en changes.md
-```js
-import { Beta } from 'vortez'
-const Mail = Beta.Mail;
-const JsonWT = Beta.JsonWT;
+For the latest development version with experimental features:
+
+```console
+npm install vortez@dev
 ```
+
+---
+
+## Getting Started
+
+### Creating a Server
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+
+// Configure (optional)
+server.config.set('port', 3000);
+server.config.set('host', 'localhost');
+
+// Add routes
+server.router.addAction('GET', '/', (request, response) => {
+  response.sendJson({ status: 'ok' });
+});
+server.router.addFile('/favicon.ico', '/assets/icon.ico');
+
+// Start listening
+await server.start();
+```
+
+### Constructor Options
+
+```js
+const server = new Vortez({
+  host: 'localhost',      // Default: 'localhost'
+  port: 80,               // Default: 80
+  ssl: null               // Optional HTTPS configuration
+});
+```
+
+### Configuration Files
+
+You can also build a `Config` directly or load one from disk.
+
+```js
+import Vortez, { Config } from 'vortez';
+
+const config = new Config({
+  host: 'localhost',
+  port: 3000,
+  routing: {
+    algorithm: 'FIFO'
+  }
+});
+
+console.log(config.toJson());
+```
+
+```js
+import Vortez, { Config } from 'vortez';
+
+const config = await Config.Loader.load('config.json');
+// You can directly use of Vortez import
+const config = await Vortez.Config.Loader.load('config.json');
+
+const server = new Vortez(config);
+await server.start();
+```
+
+> [!NOTE]
+> Template defaults are absolute by design and point to this module's bundled `global/Template/*` files.
+> If you set `templates.error` or `templates.folder` yourself, you can still use paths relative to your own project.
+
+This workflow is also covered in the dedicated examples repository.
+
+### Architecture Guide
+
+For a comprehensive guide on Vortez's internal architecture, request lifecycle, performance considerations, and deployment patterns, see [Architecture Documentation](docs/ARCHITECTURE.md).
+
+### Examples Repository
+
+The runnable examples are being moved to a separate repository to keep this package focused.
+
+Until that repository is published, the snippets in this README remain the canonical reference.
+
+---
+
+## Core Concepts
+
+### URL Rules
+
+URL rules define how requests are matched to routes. They use patterns with special markers:
+
+| Pattern | Behavior | Example |
+|---------|----------|---------|
+| `/` | Root path | `/` |
+| `/path` | Literal segment | `/api/users` |
+| `/$param` | Dynamic parameter | `/$id` captures `123` as `id` |
+| `/*` | Wildcard (matches all sub-routes) | `/files/*` matches `/files/a/b/c` |
+| `/path/$id/sub` | Mixed patterns | `/user/$id/posts` |
+
+**Examples:**
+
+```js
+// Static routes
+server.router.addAction('GET', '/', homeHandler);
+server.router.addAction('GET', '/api/status', statusHandler);
+
+// Dynamic routes with parameters
+server.router.addAction('GET', '/api/users/$id', (request, response) => {
+  const userId = request.ruleParams.id;
+  // Handle request...
+});
+
+// Wildcard routes
+server.router.addAction('GET', '/api/*', catchAllHandler);
+server.router.addFile('/docs/*', 'public/docs/index.html');
+```
+
+### Request Object
+
+The `request` object contains information about the incoming HTTP request:
+
+```js
+server.router.addAction('GET', '/api/$action/$id', (request, response) => {
+  console.log(request.method);        // 'GET', 'POST', etc.
+  console.log(request.url);           // Full URL
+  console.log(request.ruleParams);    // { action: '...', id: '...' }
+  console.log(request.searchParams);  // Query parameters object (Record<string, string | undefined>)
+  console.log(request.headers);       // HTTP headers
+  // For body, use: const body = await request.post;
+});
+```. All methods are **async** and must be awaited:
+
+```js
+// Send JSON
+await response.sendJson({ key: 'value' });
+
+// Send HTML/text
+await response.send('Hello World');
+
+// Send file
+await response.sendFile('path/to/file.html');
+
+// Send with custom status and headers
+await response.sendJson({ id: 123 }, {
+  status: 201,
+  headers: {
+    'X-Test': 'TestHeader'
+  }
+});
+
+// The same options shape is supported by send, sendJson, sendFile and sendTemplate
+```
+
+> **Breaking Change in 5.0.0**: All response methods are now async. Update your route handlers to use `await` when calling response methods.
+});
+
+// The same options shape is supported by send, sendJson, sendFile and sendTemplate
+```
+
+### Middleware Execution Model
+
+Vortez uses a **snapshot middleware composition model**:
+
+- Global middleware registered via `router.httpMiddleware.use()` / `router.httpMiddleware.useError()`
+  and `router.wsMiddleware.use()` / `router.wsMiddleware.useError()` is captured at rule registration time
+- Middleware is not updated retroactively for existing rules
+- When mounting sub-routers, child middleware is appended after parent middleware
+
+**Key principle:** Register all global middleware first, then add routes.
+
+The `router.use()` helper merges middleware instances; individual middleware functions are added on `router.httpMiddleware` or `router.wsMiddleware`.
+
+```js
+const router = server.router;
+
+// Register middleware first
+router.httpMiddleware.use(authMiddleware);
+router.httpMiddleware.use(loggingMiddleware);
+
+// Add routes (they capture current middleware)
+router.addAction('GET', '/old', oldHandler);
+// old → [authMiddleware, loggingMiddleware]
+
+// Add more middleware
+router.httpMiddleware.use(newMiddleware);
+
+// New routes get updated middleware
+router.addAction('GET', '/new', newHandler)
+  // Add a middleware only to a single rule
+  .httpMiddleware.use(otherMiddleware); 
+// new → [authMiddleware, loggingMiddleware, newMiddleware]
+
+// Old routes still use original middleware!
+// old → [authMiddleware, loggingMiddleware]
+```
+
+**Practical example with sub-routers:**
+
+```js
+const apiRouter = new Vortez.Router();
+apiRouter.httpMiddleware.use(apiAuthMiddleware);
+apiRouter.addAction('GET', '/users', getUsersHandler);
+
+server.router.httpMiddleware.use(globalMiddleware);
+server.router.mount(apiRouter, '/api');
+// Final middleware chain: [globalMiddleware, apiAuthMiddleware]
+```
+
+---
+
+## Static Pages
+
+You can use **Vortez** to serve static pages:
+
+```js
+// Importing Vortez
+import Vortez from 'vortez';
+
+// Creating the server
+const server = new Vortez();
+
+// Adding rules
+server.router.addFolder('/source', 'source');
+server.router.addFile('/', 'source/index.html');
+
+// Set all other routes or an specific rule for the static page
+server.router.addFile('/*', 'source/index.html');
+server.router.addFile('/app/*', 'source/index.html');
+
+// Starting the server
+await server.start();
+```
+
+---
+
+## REST APIs
+
+Build a complete REST API:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez({ port: 3000 });
+
+// Users resource
+server.router.addAction('GET', '/api/users', (req, res) => {
+  res.sendJson([
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' }
+  ]);
+});
+
+server.router.addAction('GET', '/api/users/$id', (req, res) => {
+  const id = req.ruleParams.id;
+  res.sendJson({ id, name: `User ${id}` });
+});
+
+server.router.addAction('POST', '/api/users', async (req, res) => {
+  const user = await req.post;
+  res.sendJson({ id: 123, ...user }, { status: 201 });
+});
+
+server.router.addAction('PUT', '/api/users/$id', async (req, res) => {
+  const id = req.ruleParams.id;
+  const body = await req.post;
+  res.sendJson({ id, ...body });
+});
+
+server.router.addAction('DELETE', '/api/users/$id', (req, res) => {
+  res.send('', { status: 204 });
+});
+
+await server.start();
+```
+
+---
+
+## Single Page Applications
+
+Serve an SPA with client-side routing:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+
+// Serve the main app shell for all app routes
+server.router.addFile('/app', 'public/app.html');
+server.router.addFile('/app/*', 'public/app.html');
+
+// Serve static assets
+server.router.addFolder('/public', 'public');
+
+// Optional: API routes
+server.router.addAction('GET', '/api/data', (req, res) => {
+  res.sendJson({ /* ... */ });
+});
+
+await server.start();
+```
+
+---
+
+## Routing Rules
+
+### Serving Folders
+
+Serve an entire directory and its subdirectories:
+
+```js
+server.router.addFolder('/public', 'public');
+server.router.addFolder('/docs', 'documentation');
+
+// Absolute paths are supported
+server.router.addFolder('/cdn', '/var/www/cdn');
+```
+
+> [!WARNING]
+> Never expose sensitive directories:
+> - ❌ `server.router.addFolder('/', '.')` — Exposes the entire project
+> - ❌ `server.router.addFolder('/', 'src')` — Exposes source code
+>
+> Exposed contents include:
+> - Private certificate keys
+> - Database credentials in configuration files
+> - API tokens and secrets
+> - Source code and internal structure
+
+### Serving Files
+
+Serve a single file at a specific route:
+
+```js
+server.router.addFile('/', 'public/index.html');
+server.router.addFile('/sitemap.xml', 'public/sitemap.xml');
+
+// Useful for SPAs - serve the same file for multiple routes
+server.router.addFile('/app/*', 'public/app.html');
+```
+
+### Action Routes
+
+Execute code to handle requests dynamically:
+
+```js
+// Simple JSON API
+server.router.addAction('GET', '/api/status', (request, response) => {
+  response.sendJson({ 
+    status: 'online',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// With route parameters
+server.router.addAction('GET', '/api/users/$id', (request, response) => {
+  const userId = request.ruleParams.id;
+  response.sendJson({ id: userId, name: 'User ' + userId });
+});
+
+// With query parameters
+server.router.addAction('GET', '/api/search', (request, response) => {
+  const query = request.searchParams.q;
+  response.sendJson({ results: [], query });
+});
+
+// POST with body
+server.router.addAction('POST', '/api/data', async (request, response) => {
+  const body = await request.post;
+  response.sendJson({ received: body }, { status: 201 });
+});
+
+// Multiple methods
+server.router.addAction('GET', '/resource/$id', getResourceHandler);
+server.router.addAction('PUT', '/resource/$id', updateResourceHandler);
+server.router.addAction('DELETE', '/resource/$id', deleteResourceHandler);
+```
+
+### WebSocket Routes
+
+Handle real-time WebSocket connections:
+
+```js
+const connections = new Set();
+
+server.router.addWebsocket('/chat', (request, socket) => {
+  console.log('[WS] New connection from:', request.url);
+  
+  // Notify others
+  connections.forEach(conn => {
+    conn.send('A user connected');
+  });
+  connections.add(socket);
+
+  // Handle incoming messages
+  socket.on('message', (data, info) => {
+    console.log('Message:', data.toString());
+    
+    // Broadcast to all connections
+    connections.forEach(conn => {
+      if (conn !== socket) {
+        conn.send(data);
+      }
+    });
+  });
+
+  // Handle disconnection
+  socket.on('finish', () => {
+    connections.delete(socket);
+    connections.forEach(conn => {
+      conn.send('A user disconnected');
+    });
+  });
+
+  // Handle errors
+  socket.on('error', (error) => {
+    console.error('[WS-Error]:', error);
+  });
+});
+```
+
+> [!NOTE]
+> WebSocket routes use a separate namespace from HTTP routes, so you can have `/api` as both an HTTP action and a WebSocket route without conflicts.
+
+---
+
+## Server Configuration
+
+### Configuration Methods
+
+Configure the server using `server.config`:
+
+```js
+import Vortez from 'vortez';
+const server = new Vortez();
+
+// Set individual values
+server.config.set('port', 3000);
+server.config.set('host', '0.0.0.0');
+
+// Set nested values
+server.config.set('ssl.cert', 'path/to/cert.pem');
+server.config.set('ssl.key', 'path/to/key.pem');
+
+// Get values
+const port = server.config.get('port');
+const algorithm = server.config.get('routing.algorithm');
+```
+
+### Constructor Configuration
+
+Pass configuration to the constructor:
+
+```js
+const server = new Vortez({
+  host: '0.0.0.0',
+  port: 8080,
+  ssl: {
+    cert: 'path/to/cert.pem',
+    key: 'path/to/key.pem',
+    port: 443
+  }
+});
+```
+
+### HTTPS/SSL Configuration
+
+Enable HTTPS with SSL certificates:
+
+```js
+server.config.set('ssl', {
+  cert: 'path/to/certificate.pem',
+  key: 'path/to/private-key.pem',
+  port: 443  // Optional: HTTPS port (default: 443)
+});
+```
+
+The framework will automatically create an HTTPS server alongside the HTTP server.
+
+### Template Path Behavior
+
+- `templates.error` and `templates.folder` default to absolute module paths inside Vortez's own `global/Template` directory.
+- This is intentional so defaults work consistently regardless of where your app is executed from.
+- When you provide your own template paths, relative paths are allowed and resolved from your app/project context.
+
+### Available Configuration Keys
+
+```js
+server.config.set('host', 'localhost');           // Server hostname
+server.config.set('port', 80);                    // HTTP port
+server.config.set('ssl.cert', 'cert.pem');        // SSL certificate path
+server.config.set('ssl.key', 'key.pem');          // SSL private key path
+server.config.set('ssl.port', 443);               // HTTPS port
+server.config.set('templates.error', 'error.html');    // Error page template
+server.config.set('templates.folder', 'folder.html');  // Folder listing template
+server.config.set('routing.algorithm', 'FIFO');   // Routing algorithm ('FIFO' or 'Tree')
+```
+
+---
+
+## Real-World Example (ArtFolder Style)
+
+This is a complete composition pattern based on the real-world project structure used in ArtFolder,
+with separated routers for UI pages, API endpoints, and WebSocket endpoints.
+
+```js
+import Vortez, { ServerError, Template } from 'vortez';
+
+const config = await Vortez.Config.Loader.load('.config.json');
+const server = new Vortez(config);
+
+const clientRouter = new Vortez.Router();
+const apiRouter = new Vortez.Router();
+const socketRouter = new Vortez.Router();
+
+// -------------------------
+// Shared API middleware
+// -------------------------
+apiRouter.httpMiddleware.useError((error, request, response, next, state) => {
+  if (error instanceof ServerError) {
+    return response.sendJson({ error: error.message }, { status: error.status });
+  }
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  return response.sendJson({ error: message }, { status: 500 });
+});
+
+apiRouter.httpMiddleware.use(async (request, response, next, state) => {
+  const page = Number(request.searchParams.page ?? '1');
+  const limit = Number(request.searchParams.limit ?? '20');
+  if (!Number.isFinite(page) || !Number.isFinite(limit)) {
+    throw new ServerError('Invalid pagination params', 400);
+  }
+  state.page = page;
+  state.limit = limit;
+  return next();
+});
+
+// -------------------------
+// Client router (SSR + static)
+// -------------------------
+clientRouter.addAction('GET', '/', async (request, response) => {
+  const importMap = await Template.load('assets/importmap.json', {});
+  await response.sendTemplate('assets/app.html', {
+    title: 'Art Folder',
+    style: '/client/styles/styles.css',
+    logic: '/client/logic/build/logic.js',
+    importMap
+  });
+});
+
+clientRouter.addAction('GET', '/app/*', async (request, response) => {
+  const importMap = await Template.load('assets/importmap.json', {});
+  await response.sendTemplate('assets/app.html', {
+    title: 'Art Folder',
+    style: '/client/styles/styles.css',
+    logic: '/client/logic/build/logic.js',
+    importMap
+  });
+});
+
+clientRouter.addFolder('/client', 'client');
+clientRouter.addFile('/favicon.ico', 'client/source/images/Mochis.gif');
+
+// -------------------------
+// API router
+// -------------------------
+apiRouter.addAction('GET', '/health', (request, response, state) => {
+  response.sendJson({ ok: true, page: state.page, limit: state.limit });
+});
+
+apiRouter.addAction('POST', '/echo', async (request, response) => {
+  const body = await request.post;
+  response.sendJson({ received: body }, { status: 201 });
+});
+
+apiRouter.addAction('GET', '/user/$uuid', (request, response) => {
+  response.sendJson({ userId: request.ruleParams.uuid });
+});
+
+apiRouter.addAction('GET', '*', (request) => {
+  throw new ServerError(`No route found for ${request.method} -> ${request.url}`, 404);
+});
+
+// -------------------------
+// WebSocket router
+// -------------------------
+socketRouter.addWebsocket('/user/$uuid', (request, socket) => {
+  socket.sendJson({
+    type: 'welcome',
+    uuid: request.ruleParams.uuid,
+    queryUuid: request.searchParams.uuid
+  });
+
+  socket.on('message', (data) => {
+    socket.sendJson({ type: 'echo', data: data.toString('utf8') });
+  });
+});
+
+// Mount everything
+server.router.mount(clientRouter);
+server.router.mount(apiRouter, '/api');
+server.router.mount(socketRouter, '/rtc');
+
+await server.start();
+```
+
+This pattern keeps each concern isolated and mirrors how larger applications organize routes in production.
+
+---
+
+## Use Cases
+
+### Static Website
+
+Simple static site with assets:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+
+server.router.addFile('/', 'public/index.html');
+server.router.addFolder('/assets', 'public');
+
+await server.start();
+```
+
+### Full-Stack Application
+
+Combine API endpoints with static frontend:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+
+// API
+server.router.addAction('GET', '/api/posts', getPosts);
+server.router.addAction('POST', '/api/posts', createPost);
+
+// Frontend
+server.router.addFile('/', 'public/index.html');
+server.router.addFolder('/assets', 'public');
+
+await server.start();
+```
+
+### Single Page Application
+
+Serve a client-side routed application shell:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+
+server.router.addFile('/', 'public/app.html');
+server.router.addFile('/app/*', 'public/app.html');
+server.router.addFolder('/assets', 'public');
+
+server.router.addAction('GET', '/api/status', (request, response) => {
+  response.sendJson({ status: 'ok' });
+});
+
+await server.start();
+```
+
+### Real-Time Chat Application
+
+WebSocket-powered chat:
+
+```js
+import Vortez from 'vortez';
+
+const server = new Vortez();
+const clients = new Set();
+
+server.router.addWebsocket('/chat', (request, socket) => {
+  clients.add(socket);
+  
+  socket.on('message', (data) => {
+    clients.forEach(client => client.send(data));
+  });
+  
+  socket.on('finish', () => clients.delete(socket));
+});
+
+server.router.addFile('/', 'public/index.html');
+await server.start();
+```
+
+---
+
+# Development Features
+
+## Beta Features
+
+The development version includes experimental functionality:
+
+```console
+npm install vortez@dev
+```
+
+Access beta features:
+
+```js
+import { Beta } from 'vortez';
+const { Mail, JwtManager } = Beta;
+
+// JWT token management
+const jwt = new JwtManager({ alg: 'HS256', key: 'secret' });
+const token = jwt.sign({ userId: 1 });
+
+// Email functionality
+const mailer = new Mail({
+  host: 'smtp.example.com',
+  port: 587,
+  username: 'user',
+  password: 'secret',
+  email: 'user@example.com',
+  useStartTLS: true
+});
+```
+
+> [!WARNING]
+> Beta features are experimental and may change significantly. Use with caution in production.
+
+---
+
+## Contributing
+
+Contributions are welcome! Feel free to submit issues and pull requests on the repository.
+
+## License
+
+Licensed under the terms specified in the [LICENSE](LICENSE) file.
+
+---
+
+## Support
+
+For questions, issues, or feature requests, please open an issue on the GitHub repository.
+

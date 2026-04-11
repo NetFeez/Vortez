@@ -1,0 +1,98 @@
+import Utilities, { Schema, Flatten } from "../../utilities/Utilities.js";
+import _Loader from "./Loader.js";
+
+export const DEFAULT_FOLDER_TEMPLATE = Utilities.Path.module('global/template/folder.vhtml');
+export const DEFAULT_ERROR_TEMPLATE = Utilities.Path.module('global/template/error.vhtml');
+
+export const SCHEMA_LOGGER_PROP = new Schema({
+    show: { type: 'boolean', default: true },
+    save: { type: 'boolean', default: true }
+});
+
+export const SCHEMA_LOGGER = new Schema({
+    showAll: { type: 'boolean', default: false },
+    server: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
+    request: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
+    response: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
+    websocket: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema }
+});
+
+export const SCHEMA_SSL = new Schema({
+    cert: { type: 'string', required: true },
+    key: { type: 'string', required: true },
+    port: { type: 'number', default: 443, minimum: 0, maximum: 65535 }
+});
+
+export const SCHEMA_TEMPLATES = new Schema({
+    folder: { type: 'string', default: DEFAULT_FOLDER_TEMPLATE },
+    error: { type: 'string', default: DEFAULT_ERROR_TEMPLATE }
+});
+
+export const SCHEMA_ROUTING = new Schema({
+    algorithm: { type: 'string', enum: ['FIFO', 'Tree'], default: 'FIFO' }
+});
+
+export const SCHEMA_HANDLER = new Schema({
+    host: { type: 'string', default: 'localhost' },
+    port: { type: 'number', default: 80, minimum: 0, maximum: 65535 },
+    ssl: { type: 'object', nullable: true, default: null, schema: SCHEMA_SSL.schema },
+    routing: { type: 'object', default: {
+        algorithm: 'FIFO'
+    }, schema: SCHEMA_ROUTING.schema },
+    templates: { type: 'object', default: {
+            folder: DEFAULT_FOLDER_TEMPLATE,
+            error: DEFAULT_ERROR_TEMPLATE
+        }, schema: SCHEMA_TEMPLATES.schema
+    },
+    logger: { type: 'object', default: {
+        showAll: false,
+        server: { show: true, save: true },
+        request: { show: true, save: true },
+        response: { show: true, save: true },
+        websocket: { show: true, save: true }
+    }, schema: SCHEMA_LOGGER.schema }
+});
+
+export type SCHEMA_HANDLER = typeof SCHEMA_HANDLER;
+
+export class Config {
+    public data: Config.data;
+    protected props: Config.props;
+    public constructor(data: Config.toProcess) {
+        this.data = SCHEMA_HANDLER.processData(data);
+        this.props = Flatten.object(this.data);
+    }
+
+    /**
+     * Gets a config property by its path.
+     * @param path - The path to the config property.
+     * @returns The value of the config property at the specified path.
+     */
+    public get<T extends keyof Config.props>(path: T): Config.props[T] {
+        return this.props[path];
+    }
+    public set<T extends keyof Config.props>(path: T, value: Config.props[T]): void {
+        this.props[path] = value;
+        this.data = Flatten.unObject(this.props);
+    }
+    /**
+     * Saves the config to the specified path.
+     * @param path - The path to save the config file to.
+     * @returns A promise that resolves when the config is saved.
+     */
+    public save(path: string): Promise<void> {
+        this.data = Flatten.unObject(this.props);
+        return Config.Loader.save(path, this);
+    }
+
+    /** Converts the config to a JSON string. */
+    public toJson(): string { return JSON.stringify(this.data, null, 4); }
+}
+export namespace Config {
+    export import Loader = _Loader;
+
+    export type toProcess = typeof SCHEMA_HANDLER.inferToProcess;
+    export type data = typeof SCHEMA_HANDLER.infer;
+    export type props = Flatten.Object<Config.data>;
+}
+export default Config;
