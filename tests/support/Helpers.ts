@@ -4,6 +4,7 @@
  * @license Apache-2.0
  */
 import { PassThrough } from 'stream';
+import { EventEmitter } from 'events';
 import PATH from 'path';
 import { promises as FSP } from 'fs';
 import type HTTP from 'http';
@@ -34,6 +35,7 @@ export class Helpers {
     /** Creates a mock HTTP response object. */
     public static createMockHttpResponse(): Helpers.MockHttpResponse {
         const headers: Record<string, string | number | string[]> = {};
+        const events = new EventEmitter();
         const response: Helpers.MockHttpResponse = {
             statusCode: 0,
             headersSent: false,
@@ -51,13 +53,28 @@ export class Helpers {
                 }
             },
             end(data = '', encoding = 'utf8') {
-                if (Buffer.isBuffer(data)) this.body = data.toString(encoding);
-                else this.body = typeof data === 'string' ? data : String(data);
+                if (Buffer.isBuffer(data)) this.body += data.toString(encoding);
+                else this.body += typeof data === 'string' ? data : String(data);
                 this.writableEnded = true;
             },
             write(data) {
                 this.body += Buffer.isBuffer(data) ? data.toString('utf8') : String(data);
                 return true;
+            },
+            on(event, listener) {
+                events.on(event, listener);
+                return this;
+            },
+            once(event, listener) {
+                events.once(event, listener);
+                return this;
+            },
+            emit(event, ...args) {
+                return events.emit(event, ...args);
+            },
+            removeListener(event, listener) {
+                events.removeListener(event, listener);
+                return this;
             },
         };
 
@@ -150,6 +167,10 @@ export namespace Helpers {
         writeHead(status: number, responseHeaders?: Record<string, string | number | string[]>): void;
         end(data?: string | Buffer, encoding?: BufferEncoding): void;
         write(data: string | Buffer): boolean;
+        on(event: string, listener: (...args: any[]) => void): MockHttpResponse;
+        once(event: string, listener: (...args: any[]) => void): MockHttpResponse;
+        emit(event: string, ...args: any[]): boolean;
+        removeListener(event: string, listener: (...args: any[]) => void): MockHttpResponse;
     }
 
     export interface IncomingMessageOptions {

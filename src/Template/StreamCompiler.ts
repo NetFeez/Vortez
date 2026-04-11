@@ -17,14 +17,9 @@ export class StreamCompiler extends Transform {
     }
 
 public override _transform(chunk: unknown, encoding: BufferEncoding, callback: TransformCallback) {
-        if (typeof chunk === 'string') {
-            this.buffer += chunk;
-        } else if (Buffer.isBuffer(chunk)) {
-            this.buffer += chunk.toString(encoding);
-        } else {
-            callback(new TypeError('StreamCompiler only supports string or Buffer chunks.'));
-            return;
-        }
+        if (typeof chunk === 'string') this.buffer += chunk;
+        else if (Buffer.isBuffer(chunk)) this.buffer += chunk.toString('utf-8');
+        else return callback(new Error('Invalid chunk type. Expected string or Buffer.'));
         
         const matches = Array.from(this.buffer.matchAll(/<(vortez-if|vortez-each)|<\/(vortez-if|vortez-each)>/g));
         
@@ -35,7 +30,6 @@ public override _transform(chunk: unknown, encoding: BufferEncoding, callback: T
             for (const match of matches) {
                 if (match[0].startsWith('</')) depth--;
                 else depth++;
-
                 if (depth === 0) lastBalancedIndex = match.index! + match[0].length;
             }
         } else {
