@@ -40,6 +40,8 @@ export class Helpers {
             statusCode: 0,
             headersSent: false,
             writableEnded: false,
+            writable: true,
+            destroyed: false,
             headers,
             body: '',
             setHeader(name, value) {
@@ -53,13 +55,26 @@ export class Helpers {
                 }
             },
             end(data = '', encoding = 'utf8') {
+                if (this.destroyed || this.writableEnded) return;
                 if (Buffer.isBuffer(data)) this.body += data.toString(encoding);
                 else this.body += typeof data === 'string' ? data : String(data);
                 this.writableEnded = true;
+                this.writable = false;
+                this.emit('finish');
+                this.emit('close');
             },
             write(data) {
+                if (this.destroyed || this.writableEnded) return false;
                 this.body += Buffer.isBuffer(data) ? data.toString('utf8') : String(data);
                 return true;
+            },
+            destroy(error?: Error) {
+                if (this.destroyed) return this;
+                this.destroyed = true;
+                this.writable = false;
+                if (error) this.emit('error', error);
+                this.emit('close');
+                return this;
             },
             on(event, listener) {
                 events.on(event, listener);
@@ -161,12 +176,15 @@ export namespace Helpers {
         statusCode: number;
         headersSent: boolean;
         writableEnded: boolean;
+        writable: boolean;
+        destroyed: boolean;
         headers: Record<string, string | number | string[]>;
         body: string;
         setHeader(name: string, value: string | number | string[]): void;
         writeHead(status: number, responseHeaders?: Record<string, string | number | string[]>): void;
         end(data?: string | Buffer, encoding?: BufferEncoding): void;
         write(data: string | Buffer): boolean;
+        destroy(error?: Error): MockHttpResponse;
         on(event: string, listener: (...args: any[]) => void): MockHttpResponse;
         once(event: string, listener: (...args: any[]) => void): MockHttpResponse;
         emit(event: string, ...args: any[]): boolean;
