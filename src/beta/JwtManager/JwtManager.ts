@@ -14,6 +14,7 @@ export { Jwt } from "./Jwt.js";
 export { JwtError } from "./JwtError.js";
 
 export class JwtManager {    
+	public static readonly DEFAULT_KID = 'vortez-default-kid';
     protected KIDMap: JwtManager.KIDMap = {};
     protected defaultEntry: JwtManager.KeyEntry;
 
@@ -21,6 +22,7 @@ export class JwtManager {
         entry: JwtManager.KeyOption,
         ...entries: JwtManager.KeyOption[]
     ) {
+        if (!(entry instanceof JwtManager.KeyEntry) && !entry.kid) entry.kid = JwtManager.DEFAULT_KID;
         this.defaultEntry = JwtManager.normalizeEntry(entry);
         entries = [this.defaultEntry, ...entries];
         for (const e of entries) { this.addKey(e); }

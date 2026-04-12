@@ -106,7 +106,7 @@ export class Router {
 		const sessionID = request.cookies.get('Session');
 		logger.request.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeRequest(request, response);
-		if (!isRouted) await response.sendError(404, `No route for: ${request.method} -> ${request.url}`);
+		if (!isRouted && !response.isSent) await response.sendError(404, `No route for: ${request.method} -> ${request.url}`);
 	}
 
 	/**
