@@ -60,7 +60,7 @@ export class Response {
 		this.httpResponse.setHeader('X-Version', Response.version);
     }
 	/** Checks if the response has been sent. */
-	public get isSended(): boolean { return this._isSended || this.httpResponse.writableEnded || this.httpResponse.headersSent; }
+	public get isSent(): boolean { return this._isSended || this.httpResponse.writableEnded || this.httpResponse.headersSent; }
 	/**
 	 * Generates headers for supported file types.
 	 * More types will be supported over time.
@@ -95,12 +95,15 @@ export class Response {
 	public async send(data: Response.data, options: Response.options = {}): Promise<void>  {
 		if (data instanceof Readable) return await this.sendReadable(data, options);
 
-		this._isSended = true;
 		const status = options.status ?? 200;
 		const encode = options.encode || 'utf-8';
 		const headers = options.headers || this.generateHeaders('txt');
+
 		this.sendHeaders(status, headers);
-		this.httpResponse.end(data, encode);
+		this._isSended = true;
+
+		try { await this.httpResponse.end(data, encode); }
+		catch (error) { logger.error(`&C1Error &C6sending data &C1${this.request.session.id}`, error); }
 	}
 	/**
 	 * Sends a readable stream as a response.
@@ -112,11 +115,17 @@ export class Response {
 	 * It handles backpressure and ensures efficient streaming of data to the client.
 	 */
 	private async sendReadable(data: Readable, options: Response.options): Promise<void> {
-		this._isSended = true;
 		const status = options.status ?? 200;
 		const headers = options.headers || this.generateHeaders('txt');
-		await this.sendHeaders(status, headers);
-		await pipeline(data, this.httpResponse);
+
+		this.sendHeaders(status, headers);
+		this._isSended = true;
+
+		try { await pipeline(data, this.httpResponse); }
+		catch (error) {
+			if (this.isClientAbortError(error)) return;
+			logger.error(`&C1error &C6sending stream &C1${this.request.session.id}`, error);
+		}
 	}
 	/**
 	 * Sends a file as a response.
@@ -175,18 +184,7 @@ export class Response {
 				headers['content-range'] = `bytes ${start}-${end}/${details.size}`;
 				await this.send(stream, { status: 206, headers });
             }
-        } catch(error) {
-			const status = this.getFsErrorStatus(error);
-			const message = status === 404
-				? 'The requested URL was not found'
-				: status === 403
-					? 'Access denied to requested resource'
-					: error instanceof Error
-						? error.message
-						: '[Response Error] - File does not exist.';
-			await this.sendError(status, message);
-			logger.error(`error sending file ${this.request.session.id}`, error);
-		}
+		} catch(error) { await this.catchError(error, 'sending file'); }
 	}
 	/**
 	 * Sends the listing of a folder as a response.
@@ -225,18 +223,7 @@ export class Response {
                     folder
                 });
             }
-        } catch(error) {
-			const status = this.getFsErrorStatus(error);
-			const message = status === 404
-				? 'The requested URL was not found'
-				: status === 403
-					? 'Access denied to requested resource'
-					: error instanceof Error
-						? error.message
-						: '[Response Error] - File/Directory does not exist.';
-			await this.sendError(status, message);
-			logger.error(`error sending folder ${this.request.session.id}`, error);
-		}
+		} catch(error) { await this.catchError(error, 'sending folder');}
 	}
 	/**
 	 * Sends a `.vhtml` template as a response.
@@ -252,20 +239,7 @@ export class Response {
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('html');
 			await this.send(template, { status, headers, encode: options.encode });
-        } catch(error) {
-			const status = this.getFsErrorStatus(error);
-			const message = status === 404
-				? 'Template not found'
-				: status === 403
-					? 'Access denied to template resource'
-					: error instanceof Error
-						? error.message
-						: '[Response Error] - Template does not exist.';
-			if (!this.httpResponse.headersSent && !this.httpResponse.writableEnded) {
-				await this.sendError(status, message);
-			}
-			logger.error(`error sending template ${this.request.session.id}`, error);
-		}
+		} catch(error) { await this.catchError(error, 'sending template'); }
 	}
 	/**
 	 * Sends data in JSON format.
@@ -278,10 +252,7 @@ export class Response {
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('json');
 			await this.send(json, { status, headers });
-		} catch(error) {
-			await this.sendError(500, error instanceof Error ? error.message : '[Response Error] - Data cannot be converted to JSON.');
-			logger.error(`error sending json ${this.request.session.id}`, error);
-		}
+		} catch(error) { await this.catchError(error, 'sending JSON');	 }
     }
 	/**
 	 * Sends an error as a response.
@@ -290,34 +261,72 @@ export class Response {
 	 */
 	public async sendError(status: number, message: string): Promise<void> {
         try {
-            if (this.templates.error) {
-                const template = await Template.load(this.templates.error, {
-                    status, message
-                });
-				const headers = this.generateHeaders('html');
-                await this.send(template, { status: status, headers });
-            } else {
-				const template = await Template.load(Utilities.Path.module('global/template/error.vhtml'), {
-                    status, message
-                });
-				const headers = this.generateHeaders('html');
-                await this.send(template, { status: status, headers });
-            }
+            if (this.templates.error) return await this.sendTemplate(this.templates.error, { status, message }, { status });
+            else await this.sendTemplate(Utilities.Path.module('global/template/error.vhtml'), { status, message }, { status });
         } catch(error) {
+			logger.error(`error sending error: ${this.request.session.id}`, error);
 			const headers = this.generateHeaders('txt');
             await this.send(`Error: ${status} -> ${message}`, { status: status, headers });
-			logger.error(`error sending error: ${this.request.session.id}`, error);
 		}
 	}
-
-	private getFsErrorStatus(error: unknown): number {
+	/**
+	 * Handles errors that occur during file sending operations.
+	 * @param error - The error that occurred.
+	 * @param doing - A description of the operation being performed when the error occurred (e.g., "sending file", "sending folder").
+	 * @returns A promise that resolves when the error response has been sent.
+	 * @remarks This method logs the error and sends an appropriate error response to the client based on the type of error encountered.
+	 * It uses the `getErrorStatus` and `getErrorMessage` methods to determine the correct HTTP status code and error message to send in the response.
+	 */
+	private async catchError(error: unknown, doing: string): Promise<void> {
+		if (this.isClientAbortError(error)) return;
+		logger.error(`&C1Error &C6${doing} &C1${this.request.session.id}`, error);
+		if (this.isSent) return;
+		const status = Response.getErrorStatus(error);
+		const message = Response.getErrorMessage(status);
+		await this.sendError(status, message);
+	}
+	/**
+	 * Determines the appropriate HTTP status code based on a filesystem error.
+	 * @param error - The error object to evaluate.
+	 * @returns The corresponding HTTP status code for the error.
+	 * @remarks This method checks for common filesystem error codes such as 'ENOENT' (file not found), 'ENOTDIR' (not a directory), 'EACCES' (permission denied), and 'EPERM' (operation not permitted).
+	 * It returns 404 for not found errors, 403 for permission errors, and defaults to 500 for other types of errors.
+	 */
+	private static getErrorStatus(error: unknown): number {
 		if (!(error instanceof Error)) return 500;
-		const withCode = error as Error & { code?: string };
-		if (withCode.code === 'ENOENT' || withCode.code === 'ENOTDIR') return 404;
-		if (withCode.code === 'EACCES' || withCode.code === 'EPERM') return 403;
+		if (!('code' in error) || typeof error.code !== 'string') return 500;
+		if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return 404;
+		if (error.code === 'EACCES' || error.code === 'EPERM') return 403;
 		return 500;
 	}
+	/**
+	 * Returns a user-friendly error message based on the HTTP status code.
+	 * @param status - The HTTP status code for which to get the error message.
+	 * @returns A string containing the error message corresponding to the provided status code.
+	 * @remarks This method provides specific messages for common error codes such as 403 (Forbidden) and 404 (Not Found), while returning a generic message for other unexpected errors.
+	 */
+	private static getErrorMessage(status: number): string {
+		switch (status) {
+			case 403: return 'Access denied to requested resource';
+			case 404: return 'The requested URL was not found';
+			default: return 'An unexpected error occurred';
+		}
+	 }
 
+	private isClientAbortError(error: unknown): boolean {
+		if (!(error instanceof Error)) return false;
+		if ('code' in error && typeof error.code === 'string') {
+			return error.code === 'ERR_STREAM_PREMATURE_CLOSE' || error.code === 'ECONNRESET' || error.code === 'EPIPE' || error.code === 'ABORT_ERR';
+		}
+		return error.name === 'AbortError';
+	}
+	/**
+	 * Loads the server version from the environment variable or `package.json` file.
+	 * @returns The server version as a string.
+	 * @remarks This method first checks for the `npm_package_version` environment variable, which is automatically set by npm when running scripts.
+	 * If it's not available, it attempts to read the `package.json` file to extract the version.
+	 * If both methods fail, it returns 'unknown'.
+	 */
 	private static loadVersion(): string {
 		const envVersion = process.env.npm_package_version;
 		if (envVersion) return envVersion;

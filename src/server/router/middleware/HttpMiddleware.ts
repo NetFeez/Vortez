@@ -28,7 +28,7 @@ export class HttpMiddleware extends Middleware<HttpRule> {
             let index = 0;
             const next: Middleware.next = async (error?: unknown) => {
                 if (error) throw error;
-                if (response.isSended) return void logger.warn('response was already sent when calling next()');
+                if (response.isSent) return void logger.warn('response was already sent when calling next()');
                 if (index >= this.pipeline.length) return await action(request, response, state);
                 const current = this.pipeline[index++];
                 return await current(request, response, next, state);
@@ -64,15 +64,15 @@ export class HttpMiddleware extends Middleware<HttpRule> {
      */
     protected async errorHandler(error: unknown, request: Request, response: Response): Promise<void> {
         if (error instanceof ServerError) {
-            if (response.isSended) return void logger.warn('throw ApiError used when response was already sent');
+            if (response.isSent) return void logger.warn('throw ApiError used when response was already sent');
             return response.sendError(error.status, error.message);
         } else if (error instanceof Error) {
             logger.error(error);
-            if (response.isSended) return;
+            if (response.isSent) return;
             return response.sendError(500, error.message);
         } else {
             logger.error(error);
-            if (response.isSended) return;
+            if (response.isSent) return;
             return response.sendError(500, 'Internal Server Error');
         }
     }
