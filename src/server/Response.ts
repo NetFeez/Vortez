@@ -184,7 +184,7 @@ export class Response {
 				headers['content-range'] = `bytes ${start}-${end}/${details.size}`;
 				await this.send(stream, { status: 206, headers });
             }
-        } catch(error) { this.catchError(error, 'sending file'); }
+		} catch(error) { await this.catchError(error, 'sending file'); }
 	}
 	/**
 	 * Sends the listing of a folder as a response.
@@ -223,7 +223,7 @@ export class Response {
                     folder
                 });
             }
-        } catch(error) { this.catchError(error, 'sending folder');}
+		} catch(error) { await this.catchError(error, 'sending folder');}
 	}
 	/**
 	 * Sends a `.vhtml` template as a response.
@@ -239,7 +239,7 @@ export class Response {
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('html');
 			await this.send(template, { status, headers, encode: options.encode });
-        } catch(error) { this.catchError(error, 'sending template'); }
+		} catch(error) { await this.catchError(error, 'sending template'); }
 	}
 	/**
 	 * Sends data in JSON format.
@@ -252,7 +252,7 @@ export class Response {
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('json');
 			await this.send(json, { status, headers });
-		} catch(error) { this.catchError(error, 'sending JSON');	 }
+		} catch(error) { await this.catchError(error, 'sending JSON');	 }
     }
 	/**
 	 * Sends an error as a response.
