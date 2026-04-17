@@ -95,21 +95,33 @@ export class Websocket extends EVENTS {
 	 * @param data The data that will be sent.
      */
     private write(data: String | Buffer): void {
-        const [buffer, isText] = typeof data == 'string'
-        ? [this.stringToBuffer(data), true]
-        : data instanceof Buffer
-            ? [data, false]
-            : [this.stringToBuffer('[Error]: unsupported data type MyNetFeez-Labs.Vortez.Websocket.send'), true];
-        const message = this.encode(buffer, isText);
+        let opCode: number, buffer: Buffer;
+
+        if (data instanceof Buffer) {
+            buffer = data;
+            opCode = 0x2; // Binary frame
+        } else if (typeof data === 'string') {
+            buffer = this.stringToBuffer(data);
+            opCode = 0x1; // Text frame
+        } else {
+            const stack = new Error().stack || ''; 
+            return logger.warn('&C3Unsupported data type for Websocket.send. Data must be a string or a Buffer.\nStack trace:\n&C0' + stack);
+        }
+        const message = this.encode(buffer, opCode);
         this.connection.write(message);
     }
     /**
      * Encodes the data to be sent to the client.
      * @param data The data that will be encoded.
-     * @param isText Whether the data is a text or a binary.
+     * @param opCode The opcode of the message.
+     * - `0x1` for text,
+     * - `0x2` for binary,
+     * - `0x8` for close,
+     * - `0x9` for ping,
+     * - `0xA` for pong.
      */
-    private encode(data: Buffer, isText: boolean = false): Buffer {
-        const encoded = isText ? [129] : [130];
+    private encode(data: Buffer, opCode: number = 0x2): Buffer {
+        const encoded = [0x80 + opCode]; // FIN + OPCODE
         if (data.length <= 125) {
             encoded[1] = data.length;
         } else if (data.length >= 126 && data.length <= 65535) {
@@ -154,11 +166,24 @@ export class Websocket extends EVENTS {
                 chunks.push(currentChunk);
                 surplus = currentChunk.surplus;
                 if (currentChunk.fin) {
+                    const { opCode, size } = chunks[0];
                     const decoded = Buffer.concat(chunks.map(chunk => chunk.decode()));
-                    this.emit('message', decoded, {
-                        opCode: chunks[0].opCode,
-                        size: chunks[0].size
-                    });
+
+                    if (opCode === 0x1 || opCode === 0x2) {
+                        this.emit('message', decoded, { opCode, size });
+                    } else if (opCode === 0x8) {
+                        this.emit('close');
+                        const closeFrame = this.encode(Buffer.alloc(0), 0x8);
+                        this.connection.write(closeFrame);
+                        this.connection.end();
+                    } else if (opCode === 0x9) {
+                        const pongFrame = this.encode(decoded, 0xA);
+                        this.connection.write(pongFrame);
+                    } else if (opCode === 0xA) { /* Ignore PONG frames for now */ }
+                    else {
+                        const stack = new Error().stack || ''; 
+                        logger.warn(`Received unsupported opcode: ${opCode}\nStack trace:\n${stack}`);
+                    }
                     chunks = [];
                 }
                 currentChunk = null;
