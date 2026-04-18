@@ -1,26 +1,32 @@
 #!/bin/bash
-echo "Starting publish process...";
-if bash scripts/test.sh; then
-  echo "Tests passed successfully!";
-else
-  echo "Tests failed. Aborting publish.";
-  exit 1;
-fi
+
+# ====== Configuration ======
+
+set -euo pipefail
+
+# ====== Preparation process ======
+
+bash scripts/test.sh
+
+echo -e "\x1B[36m====== No publishes before refactor tests process ====== \x1B[0m";
+exit 1
+
+# ====== Main Process ======
 
 if [[ "$1" == "--dev" ]]; then
-  echo "Publishing with tag 'dev'...";
+  echo -e "\x1B[37mPublishing with tag 'dev'...\x1B[0m";
   if npm publish --tag dev; then
-    echo "Dev publish completed successfully!";
+    echo -e "\x1B[32mDev publish completed successfully!\x1B[0m";
   else
-    echo "Dev publish failed.";
+    echo -e "\x1B[31mDev publish failed.\x1B[0m";
     exit 1;
   fi
 else
-  echo "Publishing...";
+  echo -e "\x1B[37mPublishing...\x1B[0m";
   if npm publish; then
-    echo "Publish completed successfully!";
+    echo -e "\x1B[32mPublish completed successfully!\x1B[0m";
   else
-    echo "Publish failed.";
+    echo -e "\x1B[31mPublish failed.\x1B[0m";
     exit 1;
   fi
 fi

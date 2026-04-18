@@ -1,7 +1,20 @@
 #!/bin/bash
+
+# ====== Configuration ======
+
 set -euo pipefail
 
-echo "Running tests...";
-npx tsc --pretty false
-npx tsc -p tsconfig.tests.json --pretty false
-node build-tests/test.js
+TEST_MAIN=build-test/test.js
+
+# ====== Preparation process ======
+
+bash scripts/compile-test.sh
+
+# ====== Main Process ======
+
+if node "$TEST_MAIN"; then
+    echo -e "\x1B[32mTests passed successfully!\x1B[0m";
+else
+    echo -e "\x1B[31mTests failed.\x1B[0m";
+    exit 1;
+fi
