@@ -19,6 +19,7 @@ import _File from './File.js';
 import _Object from './Object.js';
 import _Encoding from './Encoding.js';
 import _Time from './Time.js';
+import _Events from './Events.js';
 
 export { Path } from './Path.js';
 export { Env } from './Env.js';
@@ -30,7 +31,7 @@ export { File } from './File.js';
 export { Object } from './Object.js';
 export { Encoding } from './Encoding.js';
 export { Time } from './Time.js';
-
+export { Events } from './Events.js';
 export class Utilities {
     /**
      * Checks if a file exists at the given path.
@@ -109,7 +110,7 @@ export namespace Utilities {
     export import Object = _Object;
     export import Encoding = _Encoding;
     export import Time = _Time;
-
+    export import Events = _Events;
     export namespace Types {
         type NumListAdd = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
         type strToNum<str extends string> = str extends `${infer num extends number}` ? num : never;
