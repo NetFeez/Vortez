@@ -109,6 +109,7 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
                 if (message.isText) this.emit('message:text', message.payload.toString('utf-8'));
                 else this.emit('message:binary', message.payload);
             } else if (message.isClose) {
+                this.vStatus = 'closed';
                 this.emit('close');
                 const closeFrame = Codec.encode(Buffer.alloc(0), 0x8);
                 this.connection.write(closeFrame);
@@ -119,12 +120,16 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             }
         });
         this.assembler.on('error', (error) => {
+            this.vStatus = 'closed';
             this.emit('error', error);
             const closeFrame = Codec.encode(Buffer.alloc(0), 0x8);
             this.connection.write(closeFrame);
             this.connection.end();
         });
-        socket.on('close', this.emit.bind(this, 'close'));
+        socket.on('close', () => {
+            this.vStatus = 'closed';
+            this.emit('close');
+        });
         socket.on('error', this.emit.bind(this, 'error'));
     }
     /**

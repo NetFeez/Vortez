@@ -45,6 +45,7 @@ export class WebsocketSSInit extends WebsocketBase {
     public reject(code: number, reason: string): void {
         this.vStatus = 'closed';
         this.handshaker.reject(code, reason);
+        this.emit('close');
     }
 }
 export namespace WebsocketSSInit {}
