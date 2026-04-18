@@ -83,7 +83,7 @@ export class Tree extends Algorithm {
      * @param client - The client to route the request to.
      * @returns True if the request was routed, false otherwise.
      */
-    protected override routeWebsocket(request: Request, client: Websocket): boolean {
+    protected override routeWebsocket(request: Request, client: Websocket.WebsocketSSInit): boolean {
         request.ruleParams = {};
         const node = this.navigate(request);
         if (!node) return false;
