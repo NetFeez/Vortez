@@ -16,10 +16,10 @@ export class FIFO extends Algorithm {
         rule.exec(request, client);
         return true;
     }
-    protected override routeWebsocket(request: Request, client: Websocket): boolean {
+    protected override routeWebsocket(request: Request, connection: Websocket.WebsocketSSInit): boolean {
         const rule = this.rules.find((rule): rule is WsRule => rule instanceof WsRule && rule.test(request));
         if (!rule) return false;
-        rule.exec(request, client);
+        rule.exec(request, connection);
         return true;
     }
 }

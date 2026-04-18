@@ -24,6 +24,33 @@ export class Cookie {
         }
     }
     /**
+     * Generates an array of "Set-Cookie" header strings based on the news data.
+      * - This should be called after all cookie modifications (set/delete) are done, and the resulting array should be used to set the "Set-Cookie" headers in the response.
+      * - Each string in the returned array represents a single "Set-Cookie" header value that can be sent to the client to create, update, or delete cookies as specified by the news data.
+      * @returns An array of "Set-Cookie" header strings.
+      * 
+      * @remarks The returned array will contain one string for each cookie that was set or deleted using the `set` and `delete` methods. Each string will include the cookie name, value (if set), and any specified options such as domain, path, expires, etc. For deleted cookies, the string will indicate that the cookie should be removed by setting its value to "None" and providing an expiration date in the past.
+      */
+    public get setters(): string[] {
+        const setStrings: string[] = [];
+        this.news.forEach((value, name) => {
+            if (value.delete) {
+                setStrings.push(`${name}=None;Path=/;Expires=${(new Date).toUTCString()}`);
+            } else {
+                let setter = `${name}=${value.value}`;
+                setter += value.domain   ? `;Domain=${value.domain}`                 : '';
+                setter += value.expires  ? `;Expires=${value.expires.toUTCString()}` : '';
+                setter += value.httpOnly ? ';HttpOnly'                               : '';
+                setter += value.maxAge   ? `;Max-Age=${value.maxAge}`                : '';
+                setter += value.path     ? `;Path=${value.path}`                     : '';
+                setter += value.sameSite ? `;SameSite=${value.sameSite}`             : '';
+                setter += value.secure   ? ';Secure'                                 : '';
+                setStrings.push(setter);
+            }
+        });
+        return setStrings;
+    }
+    /**
      * Checks if a cookie exists.
      * @param name - The name of the cookie to check.
      * @returns True if the cookie exists, otherwise false.
@@ -44,29 +71,6 @@ export class Cookie {
         const cookies: Cookie.CookieObject = {};
         this.data.forEach((value, key) => cookies[key] = value);
         return cookies;
-    }
-    /**
-     * Returns an array of "Set-Cookie" header strings.
-     * @returns An array of formatted Set-Cookie strings.
-     */
-    public getSetters(): string[] {
-        const setStrings: string[] = [];
-        this.news.forEach((value, name) => {
-            if (value.delete) {
-                setStrings.push(`${name}=None;Path=/;Expires=${(new Date).toUTCString()}`);
-            } else {
-                let setter = `${name}=${value.value}`;
-                setter += value.domain   ? `;Domain=${value.domain}`                 : '';
-                setter += value.expires  ? `;Expires=${value.expires.toUTCString()}` : '';
-                setter += value.httpOnly ? ';HttpOnly'                               : '';
-                setter += value.maxAge   ? `;Max-Age=${value.maxAge}`                : '';
-                setter += value.path     ? `;Path=${value.path}`                     : '';
-                setter += value.sameSite ? `;SameSite=${value.sameSite}`             : '';
-                setter += value.secure   ? ';Secure'                                 : '';
-                setStrings.push(setter);
-            }
-        });
-        return setStrings;
     }
     /**
      * Sets or replaces a cookie.

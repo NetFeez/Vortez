@@ -9,9 +9,9 @@ export class WsRule extends Rule<WsRule.action> {
         urlRule: string, action: WsRule.action,
         public readonly middleware: WsMiddleware = new WsMiddleware()
     ) { super(urlRule, action); }
-    public exec(request: Request, client: Websocket, state?: Middleware.State): void {
+    public exec(request: Request, connection: Websocket.WebsocketSSInit, state?: Middleware.State): void {
         request.ruleParams = this.getParams(request.url);
-        this.middleware.run(request, client, this.action, state);
+        this.middleware.run(request, connection, this.action, state);
     }
     public test(request: Request): boolean {
         return super.test(request);

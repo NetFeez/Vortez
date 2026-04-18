@@ -18,57 +18,57 @@ export class WsMiddleware extends Middleware<WsRule> {
     /**
      * Runs the middleware pipeline.
      * @param request The request received by the server.
-     * @param client The WebSocket connection.
+     * @param websocket The WebSocket connection.
      * @param action The action to execute after the middleware pipeline.
      * @param state The state to pass to the middleware and action.
      */
-    public async run(request: Request, client: Websocket, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
+    public async run(request: Request, websocket: Websocket.WebsocketSSInit, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (error?: unknown) => {
                 if (error) throw error;
-                if (client.isClosed) return void logger.warn('websocket was closed when calling next()');
-                if (client.status === 'rejected') return void logger.warn('websocket was rejected when calling next()');
+                if (websocket.isClosed) return void logger.warn('websocket was closed when calling next()');
+                if (websocket.status === 'closed') return void logger.warn('websocket was rejected when calling next()');
                 if (index >= this.pipeline.length) {
-                    if (client.status === 'pending') client.accept();
-                    return await action(request, client, state);
+                    if (websocket.status === 'handshake') websocket.accept();
+                    return await action(request, websocket, state);
                 }
                 const current = this.pipeline[index++];
-                return await current(request, client, next, state);
+                return await current(request, websocket, next, state);
             };
             await next();
         } catch(error) {
-            if (this.errorPipeline.length === 0) return this.errorHandler(error, request, client);
-            else return this.runError(error, request, client, state);
+            if (this.errorPipeline.length === 0) return this.errorHandler(error, request, websocket);
+            else return this.runError(error, request, websocket, state);
         }
     }
-    public async runError(error: unknown, request: Request, client: Websocket, state: Middleware.State = {}): Promise<void> {
+    public async runError(error: unknown, request: Request, websocket: Websocket.WebsocketSSInit, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (caughtError?: unknown) => {
                 if (caughtError) throw caughtError;
-                if (index >= this.errorPipeline.length) return await this.errorHandler(error, request, client);
+                if (index >= this.errorPipeline.length) return await this.errorHandler(error, request, websocket);
                 const current = this.errorPipeline[index++];
-                return await current(error, request, client, next, state);
+                return await current(error, request, websocket, next, state);
             };
             await next();
-        } catch(error) { return this.errorHandler(error, request, client); }
+        } catch(error) { return this.errorHandler(error, request, websocket); }
     }
-    protected async errorHandler(error: unknown, request: Request, client: Websocket): Promise<void> {
+    protected async errorHandler(error: unknown, request: Request, websocket: Websocket.WebsocketSSInit): Promise<void> {
         if (error instanceof ServerError) {
             if (error.isSended) return;
-            if (client.isClosed) return void logger.error(error);
-            if (client.status !== 'pending') return;
-            client.reject(error.status, error.message);
+            if (websocket.isClosed) return void logger.error(error);
+            if (websocket.status !== 'handshake') return;
+            websocket.reject(error.status, error.message);
         } else if (error instanceof Error) {
             logger.error(error);
-            if (client.isClosed || client.status !== 'pending') return;
-            client.reject(500, error.message);
+            if (websocket.isClosed || websocket.status !== 'handshake') return;
+            websocket.reject(500, error.message);
         } else {
             logger.error(error);
-            if (client.isClosed || client.status !== 'pending') return;
-            if (client.isClosed) return;
-            client.reject(500, 'Internal Server Error');
+            if (websocket.isClosed || websocket.status !== 'handshake') return;
+            if (websocket.isClosed) return;
+            websocket.reject(500, 'Internal Server Error');
         }
     }
 }

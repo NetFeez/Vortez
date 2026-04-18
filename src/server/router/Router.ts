@@ -119,11 +119,11 @@ export class Router {
 	 */
 	public upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): void {
 		const request = new Request(HttpRequest);
-		const webSocket = new Websocket(request, Socket);
+		const websocket = new Websocket.WebsocketSSInit(request, Socket);
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
-		const isRouted = this.routeWebSocket(request, webSocket);
-		if (!isRouted) webSocket.reject(404, `No route for: ${request.method} -> ${request.url}`);
+		const isRouted = this.routeWebSocket(request, websocket);
+		if (!isRouted) websocket.reject(404, `No route for: ${request.method} -> ${request.url}`);
 	}
 	/**
 	 * Routes incoming HTTP requests to be processed.
@@ -144,8 +144,9 @@ export class Router {
 	 * @remarks This method attempts to route the incoming WebSocket upgrade request using the routing algorithm.
 	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
 	 */
-	public routeWebSocket(request: Request, webSocket: Websocket): boolean {
-		return this.algorithm.route(request, webSocket);
+	public routeWebSocket(request: Request, websocket: Websocket.WebsocketSSInit): boolean {
+		// Solo exponer la API pública Websocket al action
+		return this.algorithm.route(request, websocket);
 	}
 	/**
 	 * Adds multiple routing rules to the server.

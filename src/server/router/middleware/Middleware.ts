@@ -89,11 +89,11 @@ export namespace Middleware {
     export type next = (error?: unknown) => void;
     export namespace action {
         export type http = (request: Request, response: Response, next: next, state: State) => void | Promise<void>;
-        export type ws = (request: Request, client: Websocket, next: next, state: State) => void | Promise<void>;
+        export type ws = (request: Request, client: Websocket.WebsocketSSInit, next: next, state: State) => void | Promise<void>;
     }
     export namespace errorAction {
         export type http = (error: unknown, request: Request, response: Response, next: next, state: State) => void | Promise<void>;
-        export type ws = (error: unknown, request: Request, client: Websocket, next: next, state: State) => void | Promise<void>;
+        export type ws = (error: unknown, request: Request, client: Websocket.WebsocketSSInit, next: next, state: State) => void | Promise<void>;
     }
     export type action<Rule extends HttpRule | WsRule> = Rule extends WsRule ? action.ws : action.http;
     export type errorAction<Rule extends HttpRule | WsRule> = Rule extends WsRule ? errorAction.ws : errorAction.http;

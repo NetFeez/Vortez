@@ -1,276 +1,51 @@
-/**
- * @author NetFeez <netfeez.dev@gmail.com>
- * @description adds websocket functionality to Vortez
- * @license Apache-2.0
- */
+import type { Duplex } from 'stream';
 
-import EVENTS from 'events';
-import CRYPTO from 'crypto';
-import { Duplex } from 'stream';
-import Chunk from './Chunk.js';
-import Cookie from '../Cookie.js';
-import Request from '../Request.js';
-import LoggerManager from '../LoggerManager.js';
-import ServerError from '../ServerError.js';
+import type Request from '../Request.js';
 
-const logger = LoggerManager.getInstance().webSocket;
+import WebsocketBase from "./WebsocketBase.js";
 
-export { Chunk } from './Chunk.js';
+import _WebsocketCSInit from './WebsocketCSInit.js';
+import _WebsocketSSInit from './WebsocketSSInit.js';
 
+export { Codec } from './Codec.js';
+export { WebsocketCSInit } from './WebsocketCSInit.js';
+export { WebsocketSSInit } from './WebsocketSSInit.js';
 
-export class Websocket extends EVENTS {
-    public static readonly WEBSOCKET_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-    private _status: Websocket.handshakeStatus = 'pending';
+export class Websocket extends WebsocketBase {
     /**
-     * Creates a new websocket.
-     * @param client The connection with the client.
+     * Creates a new ServerInit with handshake functions for accepting or rejecting WebSocket connections.
+     * This method is intended to be used in server-side applications to handle incoming WebSocket handshake requests and establish WebSocket connections with clients.
+     * Before handshakes finish you should get WebSocket instance with get method `websocket`
+     * @example
+     * ```typescript
+     * const serverSocketInit = Websocket.SS(socket, request);
+     * serverSocketInit.accept(); // To accept the handshake and establish the WebSocket connection
+     * // or
+     * serverSocketInit.reject(400, 'Bad Request'); // To reject the handshake with a specific status code and reason
+     * 
+     * const socket = serverSocketInit.websocket; // Access the WebSocket instance for further communication after accepting the handshake
+     * ```
+     * @param socket - The Duplex stream representing the incoming socket connection from a client, which will be used for the WebSocket handshake and subsequent communication if the handshake is accepted.
+     * @param request - The Request object representing the client's handshake request, which contains the necessary information for validating and processing the handshake.
+     * @returns A ServerInit instance that provides methods for accepting or rejecting the WebSocket handshake, as well as access to the WebSocket instance for communication after a successful handshake.
+     * @remarks The method creates a new ServerInit instance with the provided socket and request, which encapsulates the logic for handling the WebSocket handshake process. The returned ServerInit instance can then be used to accept or reject the handshake based on the validation of the client's request, and to access the WebSocket instance for communication if the handshake is accepted.
      */
-    public constructor(
-        public readonly request: Request,
-        public readonly connection: Duplex
-    ) { super(); this.initEvents(); }
-    /** Whether the connection is closed. */
-    public get isClosed(): boolean { return this.connection.readableEnded; }
-    public get status(): Websocket.handshakeStatus { return this._status; }
-    /**
-     * Accepts the connection with the client.
-     */
-    public accept(): void  {
-        const key = this.request.headers['sec-websocket-key']?.trim();
-        if (!key) throw new ServerError('Missing Sec-WebSocket-Key header', 400);
-        this._status = 'accepted';
-        const acceptToken = CRYPTO.createHash('SHA1').update(
-            key + Websocket.WEBSOCKET_GUID
-        ).digest('base64');
-
-        const headers = this.buildHeaders([
-            'HTTP/1.1 101 Switching Protocols',
-            'Upgrade: websocket',
-            'Connection: Upgrade',
-            `Sec-WebSocket-Accept: ${acceptToken}`
-        ], this.request.cookies);
-
-        this.connection.write(headers);
+    public static SS(socket: Duplex, request: Request): Websocket.WebsocketSSInit {
+        return new _WebsocketSSInit(request, socket);
     }
     /**
-     * Rejects the connection with the client.
-     * @param code The code that will be sent to the client.
-     * @param reason The reason that will be sent to the client.
+     * Creates a new ClientInit and initiates a WebSocket connection to the specified URL by performing the necessary handshake process.
+     * This method is intended to be used in client-side applications to establish WebSocket connections to servers by providing the appropriate WebSocket URL.
+     * @param url - The WebSocket URL to connect to, which should include the protocol (ws:// or wss://), host, optional port, and path.
+     * @returns A promise that resolves to a Websocket instance representing the established connection if the handshake is successful, or rejects with an error if the handshake fails or if there are issues during the connection process.
+     * @remarks The method calls the static `connect` method of the ClientInit class, which handles parsing the URL, creating the socket connection, and performing the WebSocket handshake. If the handshake is successful, it resolves with a Websocket instance that can be used for communication. If any errors occur during the process, it rejects with the corresponding error.
      */
-    public reject(code: number, reason: string): void {
-        this._status = 'rejected';
-        const body = JSON.stringify({ code, reason },null, 4);
-        const headers = this.buildHeaders([
-            `HTTP/1.1 ${code} ${reason}`,
-            'Content-Type: application/json',
-            `Content-Length: ${Buffer.byteLength(body)}`,
-            'Connection: close'
-        ], this.request.cookies);
-        this.connection.write(headers);
-        this.connection.end(body);
-    }
-    /**  Finishes the connection. */
-    public end(): void { this.connection.end(); }
-    /** Destroys the connection. */
-    public destroy(): void { this.connection.destroy(); }
-    /**
-	 * Send data to the client.
-	 * @param data The data that will be sent.
-     */
-    public send(data: string | Buffer): void {
-        if (this.status == 'rejected') return void logger.warn('You cannot send data to a rejected websocket connection');
-        if (this.status == 'pending') return void logger.warn('You cannot send data to a pending websocket connection');
-        this.write(data);
-    }
-    /**
-	 * Send data to the client in JSON format.
-	 * @param data The data that will be sent.
-     */
-    public sendJson(data: any): void {
-        const message = JSON.stringify(data);
-        this.send(message);
-    }
-    /**
-	 * Writes data to the client socket.
-	 * @param data The data that will be sent.
-     */
-    private write(data: String | Buffer): void {
-        let opCode: number, buffer: Buffer;
-
-        if (data instanceof Buffer) {
-            buffer = data;
-            opCode = 0x2; // Binary frame
-        } else if (typeof data === 'string') {
-            buffer = this.stringToBuffer(data);
-            opCode = 0x1; // Text frame
-        } else {
-            const stack = new Error().stack || ''; 
-            return logger.warn('&C3Unsupported data type for Websocket.send. Data must be a string or a Buffer.\nStack trace:\n&C0' + stack);
-        }
-        const message = this.encode(buffer, opCode);
-        this.connection.write(message);
-    }
-    /**
-     * Encodes the data to be sent to the client.
-     * @param data The data that will be encoded.
-     * @param opCode The opcode of the message.
-     * - `0x1` for text,
-     * - `0x2` for binary,
-     * - `0x8` for close,
-     * - `0x9` for ping,
-     * - `0xA` for pong.
-     */
-    private encode(data: Buffer, opCode: number = 0x2): Buffer {
-        const encoded = [0x80 + opCode]; // FIN + OPCODE
-        if (data.length <= 125) {
-            encoded[1] = data.length;
-        } else if (data.length >= 126 && data.length <= 65535) {
-            encoded[1] = 126;
-            encoded[2] = (data.length >> 8) & 255;
-            encoded[3] = (data.length)      & 255
-        } else {
-            encoded[1] = 127;
-            encoded[2] = (data.length >> 56) & 255;
-            encoded[3] = (data.length >> 48) & 255;
-            encoded[4] = (data.length >> 40) & 255;
-            encoded[5] = (data.length >> 32) & 255;
-            encoded[6] = (data.length >> 24) & 255;
-            encoded[7] = (data.length >> 16) & 255;
-            encoded[8] = (data.length >>  8) & 255;
-            encoded[9] = (data.length)       & 255;
-        }
-        encoded.push(...data);
-        return Buffer.from(encoded);
-    }
-    /**
-     * Converts a string to a buffer.
-     * @param message The string that will be converted.
-     */
-    private stringToBuffer(message: string): Buffer {
-        return Buffer.from(message, 'utf-8');
-    }
-    /** Initializes the events. */
-    private initEvents(): void {
-        let surplus: Buffer = Buffer.alloc(0);
-        let currentChunk: Chunk | null = null;
-        let chunks: Chunk[] = [];
-
-        this.connection.on('data', (data: Buffer) => {
-            if (surplus) {
-                data = Buffer.concat([surplus, data]);
-                surplus = Buffer.alloc(0);
-            }
-            if (!currentChunk) currentChunk = new Chunk(data);
-            else if (currentChunk.isWaiting()) currentChunk.pushData(data);
-            if (!currentChunk.isWaiting()) {
-                chunks.push(currentChunk);
-                surplus = currentChunk.surplus;
-                if (currentChunk.fin) {
-                    const { opCode, size } = chunks[0];
-                    const decoded = Buffer.concat(chunks.map(chunk => chunk.decode()));
-
-                    if (opCode === 0x1 || opCode === 0x2) {
-                        this.emit('message', decoded, { opCode, size });
-                    } else if (opCode === 0x8) {
-                        this.emit('close');
-                        const closeFrame = this.encode(Buffer.alloc(0), 0x8);
-                        this.connection.write(closeFrame);
-                        this.connection.end();
-                    } else if (opCode === 0x9) {
-                        const pongFrame = this.encode(decoded, 0xA);
-                        this.connection.write(pongFrame);
-                    } else if (opCode === 0xA) { /* Ignore PONG frames for now */ }
-                    else {
-                        const stack = new Error().stack || ''; 
-                        logger.warn(`Received unsupported opcode: ${opCode}\nStack trace:\n${stack}`);
-                    }
-                    chunks = [];
-                }
-                currentChunk = null;
-            }
-        });
-        this.connection.on('close', ()      => this.emit('close'));
-        this.connection.on('end',   ()      => this.emit('finish'));
-        this.connection.on('error', (error) => this.emit('error', error));
-    }
-
-    public on(event: 'close',    listener: Websocket.listener.close): this;
-    public on(event: 'error',    listener: Websocket.listener.error): this;
-    public on(event: 'finish',   listener: Websocket.listener.finish): this;
-    public on(event: 'message',  listener: Websocket.listener.message): this;
-    public on(event: string, listener: (...args: any[]) => void): this {
-        return super.on(event, listener);
-    }
-    public off(event: 'close',   listener: Websocket.listener.close): this;
-    public off(event: 'error',   listener: Websocket.listener.error): this;
-    public off(event: 'finish',  listener: Websocket.listener.finish): this;
-    public off(event: 'message', listener: Websocket.listener.message): this
-    public off(event: string, listener: (...args: any[]) => void): this {
-        return super.off(event, listener);
-    }
-    private buildHeaders(lines: string[], cookies?: Cookie): string {
-        const cookieSetters = cookies
-            ? cookies.getSetters().map((setter) => `Set-Cookie: ${setter}`)
-            : [];
-        return [...lines, ...cookieSetters, '\r\n'].join('\r\n');
+    public static CS(url: string): Promise<Websocket> {
+        return _WebsocketCSInit.connect(url);
     }
 }
-
 export namespace Websocket {
-    export namespace listener {
-        export type close = () => void;
-        export type error = (error: Error) => void;
-        export type finish = () => void;
-        export type message = (data: Buffer, info: dataInfo) => void;
-    }
-    export interface dataInfo {
-        opCode: number;
-        size: number | bigint;
-    }
-    export type handshakeStatus = 'accepted' | 'rejected' | 'pending';
+    export import WebsocketCSInit = _WebsocketCSInit;
+    export import WebsocketSSInit = _WebsocketSSInit;
 }
-
 export default Websocket;
-
-/* To accept a connection
- * 
- * HTTP/1.1 101 Switching Protocols
- * Upgrade: websocket
- * Connection: Upgrade
- * Sec-WebSocket-Accept: Sec-Websocket-key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
- *                                            en HASH SHA-1 encoded in Base64
- *
- ** Format to data exchange
- *  0               1               2               3              
- *  0                   1                   2                   3
- *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- * +-+-+-+-+-------+-+-------------+-------------------------------+
- * |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
- * |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
- * |N|V|V|V|       |S|             |   (if payload len==126/127)   |
- * | |1|2|3|       |K|             |                               |
- * +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
- * |     Extended payload length continued, if payload len == 127  |
- * + - - - - - - - - - - - - - - - +-------------------------------+
- * |                               |Masking-key, if MASK set to 1  |
- * +-------------------------------+-------------------------------+
- * | Masking-key (continued)       |          Payload Data         |
- * +-------------------------------- - - - - - - - - - - - - - - - +
- * :                     Payload Data continued ...                :
- * + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
- * |                     Payload Data continued ...                |
- * +---------------------------------------------------------------+
- * 
- * 
- * FIN and OPCODE works together to deliver messages with a separate frame
- * Only available in OPCODE 0x0 to 0x2
- * 
- * 
- * OPCODES:
- * 0x0: continuation
- * 0x1: text
- * 0x2: binary
- * 0x8: close
- * 0x9: ping
- * 0xA: pong
- */

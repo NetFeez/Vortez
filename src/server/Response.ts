@@ -83,7 +83,7 @@ export class Response {
 	 * @param headers - The headers to send.
 	 */
 	private sendHeaders(code: number, headers: HTTP.OutgoingHttpHeaders): void {
-		const cookieSetters = this.request.cookies.getSetters();
+		const cookieSetters = this.request.cookies.setters;
 		if (cookieSetters.length > 0) headers['set-cookie'] = cookieSetters;
 		this.httpResponse.writeHead(code, headers);
 	}
