@@ -8,9 +8,38 @@ import WebsocketBase from './WebsocketBase.js';
 import Codec from './Codec.js';
 
 export class WebsocketCSInit extends WebsocketBase {
+    protected handshaker: CSHandShaker;
+    public request: WebsocketCSInit.Request;
+    public constructor(socket: Duplex, request: WebsocketCSInit.Request) { super(socket);
+        this.handshaker = new CSHandShaker(socket, request.authority, request.path);
+        this.request = request;
+        this.handshake();
+    }
     protected override writeFrame(buffer: Buffer, opcode: number): void {
         const frame = Codec.clientEncode(buffer, opcode);
         this.connection.write(frame);
+    }
+    /**
+     * Handles the WebSocket handshake process by listening for 'finish' and 'error' events from the CSHandShaker instance.
+     * When the handshake is completed successfully, it updates the connection status to 'open', initializes the WebSocket connection, and emits an 'open' event. If the handshake fails or encounters an error, it updates the status to 'closed' and emits a 'close' or 'error' event accordingly.
+     * This method is called internally during the construction of the WebsocketCSInit instance to automatically manage the handshake process when a new connection is established.
+     */
+    protected handshake(): void {
+        this.handshaker.once('finish', (status) => {
+            if (status === 'open') {
+                this.startup(this.connection);
+                this.vStatus = 'open';
+                this.emit('open');
+            } else {
+                this.vStatus = 'closed';
+                this.emit('close');
+            }
+        });
+        this.handshaker.once('error', (error) => {
+            this.vStatus = 'closed';
+            this.emit('error', error);
+        });
+        this.handshaker.start();
     }
     /**
      * Establishes a WebSocket connection to the specified URL by performing the necessary handshake process. This method parses the provided URL, creates a socket connection to the server, and then initiates the WebSocket handshake to establish a full-duplex communication channel.
@@ -20,9 +49,10 @@ export class WebsocketCSInit extends WebsocketBase {
      * If the handshake is successful, it initializes a new ClientInit instance with the established socket and resolves the promise with this instance. If any errors occur during parsing, socket creation, or handshake, the promise is rejected with the corresponding error.
      */
     public static async connect(url: string): Promise<WebsocketBase> {
-        const { protocol, host, port, path } = this.parseURL(url);
-        const socket = this.createSocket(protocol, host, port);
-        return this.handshake(socket, host, port, path);
+        const request = WebsocketCSInit.parseURL(url);
+        const socket = WebsocketCSInit.createSocket(request.protocol, request.host, request.port);
+        const websocket = new WebsocketCSInit(socket, request);
+        return websocket;
     }
     /**
      * Creates a socket connection to the specified host and port using the appropriate protocol (TCP for ws and TLS for wss).
@@ -34,36 +64,8 @@ export class WebsocketCSInit extends WebsocketBase {
      * @remarks The method checks the protocol and creates a socket connection accordingly. For 'wss:', it uses TLS to create a secure connection, while for 'ws:', it creates a standard TCP connection. The returned Duplex stream can then be used for reading and writing data during the WebSocket communication.
      */
     public static createSocket(protocol: string, host: string, port: number): Duplex {
-        if (protocol === 'wss:') {
-            return tls.connect({ host, port, servername: host });
-        } else {
-            return net.connect({ host, port });
-        }
-    }
-    /**
-     * Performs the WebSocket handshake process using the CSHandShaker class to establish a WebSocket connection over the provided socket. This method listens for the completion of the handshake and resolves with a Websocket instance if successful, or rejects with an error if the handshake fails.
-     * @param socket - The Duplex stream representing the socket connection to the server, which will be used for the handshake process and subsequent WebSocket communication.
-     * @param host - The hostname of the server to which the WebSocket connection is being established, used in the handshake process.
-     * @param port - The port number of the server to which the WebSocket connection is being established, used in the handshake process.
-     * @param path - The path component of the WebSocket URL, used in the handshake process to specify the endpoint for the WebSocket connection.
-     * @returns A promise that resolves to a Websocket instance if the handshake is successful, or rejects with an error if the handshake fails.
-     * @remarks The method creates an instance of CSHandShaker with the provided socket and connection details (host, port, path). It listens for 'finish' and 'error' events from the handshaker to determine the outcome of the handshake. If the
-     */
-    public static handshake(socket: Duplex, host: string, port: number, path: string): Promise<WebsocketBase> {
-        return new Promise((resolve, reject) => {
-            const handshaker = new CSHandShaker(socket, `${host}:${port}`, path);
-            handshaker.once('finish', (status) => {
-                if (status === 'open') {
-                    const ws = new WebsocketCSInit(socket);
-                    ws.vStatus = 'open';
-                    ws.startup(socket);
-                    ws.emit('open');
-                    resolve(ws);
-                } else reject(new Error('Handshake failed'));
-            });
-            handshaker.once('error', reject);
-            handshaker.start();
-        });
+        if (protocol === 'wss:') return tls.connect({ host, port, servername: host });
+        else return net.connect({ host, port });
     }
     /**
      * Parses a WebSocket URL and extracts its components (protocol, host, port, path) to create a structured request object. This method is used internally to process the URL provided for establishing a WebSocket connection.
@@ -79,7 +81,8 @@ export class WebsocketCSInit extends WebsocketBase {
         const host = parsed.hostname;
         const port = Number(parsed.port || defaultPort);
         const path = parsed.pathname + (parsed.search || '');
-        return { protocol, host, port, path };
+        const authority = `${host}:${port}`;
+        return { protocol, host, port, path, authority };
     }
     /**
      * Valida si el protocolo es ws o wss. Este método se utiliza internamente para asegurar que solo se acepten URLs con los protocolos correctos durante el proceso de conexión.
@@ -95,6 +98,7 @@ export namespace WebsocketCSInit {
     export type Protocol = 'ws:' | 'wss:';
     export interface Request {
         protocol: Protocol,
+        authority: string,
         host: string,
         port: number,
         path: string

@@ -6,19 +6,26 @@
 
 import type { Duplex } from 'stream';
 
-import type Message from './messageAssembler/Message.js';
 
 import { Events } from '../../utilities/Utilities.js';
 import LoggerManager from '../LoggerManager.js';
 
 import Codec from './Codec.js';
 import Frame from './frame/Frame.js';
+import Message from './messageAssembler/Message.js';
 import MessageAssembler from './messageAssembler/MessageAssembler.js';
 
 const logger = LoggerManager.getInstance().webSocket;
 
 export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     protected vStatus: WebsocketBase.Status = 'handshake';
+
+    protected vReEmitOpen: boolean = false;
+    protected vReEmitClose: boolean = false;
+    protected vReEmitError: boolean = false;
+    protected vMessageBuffering: boolean = true;
+    protected vMessageBuffer: Message[] = [];
+    protected vErrorBuffer: Error[] = [];
 
     protected assembler: MessageAssembler;
     protected surplus: Buffer = Buffer.alloc(0);
@@ -32,6 +39,62 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
 
     public get isClosed(): boolean { return this.connection.readableEnded; }
     public get status(): WebsocketBase.Status { return this.vStatus; }
+
+    public flushBufferedEvents(): void {
+        if (
+            this.eventCount('message') > 0 ||
+            this.eventCount('message:text') > 0 ||
+            this.eventCount('message:binary') > 0
+        ) {
+            for (const message of this.vMessageBuffer) {
+                this.emit('message', message);
+                if (message.isText) this.emit('message:text', message.payload.toString('utf-8'));
+                else if (message.isBinary) this.emit('message:binary', message.payload);
+            }
+            this.vMessageBuffer = [];
+        }
+        if (this.vReEmitOpen && this.eventCount('open') > 0) {
+            this.vReEmitOpen = false;
+            this.emit('open');
+        }
+        if (this.vReEmitClose && this.eventCount('close') > 0) {
+            this.vReEmitClose = false;
+            this.emit('close');
+        }
+        if (this.vReEmitError && this.eventCount('error') > 0) {
+            for (const error of this.vErrorBuffer) this.emit('error', error);
+            this.vReEmitError = false;
+            this.vErrorBuffer = [];
+        }
+    }
+    /**
+     * Middleware for emitting events. It handles buffering of messages and errors when there are no listeners, and re-emits 'open' and 'close' events if they were emitted before listeners were added.
+     * This method overrides the base emit method to provide additional functionality specific to WebSocket event handling, such as buffering messages and errors until listeners are available, and ensuring that 'open' and 'close' events are emitted appropriately based on the connection status and listener presence.
+     * @param event - The event to be emitted, which includes the event name and any associated arguments. The method processes the event based on its type and manages buffering and re-emission logic as needed.
+     */
+    protected emit<E extends string & keyof WebsocketBase.EventMap>(...event: [name: E, ...args: WebsocketBase.EventMap[E]]): void {
+        const [name, ...args] = event;
+        if (name === 'open' && this.eventCount('open') === 0) return void (this.vReEmitOpen = true);
+        if (name === 'close' && this.eventCount('close') === 0) return void (this.vReEmitClose = true);
+        if (
+            name === 'error' &&
+            this.eventCount('error') === 0 &&
+             args[0] instanceof Error
+        ) {
+            this.vReEmitError = true;
+            this.vErrorBuffer.push(args[0] as Error);
+            return;
+        }
+        if (
+            name === 'message' &&
+            this.eventCount('message') === 0 &&
+            this.eventCount('message:text') === 0 &&
+            this.eventCount('message:binary') === 0 &&
+            this.vMessageBuffering &&
+            args[0] instanceof Message
+        ) this.vMessageBuffer.push(args[0]);
+        return super.emit(...event);
+    }
     /**
      * Sends a JSON-serializable object through the WebSocket connection as a text frame. The object is first serialized to a JSON string before being sent.
      * @param data - The JSON-serializable object to be sent through the WebSocket connection.
@@ -105,9 +168,9 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
         });
         this.assembler.on('message', (message: Message) => {
             if (message.isText || message.isBinary) {
-                this.emit('message', message.payload);
+                this.emit('message', message);
                 if (message.isText) this.emit('message:text', message.payload.toString('utf-8'));
-                else this.emit('message:binary', message.payload);
+                else if (message.isBinary) this.emit('message:binary', message.payload);
             } else if (message.isClose) {
                 this.vStatus = 'closed';
                 this.emit('close');
@@ -171,7 +234,7 @@ export namespace WebsocketBase {
         size: number | bigint;
     }
     export type EventMap = {
-        message: [message: Buffer | string];
+        message: [message: Message];
         'message:text': [message: string];
         'message:binary': [message: Buffer];
         error: [error: Error];
