@@ -145,7 +145,6 @@ export class Router {
 	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
 	 */
 	public routeWebSocket(request: Request, websocket: Websocket.WebsocketSSInit): boolean {
-		// Solo exponer la API pública Websocket al action
 		return this.algorithm.route(request, websocket);
 	}
 	/**

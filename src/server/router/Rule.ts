@@ -38,7 +38,7 @@ export abstract class Rule<T extends any> {
      * @param request - The Request that matched the rule.
      * @param client - The client that made the request.
      */
-    public abstract exec(request: Request, client: Rule.ClientType): void | Promise<void>
+    public abstract exec(request: Request, client: Rule.ClientType): Promise<void>;
     /**
      * Checks whether a URL matches this route.
      * Also sets the Request.ruleParams.

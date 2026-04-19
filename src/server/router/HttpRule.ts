@@ -17,9 +17,9 @@ export class HttpRule extends BaseRule<HttpRule.action> {
         urlRule: string, action: HttpRule.action,
         public readonly middleware: HttpMiddleware = new HttpMiddleware()
     ) { super(urlRule, action); }
-    public exec(request: Request, response: Response, state?: Middleware.State): void {
+    public exec(request: Request, response: Response, state?: Middleware.State): Promise<void> {
         request.ruleParams = this.getParams(request.url);
-        this.middleware.run(request, response, this.action, state);
+        return this.middleware.run(request, response, this.action, state);
     }
     public test(request: Request): boolean {
         return (this.method == request.method || this.method == 'ALL')  && super.test(request);
@@ -94,7 +94,7 @@ export class HttpRule extends BaseRule<HttpRule.action> {
 }
 
 export namespace HttpRule {
-    export type action = (request: Request, response: Response, state: Middleware.State) => void | Promise<void>;
+    export type action = (request: Request, response: Response, state: Middleware.State) => Promise<void>;
 }
 
 export default HttpRule;

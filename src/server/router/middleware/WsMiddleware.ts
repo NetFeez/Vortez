@@ -31,7 +31,8 @@ export class WsMiddleware extends Middleware<WsRule> {
                 if (websocket.status === 'closed') return void logger.warn('websocket was rejected when calling next()');
                 if (index >= this.pipeline.length) {
                     if (websocket.status === 'handshake') websocket.accept();
-                    return await action(request, websocket, state);
+                    await action(request, websocket, state);
+                    return websocket.flushBufferedEvents();
                 }
                 const current = this.pipeline[index++];
                 return await current(request, websocket, next, state);
