@@ -81,7 +81,7 @@ export class WebsocketCSInit extends WebsocketBase {
      * @returns An object containing the parsed components of the URL: protocol, host, port, and path. The port is determined based on the protocol if not explicitly provided in the URL (defaulting to 80 for ws and 443 for wss).
      * @throws Will throw an error if the URL does not use a valid WebSocket protocol (i.e., if it does not start with ws:// or wss://).
      */
-    protected static parseURL(url: string):  WebsocketCSInit.Request {
+    public static parseURL(url: string):  WebsocketCSInit.Request {
         const parsed = new URL(url);
         const protocol = parsed.protocol;
         if (!WebsocketCSInit.isProtocol(protocol)) throw new Error('Solo se aceptan protocolos ws:// o wss://');
