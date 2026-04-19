@@ -8,6 +8,7 @@
 export class ConsoleUI {
     private static formatString = '%prefix%((?:(?:[BC])[0-7])|[NSPIR])';
     private static rgbString = '%prefix%(?:([BC])\\((?:([0-2]?[0-9]{1,2}), ?([0-2]?[0-9]{1,2}), ?([0-2]?[0-9]{1,2}))\\))';
+    private static hexString = '%prefix%(?:([BC])\\(#([0-9a-fA-F]{3,6})\\))';
     private static readonly formats = {
         // Var: Code    // Text color
         C0: '\x1B[30m', // Black
@@ -18,7 +19,7 @@ export class ConsoleUI {
         C5: '\x1B[35m', // Magenta
         C6: '\x1B[36m', // Cyan
         C7: '\x1B[37m', // White
-        C: '\x1B[38;2;R;G;Bm', // (R,G,B)
+        C: '\x1B[38;2;R;G;Bm', // (R,G,B) (#RRGGBB)
         // Var: Code    // Background color
         B0: '\x1B[40m', // Black background
         B1: '\x1B[41m', // Red background
@@ -28,7 +29,7 @@ export class ConsoleUI {
         B5: '\x1B[45m', // Magenta background
         B6: '\x1B[46m', // Cyan background
         B7: '\x1B[47m', // White background
-        B: '\x1B[48;2;R;G;Bm', // (R,G,B)
+        B: '\x1B[48;2;R;G;Bm', // (R,G,B) (#RRGGBB)
         // Var: Code     // Text format
         N:    '\x1B[1m', // Bold
         S:    '\x1B[4m', // Underline
@@ -48,7 +49,8 @@ export class ConsoleUI {
     public static cleanFormat(text: string, prefix: string = '&'): string {
         const formatExp = new RegExp(this.formatString.replace('%prefix%', prefix), 'g');
         const rgbExp = new RegExp(this.rgbString.replace('%prefix%', prefix), 'g');
-        return text.replace(formatExp, '').replace(rgbExp, '');
+        const hexExp = new RegExp(this.hexString.replace('%prefix%', prefix), 'g');
+        return text.replace(formatExp, '').replace(rgbExp, '').replace(hexExp, '');
     }
 
     /**
@@ -93,6 +95,8 @@ export class ConsoleUI {
      * | ------------------- | --------------------------------------------- | -------------- | ------------ |
      * | `%prefix%C(R,G,B)`  | Foreground color using RGB (0-255 for R,G,B) | `&C(255,0,0)Red` | N/A          |
      * | `%prefix%B(R,G,B)`  | Background color using RGB (0-255 for R,G,B) | N/A            | `&B(0,0,255)Blue BG` |
+     * | `%prefix%C(#RRGGBB)`  | Foreground color using HEX (6-digit)       | `&C(#FF0000)Red` | N/A          |
+     * | `%prefix%B(#RRGGBB)`  | Background color using HEX (6-digit)       | N/A            | `&B(#0000FF)Blue BG` |
      *
      * **Notes:**
      *
@@ -102,7 +106,6 @@ export class ConsoleUI {
      *   to ensure subsequent console output is not affected by the formatting.
      * - Terminal support for colors and formatting may vary.
      * ---
-     *
      * **Examples:**
      * - `&N&C4Bold Blue Text&R`: Displays "Bold Blue Text" in bold and blue, then resets formatting.
      * - `&B2Green Background&R`: Displays "Green Background" with a green background and default text color, then resets.
@@ -113,13 +116,20 @@ export class ConsoleUI {
     public static formatText(text: string, prefix: string = '&'): string {
         const formatExp = new RegExp(this.formatString.replace('%prefix%', prefix), 'g');
         const rgbExp = new RegExp(this.rgbString.replace('%prefix%', prefix), 'g');
+        const hexExp = new RegExp(this.hexString.replace('%prefix%', prefix), 'g');
         return `${text
             .replace(formatExp, (result, format) => this.formats[format as ConsoleUI.formatKey])
-            .replace(rgbExp, (result, type, R, G, B) => (this.formats[type as ConsoleUI.formatKey]
+            .replace(rgbExp, (result, type: string, R: string, G: string, B: string) => (this.formats[type as ConsoleUI.formatKey]
                 .replace('R', R)
                 .replace('G', G)
                 .replace('B', B)
-            ))
+            )).replace(hexExp, (result, type: string, hex: string) => {
+                const [R, G, B] = hex.match(/(.{2})(.{2})(.{2})/)?.slice(1).map((c) => parseInt(c, 16).toString()) || ['0', '0', '0'];
+                return this.formats[type as ConsoleUI.formatKey]
+                    .replace('R', R)
+                    .replace('G', G)
+                    .replace('B', B);
+            })
         }${this.formats.R}`;
     }
 
