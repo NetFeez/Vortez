@@ -40,7 +40,24 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     public get isClosed(): boolean { return this.connection.readableEnded; }
     public get status(): WebsocketBase.Status { return this.vStatus; }
 
-    protected flushBufferedEvents(): void {
+    /**
+     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
+     * It checks for buffered 'message', 'message:text', 'message:binary', and 'error' events and emits them if there are listeners available.
+     * Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
+     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
+     * 
+     * If you are using this class as a we client, you can use it after add your listeners.
+     * 
+     * If you are using this class as a web server, you can use it after routing and executed the action rule on the router o middleware exec (vortez context).
+     * 
+     * Here in **Vortez**, the WebsocketSSInit instance is created in the router on receive upgrade request.
+     * Before it is executed the middleware stack -> executed the action rule on the router and automatically is called flush() method to emit the buffered events.
+     * we are sure that the events will be received with your instance of Websocket on server side if you use `vortez`
+     * 
+     * If you are using the class as a client ``WebsocketCSInit`` or out of Vortez, you can call it after add your listeners to make sure that you will receive the events emitted during the handshake phase.
+     * @remarks This method is essential for ensuring that all relevant events are emitted to listeners, especially in cases where events may have been emitted before listeners were registered. By calling this method after adding listeners, you can ensure that any buffered events are properly emitted and handled by the listeners, allowing for correct functionality of the WebSocket connection in your application.
+     */
+    public flush(): void {
         if (
             this.eventCount('message') > 0 ||
             this.eventCount('message:text') > 0 ||

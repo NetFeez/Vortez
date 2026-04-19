@@ -15,14 +15,6 @@ export class WebsocketCSInit extends WebsocketBase {
         this.request = request;
         this.handshake();
     }
-    /**
-     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
-     * It checks for buffered 'message', 'message:text', and 'error' events and emits them if there are listeners available. Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
-     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
-     * 
-     * Dev suggestion: use it after add your listeners.
-    */
-    public flush(): void { this.flushBufferedEvents(); }
     protected override writeFrame(buffer: Buffer, opcode: number): void {
         const frame = Codec.clientEncode(buffer, opcode);
         this.connection.write(frame);

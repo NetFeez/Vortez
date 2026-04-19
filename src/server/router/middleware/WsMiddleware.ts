@@ -32,7 +32,7 @@ export class WsMiddleware extends Middleware<WsRule> {
                 if (index >= this.pipeline.length) {
                     if (websocket.status === 'handshake') websocket.accept();
                     await action(request, websocket, state);
-                    return websocket.flushBufferedEvents();
+                    return websocket.flush();
                 }
                 const current = this.pipeline[index++];
                 return await current(request, websocket, next, state);
