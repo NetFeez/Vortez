@@ -55,14 +55,14 @@ export class Events<EventMap extends Events.EventMap = Events.EventMap> {
      * Removes all listeners from an event.
      * @param name The name of the event from which the callbacks will be removed.
      */
-    public offAll(name: string): void {
+    public offAll<E extends string & keyof EventMap>(name: E): void {
         delete this.listeners[name];
     }
     /**
      * Removes all listeners from an once event.
      * @param name The name of the event from which the callbacks will be removed.
      */
-    public offAllOnce(name: string): void {
+    public offAllOnce<E extends string & keyof EventMap>(name: E): void {
         delete this.onceListeners[name];
     }
     /**
@@ -89,7 +89,7 @@ export class Events<EventMap extends Events.EventMap = Events.EventMap> {
      * @param name The name of the event.
      * @returns The number of callbacks of the event.
      */
-    public eventCount(name: string): number {
+    public eventCount<E extends string & keyof EventMap>(name: E): number {
         const listenerCount = this.listeners[name]?.size ?? 0;
         const onceCount     = this.onceListeners[name]?.size ?? 0;
         return listenerCount + onceCount;
