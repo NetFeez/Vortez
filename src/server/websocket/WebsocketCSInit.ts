@@ -15,7 +15,7 @@ export class WebsocketCSInit extends WebsocketBase {
         this.request = request;
         this.handshake();
     }
-    protected override writeFrame(buffer: Buffer, opcode: number): void {
+    protected override write(buffer: Buffer, opcode: number): void {
         const frame = Codec.clientEncode(buffer, opcode);
         this.connection.write(frame);
     }

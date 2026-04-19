@@ -14,18 +14,15 @@ import Codec from './Codec.js';
 import Frame from './frame/Frame.js';
 import Message from './messageAssembler/Message.js';
 import MessageAssembler from './messageAssembler/MessageAssembler.js';
+import { buffer } from 'stream/consumers';
 
 const logger = LoggerManager.getInstance().webSocket;
 
 export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     protected vStatus: WebsocketBase.Status = 'handshake';
 
-    protected vReEmitOpen: boolean = false;
-    protected vReEmitClose: boolean = false;
-    protected vReEmitError: boolean = false;
-    protected vMessageBuffering: boolean = true;
-    protected vMessageBuffer: Message[] = [];
-    protected vErrorBuffer: Error[] = [];
+    protected readonly vEventBuffer: WebsocketBase.EventBuffer = {};
+    protected vEventBuffering: boolean = true
 
     protected assembler: MessageAssembler;
     protected surplus: Buffer = Buffer.alloc(0);
@@ -40,78 +37,6 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     public get isClosed(): boolean { return this.connection.readableEnded; }
     public get status(): WebsocketBase.Status { return this.vStatus; }
 
-    /**
-     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
-     * It checks for buffered 'message', 'message:text', 'message:binary', and 'error' events and emits them if there are listeners available.
-     * Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
-     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
-     * 
-     * If you are using this class as a we client, you can use it after add your listeners.
-     * 
-     * If you are using this class as a web server, you can use it after routing and executed the action rule on the router o middleware exec (vortez context).
-     * 
-     * Here in **Vortez**, the WebsocketSSInit instance is created in the router on receive upgrade request.
-     * Before it is executed the middleware stack -> executed the action rule on the router and automatically is called flush() method to emit the buffered events.
-     * we are sure that the events will be received with your instance of Websocket on server side if you use `vortez`
-     * 
-     * If you are using the class as a client ``WebsocketCSInit`` or out of Vortez, you can call it after add your listeners to make sure that you will receive the events emitted during the handshake phase.
-     * @remarks This method is essential for ensuring that all relevant events are emitted to listeners, especially in cases where events may have been emitted before listeners were registered. By calling this method after adding listeners, you can ensure that any buffered events are properly emitted and handled by the listeners, allowing for correct functionality of the WebSocket connection in your application.
-     */
-    public flush(): void {
-        if (
-            this.eventCount('message') > 0 ||
-            this.eventCount('message:text') > 0 ||
-            this.eventCount('message:binary') > 0
-        ) {
-            for (const message of this.vMessageBuffer) {
-                this.emit('message', message);
-                if (message.isText) this.emit('message:text', message.payload.toString('utf-8'));
-                else if (message.isBinary) this.emit('message:binary', message.payload);
-            }
-            this.vMessageBuffer = [];
-        }
-        if (this.vReEmitOpen && this.eventCount('open') > 0) {
-            this.vReEmitOpen = false;
-            this.emit('open');
-        }
-        if (this.vReEmitClose && this.eventCount('close') > 0) {
-            this.vReEmitClose = false;
-            this.emit('close');
-        }
-        if (this.vReEmitError && this.eventCount('error') > 0) {
-            for (const error of this.vErrorBuffer) this.emit('error', error);
-            this.vReEmitError = false;
-            this.vErrorBuffer = [];
-        }
-    }
-    /**
-     * Middleware for emitting events. It handles buffering of messages and errors when there are no listeners, and re-emits 'open' and 'close' events if they were emitted before listeners were added.
-     * This method overrides the base emit method to provide additional functionality specific to WebSocket event handling, such as buffering messages and errors until listeners are available, and ensuring that 'open' and 'close' events are emitted appropriately based on the connection status and listener presence.
-     * @param event - The event to be emitted, which includes the event name and any associated arguments. The method processes the event based on its type and manages buffering and re-emission logic as needed.
-     */
-    protected emit<E extends string & keyof WebsocketBase.EventMap>(...event: [name: E, ...args: WebsocketBase.EventMap[E]]): void {
-        const [name, ...args] = event;
-        if (name === 'open' && this.eventCount('open') === 0) return void (this.vReEmitOpen = true);
-        if (name === 'close' && this.eventCount('close') === 0) return void (this.vReEmitClose = true);
-        if (
-            name === 'error' &&
-            this.eventCount('error') === 0 &&
-             args[0] instanceof Error
-        ) {
-            this.vReEmitError = true;
-            this.vErrorBuffer.push(args[0] as Error);
-            return;
-        }
-        if (
-            name === 'message' &&
-            this.eventCount('message') === 0 &&
-            this.eventCount('message:text') === 0 &&
-            this.eventCount('message:binary') === 0 &&
-            this.vMessageBuffering &&
-            args[0] instanceof Message
-        ) this.vMessageBuffer.push(args[0]);
-        return super.emit(...event);
-    }
     /**
      * Sends a JSON-serializable object through the WebSocket connection as a text frame. The object is first serialized to a JSON string before being sent.
      * @param data - The JSON-serializable object to be sent through the WebSocket connection.
@@ -130,7 +55,51 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     public send(data: string | Buffer): void {
         if (this.status === 'closed') return void logger.warn('You cannot send data to a closed websocket connection');
         if (this.status === 'handshake') return void logger.warn('You cannot send data to a websocket connection in the handshake phase');
-        this.write(data);
+
+        if (typeof data === 'string') return this.write(Buffer.from(data, 'utf-8'), 0x1);
+        else if (data instanceof Buffer) return this.write(data, 0x2);
+
+        const stack = new Error().stack || '';
+        return logger.warn('&C3Unsupported data type for Websocket.send. Data must be a string or a Buffer.\nStack trace:\n&C0' + stack);
+    }
+    /**
+     * Closes the WebSocket connection by sending a close frame and ending the connection. If the connection is already closed, this method does nothing.
+      * - It first checks if the connection is already closed, and if so, it simply returns without performing any actions.
+      * - If the connection is not closed, it updates the internal status to 'closed', sends a close frame to the peer, and ends the connection.
+      * @remarks This method ensures that the WebSocket connection is properly closed by sending the appropriate close frame and terminating the connection. It also prevents any further actions from being taken on a closed connection by checking the status before attempting to close it again.
+     */
+    public close(): void {
+        if (this.status === 'closed') return;
+        this.vStatus = 'closed';
+        this.write(Buffer.alloc(0), 0x8);
+        this.connection.end();
+    }
+    /**
+     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
+     * It checks for buffered 'message', 'message:text', 'message:binary', and 'error' events and emits them if there are listeners available.
+     * Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
+     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
+     * 
+     * If you are using this class as a we client, you can use it after add your listeners.
+     * 
+     * If you are using this class as a web server, you can use it after routing and executed the action rule on the router o middleware exec (vortez context).
+     * 
+     * Here in **Vortez**, the WebsocketSSInit instance is created in the router on receive upgrade request.
+     * Before it is executed the middleware stack -> executed the action rule on the router and automatically is called flush() method to emit the buffered events.
+     * we are sure that the events will be received with your instance of Websocket on server side if you use `vortez`
+     * 
+     * If you are using the class as a client ``WebsocketCSInit`` or out of Vortez, you can call it after add your listeners to make sure that you will receive the events emitted during the handshake phase.
+     * @remarks This method is essential for ensuring that all relevant events are emitted to listeners, especially in cases where events may have been emitted before listeners were registered. By calling this method after adding listeners, you can ensure that any buffered events are properly emitted and handled by the listeners, allowing for correct functionality of the WebSocket connection in your application.
+     */
+    public flush(): void {
+        this.vEventBuffering = false;
+        const is = <T extends string>(name: T): name is T & keyof WebsocketBase.EventMap => { return name in this.vEventBuffer; };
+        for (const name in this.vEventBuffer) {
+            if (!is(name)) continue;
+            const buffer = this.vEventBuffer[name] ?? [];
+            for (const args of buffer) super.emit(name, ...args);
+            delete this.vEventBuffer[name];
+        }
     }
     /**
      * ====== Override this method in Client side to use different codec ======
@@ -142,30 +111,9 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
      * @param opcode - The opcode indicating the type of frame being sent (e.g., 0x8 for close, 0x9 for ping, 0xA for pong).
      * @remarks The method encodes the frame data with the specified opcode and sends it through the WebSocket connection. This is typically used for sending control frames in response to certain events (like responding to a ping with a pong) or for initiating a close frame when closing the connection.
      */
-    protected writeFrame(buffer: Buffer, opcode: number): void {
+    protected write(buffer: Buffer, opcode: number): void {
         const frame = Codec.encode(buffer, opcode);
         this.connection.write(frame);
-    }
-    /**
-     * Internal method to write data to the WebSocket connection.
-     * This method handles encoding the data into the appropriate WebSocket frame format before sending it through the connection.
-     * It supports both string and Buffer data types, encoding them as text or binary frames respectively.
-     * If an unsupported data type is provided, a warning is logged and the data is not sent.
-     * @param data - The data to be sent through the WebSocket connection, which can be either a string (for text frames) or a Buffer (for binary frames).
-     * @remarks The method first checks the type of the data and encodes it accordingly using the Codec module. It then sends the encoded frame through the WebSocket connection.
-     * If the data type is not supported, a warning is logged to inform the developer of the issue without throwing an error, allowing the application to continue running without interruption.
-     */
-    private write(data: string | Buffer): void {
-        let opcode: number, buffer: Buffer;
-        if (data instanceof Buffer) {
-            buffer = data; opcode = 0x2;
-        } else if (typeof data === 'string') {
-            buffer = Buffer.from(data, 'utf-8'); opcode = 0x1;
-        } else {
-            const stack = new Error().stack || '';
-            return logger.warn('&C3Unsupported data type for Websocket.send. Data must be a string or a Buffer.\nStack trace:\n&C0' + stack);
-        }
-        this.writeFrame(buffer, opcode);
     }
     /**
      * Initializes the WebSocket connection by setting up event listeners for incoming data, message assembly, and connection events.
@@ -191,19 +139,16 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             } else if (message.isClose) {
                 this.vStatus = 'closed';
                 this.emit('close');
-                const closeFrame = Codec.encode(Buffer.alloc(0), 0x8);
-                this.connection.write(closeFrame);
+                this.write(Buffer.alloc(0), 0x8);
                 this.connection.end();
             } else if (message.isPing) {
-                const pongFrame = Codec.encode(message.payload, 0xA);
-                this.connection.write(pongFrame);
+                this.write(message.payload, 0xA);
             }
         });
         this.assembler.on('error', (error) => {
             this.vStatus = 'closed';
             this.emit('error', error);
-            const closeFrame = Codec.encode(Buffer.alloc(0), 0x8);
-            this.connection.write(closeFrame);
+            this.write(Buffer.alloc(0), 0x8);
             this.connection.end();
         });
         socket.on('close', () => {
@@ -243,13 +188,22 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             else this.emit('error', new Error(String(error)));
         }
     }
+    /**
+     * Middleware for emitting events. It handles buffering of messages and errors when there are no listeners, and re-emits 'open' and 'close' events if they were emitted before listeners were added.
+     * This method overrides the base emit method to provide additional functionality specific to WebSocket event handling, such as buffering messages and errors until listeners are available, and ensuring that 'open' and 'close' events are emitted appropriately based on the connection status and listener presence.
+     * @param event - The event to be emitted, which includes the event name and any associated arguments. The method processes the event based on its type and manages buffering and re-emission logic as needed.
+     */
+    protected override emit<E extends string & keyof WebsocketBase.EventMap>(...event: [name: E, ...args: WebsocketBase.EventMap[E]]): void {
+        if (!this.vEventBuffering) return super.emit(...event);
+        const [name, ...args] = event;
+        if (this.vEventBuffering && this.eventCount(name) === 0) {
+            this.vEventBuffer[name] = this.vEventBuffer[name] ?? [];
+            this.vEventBuffer[name].push(args);
+            return;
+        }
+    }
 }
 export namespace WebsocketBase {
-    export type Status = 'handshake' | 'open' | 'closed';
-    export interface dataInfo {
-        opCode: number;
-        size: number | bigint;
-    }
     export type EventMap = {
         message: [message: Message];
         'message:text': [message: string];
@@ -258,5 +212,13 @@ export namespace WebsocketBase {
         close: [];
         open: [];
     }
+    export type Status = 'handshake' | 'open' | 'closed';
+    export interface dataInfo {
+        opCode: number;
+        size: number | bigint;
+    }
+    export type EventBuffer = {
+        [name in keyof WebsocketBase.EventMap]?: WebsocketBase.EventMap[name][];
+    };
 }
 export default WebsocketBase;
