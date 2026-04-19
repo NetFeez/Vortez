@@ -14,7 +14,16 @@ export class WebsocketSSInit extends WebsocketBase {
         super(socket);
         this.handshaker = new SSHandshaker(socket, request);
     }
-
+    /**
+     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
+     * It checks for buffered 'message', 'message:text', and 'error' events and emits them if there are listeners available. Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
+     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
+     * 
+     * --- IGNORE ---
+     * 
+     * Dev suggestion: use it after routing and executed the action rule on the router o middleware exec (vortez context)
+    */
+    public override flushBufferedEvents(): void { super.flushBufferedEvents(); }
     /**
      * Accepts the WebSocket handshake by validating the client's request and sending the appropriate HTTP response to establish the WebSocket connection. This method should be called after verifying that the client's handshake request is valid and meets the necessary criteria for accepting the connection.
       * - It generates the Sec-WebSocket-Accept key based on the client's Sec-WebSocket-Key and constructs the HTTP response with the required headers to complete the handshake.

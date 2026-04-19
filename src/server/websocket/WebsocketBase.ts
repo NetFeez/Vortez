@@ -40,7 +40,7 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     public get isClosed(): boolean { return this.connection.readableEnded; }
     public get status(): WebsocketBase.Status { return this.vStatus; }
 
-    public flushBufferedEvents(): void {
+    protected flushBufferedEvents(): void {
         if (
             this.eventCount('message') > 0 ||
             this.eventCount('message:text') > 0 ||
