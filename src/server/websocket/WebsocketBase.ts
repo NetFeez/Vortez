@@ -6,6 +6,7 @@
 
 import type { Duplex } from 'stream';
 
+import { randomUUID } from 'crypto';
 
 import { Events } from '../../utilities/Utilities.js';
 import LoggerManager from '../LoggerManager.js';
@@ -14,7 +15,6 @@ import Codec from './Codec.js';
 import Frame from './frame/Frame.js';
 import Message from './messageAssembler/Message.js';
 import MessageAssembler from './messageAssembler/MessageAssembler.js';
-import { buffer } from 'stream/consumers';
 
 const logger = LoggerManager.getInstance().webSocket;
 
@@ -60,14 +60,57 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
         return logger.warn('&C3Unsupported data type for Websocket.send. Data must be a string or a Buffer.\nStack trace:\n&C0' + stack);
     }
     /**
+     * Sends a ping frame through the WebSocket connection and waits for a corresponding pong response to measure the round-trip time (RTT) of the ping-pong exchange. The method returns a promise that resolves with the measured RTT in milliseconds or rejects if a timeout occurs or if there is an error during the process.
+     * @param options - An optional object containing configuration options for the ping operation, including:
+     *   - `timeout`: The maximum time to wait for a pong response before rejecting the promise (default is 5000 milliseconds).
+     *   - `data`: Optional data to include in the ping frame, which can be a Buffer or a string. If a string is provided, it will be converted to a Buffer using UTF-8 encoding.
+     * @returns A promise that resolves with the measured round-trip time (RTT) in milliseconds if a pong response is received within the specified timeout, or rejects with an error if a timeout occurs or if there is an issue during the ping-pong exchange.
+     */
+    public async ping(options: WebsocketBase.PingOptions = {}): Promise<number> {
+        const {
+            timeout = 5000,
+            data = randomUUID(),
+        } = options;
+        
+        const buffer = typeof data === 'string' ? Buffer.from(data, 'utf-8') : data;
+        const start = Date.now();
+
+        return new Promise((resolve, reject) => {
+            const handler = (payload: Buffer) => {
+                if (payload.equals(buffer)) {
+                    cleanup();
+                    resolve(Date.now() - start);
+                }
+            };
+
+            const timer = setTimeout(() => {
+                cleanup();
+                reject(new Error(`Ping timeout after ${timeout}ms`));
+            }, timeout);
+
+            const cleanup = () => {
+                clearTimeout(timer);
+                this.off('pong', handler);
+            };
+
+            this.on('pong', handler);
+            
+            try { this.write(buffer, 0x09); }
+            catch (error) {
+                cleanup();
+                reject(error);
+            }
+        });
+    }
+    /**
      * Closes the WebSocket connection by sending a close frame and ending the connection. If the connection is already closed, this method does nothing.
       * - It first checks if the connection is already closed, and if so, it simply returns without performing any actions.
       * - If the connection is not closed, it updates the internal status to 'closed', sends a close frame to the peer, and ends the connection.
       * @remarks This method ensures that the WebSocket connection is properly closed by sending the appropriate close frame and terminating the connection. It also prevents any further actions from being taken on a closed connection by checking the status before attempting to close it again.
      */
     public close(): void {
-        this.vStatus = 'closed';
         this.write(Buffer.alloc(0), 0x8);
+        this.vStatus = 'closed';
         this.connection.end();
     }
     /**
@@ -149,14 +192,17 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             } else if (message.isClose) {
                 if (this.vStatus === 'closed') return;
                 if (this.connection.writable && !this.connection.writableEnded) {
-                    try { this.encode(message.payload, 0x8);
+                    try { this.write(message.payload, 0x8);
                     } catch (error) {}
                 }
                 this.vStatus = 'closed';
                 this.connection.end();
                 this.emit('close');
             } else if (message.isPing) {
-                this.encode(message.payload, 0xA);
+                this.emit('ping', message.payload);
+                this.write(message.payload, 0xA);
+            } else if (message.isPong) {
+                this.emit('pong', message.payload);
             }
         });
         this.assembler.on('error', (error) => {
@@ -227,14 +273,20 @@ export namespace WebsocketBase {
         message: [message: Message];
         'message:text': [message: string];
         'message:binary': [message: Buffer];
+        ping: [data: Buffer];
+        pong: [data: Buffer];
         error: [error: Error];
         close: [];
         open: [];
     }
     export type Status = 'handshake' | 'open' | 'closed';
-    export interface dataInfo {
+    export interface DataInfo {
         opCode: number;
         size: number | bigint;
+    }
+    export interface PingOptions {
+        timeout?: number;
+        data?: Buffer | string;
     }
     export type EventBuffer = {
         [name in keyof WebsocketBase.EventMap]?: WebsocketBase.EventMap[name][];
