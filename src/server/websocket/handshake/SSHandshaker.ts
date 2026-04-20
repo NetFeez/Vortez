@@ -29,7 +29,7 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
         } catch (error) {
             this.vStatus = 'closed';
             this.emit('error', error instanceof Error ? error : new Error(String(error)));
-        } finally { this.emit('finish', this.vStatus); }
+        } finally { setImmediate(() => this.emit('finish', this.vStatus)); }
     }
     /**
      * Rejects the WebSocket handshake by sending an HTTP response with the specified status code and reason, and then closes the connection.
@@ -45,7 +45,7 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
             this.socket.end();
             this.vStatus = 'closed';
         } catch (error) { this.emit('error', error instanceof Error ? error : new Error(String(error))); }
-        finally { this.emit('finish', this.vStatus); }
+        finally { setImmediate(() => this.emit('finish', this.vStatus)); }
     }
     /**
      * Generates the Sec-WebSocket-Accept key for the server handshake response based on the client's Sec-WebSocket-Key.
