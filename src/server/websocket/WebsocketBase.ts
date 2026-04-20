@@ -53,9 +53,6 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
      * @remarks The method first checks the status of the connection to ensure that it is open before attempting to send data. If the connection is closed or still in the handshake phase, a warning is logged to inform the developer that data cannot be sent in the current state. If the connection is open, the method calls the internal `write` method to handle encoding and sending the data through the WebSocket connection.
      */
     public send(data: string | Buffer): void {
-        if (this.status === 'closed') return void logger.warn('You cannot send data to a closed websocket connection');
-        if (this.status === 'handshake') return void logger.warn('You cannot send data to a websocket connection in the handshake phase');
-
         if (typeof data === 'string') return this.write(Buffer.from(data, 'utf-8'), 0x1);
         else if (data instanceof Buffer) return this.write(data, 0x2);
 
@@ -69,11 +66,32 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
       * @remarks This method ensures that the WebSocket connection is properly closed by sending the appropriate close frame and terminating the connection. It also prevents any further actions from being taken on a closed connection by checking the status before attempting to close it again.
      */
     public close(): void {
-        if (this.status === 'closed') return;
         this.vStatus = 'closed';
-        if (this.connection.readableEnded) return;
         this.write(Buffer.alloc(0), 0x8);
         this.connection.end();
+    }
+    /**
+     * Writes the given buffer with the specified opcode to the WebSocket connection.
+     * This method is responsible for encoding the data into a WebSocket frame format and sending it through the underlying connection.
+     * In the base implementation, it uses the `encode` method to perform the encoding, which can be overridden in subclasses to provide different encoding strategies (e.g., masking for client-to-server communication).
+     * @param buffer - The data buffer to be encoded and sent through the WebSocket connection.
+     * @param opcode - The opcode indicating the type of frame being sent (e.g., 0x1 for text frames, 0x2 for binary frames).
+     * @remarks This method is designed to be overridden in client-side implementations to allow for different encoding strategies, such as masking frames for client-to-server communication. In the base implementation, it simply encodes the buffer using the standard `encode` method and writes it to the connection, but subclasses can provide their own encoding logic as necessary.
+     */
+    public write(buffer: Buffer, opcode: number): void {
+        if (this.vStatus !== 'open') return logger.warn('&C3Attempted to send data on a WebSocket connection that is not open. Data will not be sent.');
+        if (
+            this.connection.writableEnded ||
+            this.connection.destroyed ||
+            !this.connection.writable
+        ) {
+            this.vStatus = 'closed';
+            this.emit('close');
+            const stack = new Error().stack || '';
+            return logger.warn(`&C3Attempted to send data on a WebSocket connection that is already closed. Data will not be sent. ${stack}`);
+        }
+        const frame = this.encode(buffer, opcode);
+        this.connection.write(frame);
     }
     /**
      * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
@@ -105,16 +123,15 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     /**
      * ====== Override this method in Client side to use different codec ======
      * 
-     * Internal method to encode and send a WebSocket frame with the specified opcode.
-     * This method is used to send control frames (like close, ping, pong) or any other frames with specific opcodes as needed.
-     * It encodes the provided frame data using the Codec module and sends it through the WebSocket connection.
-     * @param buffer - The Buffer containing the data to be sent in the WebSocket frame, which will be encoded according to the WebSocket protocol.
-     * @param opcode - The opcode indicating the type of frame being sent (e.g., 0x8 for close, 0x9 for ping, 0xA for pong).
-     * @remarks The method encodes the frame data with the specified opcode and sends it through the WebSocket connection. This is typically used for sending control frames in response to certain events (like responding to a ping with a pong) or for initiating a close frame when closing the connection.
+     * Encodes the given buffer with the specified opcode and sends it through the WebSocket connection. This method is responsible for encoding the data into a WebSocket frame format and writing it to the underlying connection.
+     * In the base implementation, it uses the Codec.encode method to perform the encoding, but this method can be overridden in subclasses (such as WebsocketCSInit) to use a different encoding strategy if needed.
+     * @param buffer - The data buffer to be encoded and sent through the WebSocket connection.
+     * @param opcode - The opcode indicating the type of frame being sent (e.g., 0x1 for text frames, 0x2 for binary frames).
+     * @returns the encoded buffer that was sent through the connection. This allows for further processing or logging of the encoded data if necessary.
+     * @remarks This method is designed to be overridden in client-side implementations to allow for different encoding strategies, such as masking frames for client-to-server communication. In the base implementation, it simply encodes the buffer using the standard Codec.encode method and writes it to the connection, but subclasses can provide their own encoding logic as necessary.
      */
-    protected write(buffer: Buffer, opcode: number): void {
-        const frame = Codec.encode(buffer, opcode);
-        this.connection.write(frame);
+    protected encode(buffer: Buffer, opcode: number): Buffer {
+        return Codec.encode(buffer, opcode);
     }
     /**
      * Initializes the WebSocket connection by setting up event listeners for incoming data, message assembly, and connection events.
@@ -132,20 +149,20 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             } else if (message.isClose) {
                 if (this.vStatus === 'closed') return;
                 if (this.connection.writable && !this.connection.writableEnded) {
-                    try { this.write(message.payload, 0x8);
+                    try { this.encode(message.payload, 0x8);
                     } catch (error) {}
                 }
                 this.vStatus = 'closed';
                 this.connection.end();
                 this.emit('close');
             } else if (message.isPing) {
-                this.write(message.payload, 0xA);
+                this.encode(message.payload, 0xA);
             }
         });
         this.assembler.on('error', (error) => {
             this.vStatus = 'closed';
             this.emit('error', error);
-            this.write(Buffer.alloc(0), 0x8);
+            this.encode(Buffer.alloc(0), 0x8);
             this.connection.end();
         });
         this.connection.on('data', (data: Buffer) => {

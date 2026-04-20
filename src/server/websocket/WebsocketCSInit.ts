@@ -15,9 +15,8 @@ export class WebsocketCSInit extends WebsocketBase {
         this.request = request;
         this.handshake();
     }
-    protected override write(buffer: Buffer, opcode: number): void {
-        const frame = Codec.clientEncode(buffer, opcode);
-        this.connection.write(frame);
+    protected override encode(buffer: Buffer, opcode: number): Buffer {
+        return Codec.clientEncode(buffer, opcode);
     }
     /**
      * Handles the WebSocket handshake process by listening for 'finish' and 'error' events from the CSHandShaker instance.
