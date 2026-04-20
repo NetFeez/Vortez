@@ -13,14 +13,10 @@ export class WebsocketSSInit extends WebsocketBase {
     ) {
         super(socket);
         this.handshaker = new SSHandshaker(socket, request);
-    }
-    /**
-     * Accepts the WebSocket handshake by validating the client's request and sending the appropriate HTTP response to establish the WebSocket connection. This method should be called after verifying that the client's handshake request is valid and meets the necessary criteria for accepting the connection.
-      * - It generates the Sec-WebSocket-Accept key based on the client's Sec-WebSocket-Key and constructs the HTTP response with the required headers to complete the handshake.
-      * - After sending the response, it updates the internal status to 'open' and emits a 'finish' event with the new status.
-      * @throws Will throw an error if the client's handshake request does not contain a valid Sec-WebSocket-Key or if any other issue occurs during the acceptance process. The error will be emitted as an 'error' event for handling by the caller.
-      */
-    public accept(): void {
+        this.handshaker.once('error', (error) => {
+            this.vStatus = 'closed';
+            this.emit('error', error);
+        });
         this.handshaker.once('finish', (status) => {
             this.vStatus = status;
             if (status !== 'open') this.emit('close');
@@ -29,10 +25,15 @@ export class WebsocketSSInit extends WebsocketBase {
                 this.emit('open');
             }
         });
-        this.handshaker.once('error', (error) => {
-            this.vStatus = 'closed';
-            this.emit('error', error);
-        });
+    }
+    /**
+     * Accepts the WebSocket handshake by validating the client's request and sending the appropriate HTTP response to establish the WebSocket connection. This method should be called after verifying that the client's handshake request is valid and meets the necessary criteria for accepting the connection.
+      * - It generates the Sec-WebSocket-Accept key based on the client's Sec-WebSocket-Key and constructs the HTTP response with the required headers to complete the handshake.
+      * - After sending the response, it updates the internal status to 'open' and emits a 'finish' event with the new status.
+      * @throws Will throw an error if the client's handshake request does not contain a valid Sec-WebSocket-Key or if any other issue occurs during the acceptance process. The error will be emitted as an 'error' event for handling by the caller.
+      */
+    public accept(): void {
+        if (this.vStatus !== 'handshake') return this.emit('error', new Error('Handshake already completed or connection is closed'));
         this.handshaker.accept();
     }
     /**
@@ -42,9 +43,8 @@ export class WebsocketSSInit extends WebsocketBase {
      * @remarks The generated response will have a JSON body containing the provided code and reason, and will include any specified cookies in the headers. This response can be sent back to the client to indicate that the handshake request was rejected, along with the reason for rejection.
      */
     public reject(code: number, reason: string): void {
-        this.vStatus = 'closed';
+        if (this.vStatus !== 'handshake') return this.emit('error', new Error('Handshake already completed or connection is closed'));
         this.handshaker.reject(code, reason);
-        this.emit('close');
     }
 }
 export namespace WebsocketSSInit {}
