@@ -114,7 +114,6 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
      */
     protected write(buffer: Buffer, opcode: number): void {
         const frame = Codec.encode(buffer, opcode);
-        console.log(frame);
         this.connection.write(frame);
     }
     /**
@@ -131,10 +130,14 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
                 if (message.isText) this.emit('message:text', message.payload.toString('utf-8'));
                 else if (message.isBinary) this.emit('message:binary', message.payload);
             } else if (message.isClose) {
+                if (this.vStatus === 'closed') return;
+                if (this.connection.writable && !this.connection.writableEnded) {
+                    try { this.write(message.payload, 0x8);
+                    } catch (error) {}
+                }
                 this.vStatus = 'closed';
-                this.emit('close');
-                this.write(Buffer.alloc(0), 0x8);
                 this.connection.end();
+                this.emit('close');
             } else if (message.isPing) {
                 this.write(message.payload, 0xA);
             }
@@ -199,8 +202,7 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
         if (this.vEventBuffering && this.eventCount(name) === 0) {
             this.vEventBuffer[name] = this.vEventBuffer[name] ?? [];
             this.vEventBuffer[name].push(args);
-            return;
-        }
+        } else super.emit(...event);
     }
 }
 export namespace WebsocketBase {
