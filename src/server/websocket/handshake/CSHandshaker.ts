@@ -34,12 +34,12 @@ export class CSHandShaker extends Events<CSHandShaker.EventMap> {
                     const expected = CSHandShaker.computeAcceptKey(this.secWebSocketKey);
                     if (accept !== expected) {
                         this.emit('error', new Error('Invalid Sec-WebSocket-Accept header in handshake'));
-                        this.emit('finish', 'closed');
+                        setImmediate(() => this.emit('finish', 'closed'));
                         return;
                     }
-                    this.emit('finish', 'open');
+                    setImmediate(() => this.emit('finish', 'open'));
                 } else {
-                    this.emit('finish', 'closed');
+                    setImmediate(() => this.emit('finish', 'closed'));
                 }
             });
 
@@ -58,10 +58,19 @@ export class CSHandShaker extends Events<CSHandShaker.EventMap> {
         emitter: Events.Emitter<CSHandShaker.ServerSocketEventMap>,
         parent: CSHandShaker
     ): (data: Buffer) => void {
+        let buffer = Buffer.alloc(0);
         return (data: Buffer): void => {
             try {
-                const response = data.toString();
-                const [header, ...rest] = response.split('\r\n\r\n');
+                buffer = Buffer.concat([buffer, data]);
+                const index = buffer.indexOf('\r\n\r\n');
+                if (index === -1) return;
+
+                const headerBuffer = buffer.subarray(0, index);
+                const leftovers = buffer.subarray(index + 4);
+
+                if (leftovers.length > 0) { parent.socket.unshift(leftovers); }
+
+                const header = headerBuffer.toString('utf-8');
                 const headerLines = header.split('\r\n');
                 const statusLine = headerLines[0];
                 const statusMatch = statusLine.match(/^HTTP\/\d\.\d (\d{3})/);
@@ -100,7 +109,7 @@ export class CSHandShaker extends Events<CSHandShaker.EventMap> {
             'Connection: Upgrade',
             `Sec-WebSocket-Key: ${secWebSocketKey}`,
             'Sec-WebSocket-Version: 13',
-            '\r\n'
+            ''
         ].join('\r\n');
     }
 
