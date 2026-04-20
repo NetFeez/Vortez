@@ -71,6 +71,7 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
     public close(): void {
         if (this.status === 'closed') return;
         this.vStatus = 'closed';
+        if (this.connection.readableEnded) return;
         this.write(Buffer.alloc(0), 0x8);
         this.connection.end();
     }
@@ -113,6 +114,7 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
      */
     protected write(buffer: Buffer, opcode: number): void {
         const frame = Codec.encode(buffer, opcode);
+        console.log(frame);
         this.connection.write(frame);
     }
     /**
@@ -120,17 +122,9 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
      * This method is called after a successful handshake to start processing WebSocket frames and messages.
      * It listens for 'data' events on the socket to process incoming frames, and uses the MessageAssembler to assemble complete messages from the frames.
      * It also handles control frames (like close and ping) appropriately, emitting events for messages, errors, and connection closures as needed.
-      * @param socket - The Duplex stream representing the WebSocket connection, which will be used to listen for incoming data and send responses as needed.
       * @remarks The method sets up a 'data' event listener on the socket to process incoming data buffers. It uses the MessageAssembler to handle the assembly of messages from frames, emitting 'message' events when complete messages are assembled. It also handles control frames such as close and ping, emitting a 'close' event when a close frame is received and responding to ping frames with pong frames. Additionally, it listens for 'close' and 'error' events on the socket to emit corresponding events for the WebSocket instance.
      */
-    protected startup(socket: Duplex): void {
-        socket.on('data', (data: Buffer) => {
-            if (this.surplus.length > 0) {
-                data = Buffer.concat([this.surplus, data]);
-                this.surplus = Buffer.alloc(0);
-            }
-            this.processBuffer(data);
-        });
+    protected startup(): void {
         this.assembler.on('message', (message: Message) => {
             if (message.isText || message.isBinary) {
                 this.emit('message', message);
@@ -151,11 +145,17 @@ export class WebsocketBase extends Events<WebsocketBase.EventMap> {
             this.write(Buffer.alloc(0), 0x8);
             this.connection.end();
         });
-        socket.on('close', () => {
+        this.connection.on('data', (data: Buffer) => {
+            if (this.surplus.length > 0) {
+                data = Buffer.concat([this.surplus, data]);
+                this.surplus = Buffer.alloc(0);
+            } this.processBuffer(data);
+        });
+        this.connection.on('close', () => {
             this.vStatus = 'closed';
             this.emit('close');
         });
-        socket.on('error', this.emit.bind(this, 'error'));
+        this.connection.on('error', this.emit.bind(this, 'error'));
     }
     /**
      * Procesa el buffer recibido, extrayendo todos los frames completos y acumulando el surplus.

@@ -27,7 +27,7 @@ export class WebsocketCSInit extends WebsocketBase {
     protected handshake(): void {
         this.handshaker.once('finish', (status) => {
             if (status === 'open') {
-                this.startup(this.connection);
+                this.startup();
                 this.vStatus = 'open';
                 this.emit('open');
             } else {

@@ -25,7 +25,7 @@ export class WebsocketSSInit extends WebsocketBase {
             this.vStatus = status;
             if (status !== 'open') this.emit('close');
             else {
-                this.startup(this.connection);
+                this.startup();
                 this.emit('open');
             }
         });
