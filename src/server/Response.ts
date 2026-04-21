@@ -17,7 +17,7 @@ import Template from '../Template/Template.js';
 import Config from './config/Config.js';
 import PathSecurity from './security/PathSecurity.js';
 
-const logger = new Logger({ prefix: 'Response' });
+const logger = new Logger({ name: 'Response' });
 
 export class Response {
 	public static readonly contentTypeMap: Response.contentTypeMap = {

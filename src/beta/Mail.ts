@@ -5,14 +5,19 @@
  * @license Apache-2.0
  */
 
-import Debug from '../logger/Debug.js';
+import Logger from '../logger/Logger.js';
 
 import TLS from 'tls';
 import NET from 'net';
 import FS from 'fs';
 import CRYPTO from 'crypto';
 
-export const $Mail = Debug.getInstance('beta.mail', { path: '.debug-beta' });
+export const $Mail = new Logger({
+    logger: {
+        id: 'BETA.MAIL',
+        path: '.debug-beta/{DD}-{MM}-{YYYY}/{HH}-{mm}-{ss}.log',
+    }
+});
 
 export class Mail {
     private host: string;

@@ -1,60 +1,101 @@
-/**
- * @author NetFeez <netfeez.dev@gmail.com>
- * @description Adds a logger class to have organized logs.
- * @license Apache-2.0
-*/
-
-import _Debug from "./Debug.js";
-
-export { Debug } from "./Debug.js";
+import Formatter from "./Formatter.js";
+import LoggerCore from "./LoggerCore.js";
 
 export class Logger {
-    private static readonly LEVEL_MAP: Logger.LevelMap = {
-        log: `&C2[LOG]`,
-        warn: `&C3[WRN]`,
-        info: `&C6[INF]`,
-        error: `&C1[ERR]`,
-    }
-    private prefix: string;
-    private format: string;
-    private debug: Logger.Debug;
-    public show: boolean = true;
-    public save: boolean = true;
-    constructor(options: Logger.Options = {}) {
-        const { prefix = 'Logger', format = '&R&C7', debug = Logger.Debug.default } = options;
-        this.prefix = prefix;
-        this.format = format;
-        if (debug instanceof Logger.Debug) this.debug = debug;
-        else if (typeof debug === 'string') this.debug = Logger.Debug.getInstance(debug);
-        else if (typeof debug === 'object') this.debug = Logger.Debug.getInstance(debug.id, debug);
-        else {
-            this.debug = Logger.Debug.default;
-            this.warn('The provided option.debug is not valid, the default debug instance will be used.');
+    public static default = new Logger();
+
+    protected readonly formatter: Formatter;
+    protected readonly core: LoggerCore;
+    protected name: string;
+    public save: boolean;
+    public show: boolean;
+
+    public constructor(options: Logger.Options | Logger = {}) {
+        if (options instanceof Logger) {
+            this.core = options.core;
+            this.name = options.name;
+            this.save = options.save;
+            this.show = options.show;
+            this.formatter = options.formatter;
+            return;
         }
+        this.core = Logger.getCore(options.logger);
+        this.name = options.name || this.core.id;
+        this.save = options.save ?? this.core.save;
+        this.show = options.show ?? this.core.show;
+        this.formatter = Logger.getFormatter(this.core.formatter, options.formatter);
     }
-    public log (...data: any[]) { this.debug.customLog(data, this.getLogOptions('log')); }
-    public warn (...data: any[]) { this.debug.customLog(data, this.getLogOptions('warn')); }
-    public info (...data: any[]) { this.debug.customLog(data, this.getLogOptions('info')); }
-    public error (...data: any[]) { this.debug.customLog(data, this.getLogOptions('error')); }
-    private getLogOptions(level: Logger.level): Logger.Debug.LogOptions {
-        const prefix = `${Logger.LEVEL_MAP[level]} [${this.prefix}]${this.format}`
-        return { prefix, save: this.save, show: this.show, }
+
+    public log(...data: any[]): void { this.send(Logger.LEVEL.LOG, ...data); }
+    public info(...data: any[]): void { this.send(Logger.LEVEL.INF, ...data); }
+    public warn(...data: any[]): void { this.send(Logger.LEVEL.WRN, ...data); }
+    public error(...data: any[]): void { this.send(Logger.LEVEL.ERR, ...data); }
+    public debug(...data: any[]): void { this.send(Logger.LEVEL.DBG, ...data); }
+
+    protected send(level: Logger.LEVEL, ...data: any[]): void {
+        const color = Logger.getColor(level);
+        this.core.customLog({
+            formatter: this.formatter,
+            level: `${color}[${level}]&R`,
+            name: `${color}[${this.name}${color}]&R`,
+            save: this.save,
+            show: this.show,
+            data
+        });
+    }
+
+    public static log(...data: any) { this.send(Logger.LEVEL.LOG, ...data); }
+    public static info(...data: any) { this.send(Logger.LEVEL.INF, ...data); }
+    public static warn(...data: any) { this.send(Logger.LEVEL.WRN, ...data); }
+    public static error(...data: any) { this.send(Logger.LEVEL.ERR, ...data); }
+    public static debug(...data: any) { this.send(Logger.LEVEL.DBG, ...data); }
+
+    protected static send(level: Logger.LEVEL, ...data: any): void {
+        const color = Logger.getColor(level);
+        Logger.default.core.customLog({ level: `${color}[${level}]`, data });
+    }
+
+    protected static getFormatter(defaultF: Formatter, formatter?: Formatter | Formatter.Options): Formatter {
+        if (!formatter) return defaultF;
+        else if (formatter instanceof Formatter) return formatter;
+        else return new Formatter(formatter);
+    }
+    protected static getCore(logger?: Logger.Core): LoggerCore {
+        if (!logger) return LoggerCore.get('default');
+        else if (logger instanceof LoggerCore) return logger;
+        else if (logger instanceof Logger) return logger.core;
+        else if (typeof logger === 'string') return LoggerCore.get(logger);
+        else if ('id' in logger) return LoggerCore.get(logger.id, logger);
+        else return LoggerCore.get(logger);
+    }
+    protected static getColor(level: Logger.LEVEL): string {
+        switch (level) {
+            case Logger.LEVEL.LOG: return '&C(#FFB4DC)';
+            case Logger.LEVEL.INF: return '&C6';
+            case Logger.LEVEL.WRN: return '&C3';
+            case Logger.LEVEL.ERR: return '&C1';
+            case Logger.LEVEL.DBG: return '&C7';
+            default: return '&R';
+        }
     }
 }
 export namespace Logger {
-    export import Debug = _Debug;
-    export type level = 'log' | 'warn' | 'info' | 'error';
-    export type LevelMap = Record<level, string>;
-    export interface NewDebugOptions {
-        id: string;
-        path?: string;
-        show?: boolean;
-        save?: boolean;
+    export enum LEVEL {
+        LOG = 'LOG',
+        INF = 'INF',
+        WRN = 'WRN',
+        ERR = 'ERR',
+        DBG = 'DBG'
     }
-    export interface Options {
-        prefix?: string;
-        format?: string;
-        debug?: string | Logger.Debug | NewDebugOptions;
+    export type FormatterOption = Formatter | Formatter.Options;
+    export type Core = string | Logger | LoggerCore | LoggerOptions;
+    export interface Options extends Omit<LoggerCore.Options, 'path'> {
+        name?: string;
+        formatter?: FormatterOption;
+        logger?: Core;
+    }
+    export interface LoggerOptions extends LoggerCore.Options {
+        id: string;
     }
 }
 export default Logger;

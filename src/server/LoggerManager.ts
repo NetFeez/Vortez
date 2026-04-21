@@ -4,7 +4,6 @@
  * @license Apache-2.0
  */
 
-import Debug from "../logger/Debug.js";
 import Logger from "../logger/Logger.js";
 
 export class LoggerManager {
@@ -18,10 +17,10 @@ export class LoggerManager {
     public response: Logger;
     public webSocket: Logger;
     private constructor() {
-        this.server = new Logger({ prefix: 'Server' });
-        this.request = new Logger({ prefix: 'Request' });
-        this.response = new Logger({ prefix: 'Response' });
-        this.webSocket = new Logger({ prefix: 'WebSocket' })
+        this.server = new Logger({ name: 'Server' });
+        this.request = new Logger({ name: 'Request' });
+        this.response = new Logger({ name: 'Response' });
+        this.webSocket = new Logger({ name: 'WebSocket' })
     }
     public log(...data: any[]) { this.server.log(...data); }
     public info(...data: any[]) { this.server.info(...data); }

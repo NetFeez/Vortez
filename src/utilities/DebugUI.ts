@@ -13,11 +13,11 @@ export class DebugUI {
     public in: NodeJS.ReadStream;
     public out: Logger;
     public commandMap: DebugUI.CommandMap;
-    public constructor(prefix: string = 'C-UI') {
+    public constructor(name: string = 'C-UI') {
         this.dataHandleInstance = this.dataHandler.bind(this);
         this.prompt = ConsoleUI.formatText("&C(255,180,220)[Vortez] << &C6&S");
         this.in = process.stdin;
-        this.out = new Logger({ prefix, debug: 'console-ui' });
+        this.out = new Logger({ name, logger: 'console-ui' });
         this.commandMap = {};
         this.addDefaultCommands();
     }

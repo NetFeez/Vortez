@@ -9,7 +9,7 @@ import Logger from "../../logger/Logger.js";
 import Config from "./Config.js";
 import Utilities from "../../utilities/Utilities.js";
 
-const logger = new Logger({ prefix: 'Config' });
+const logger = new Logger({ name: 'Config' });
 
 export class Loader {
     /**

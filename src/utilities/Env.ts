@@ -6,7 +6,7 @@
 import FS, { promises as FSP } from "fs";
 import PATH from "path";
 
-import Debug from "../logger/Debug.js";
+import Logger from "../logger/Logger.js";
 import File from './File.js';
 
 export class Env {
@@ -24,19 +24,19 @@ export class Env {
      * @throws Error if the environment variables file is not readable.
      */
     public static async load(path: string, options: Env.LoadOptions = {}): Promise<Env.EnvList> {
-        Debug.log(`loading environment variables from &C6[${path}]`);
+        Logger.info(`loading environment variables from &C6[${path}]`);
         const defaultEnv = options.defaultEnv ?? {};
         const setEnv = options.setEnv ?? true;
 
         if (!await File.exists(path)) {
             try {
-                Debug.log(`environment variables file &C6[${path}]&R does not exist, creating it`);
+                Logger.log(`environment variables file &C6[${path}]&R does not exist, creating it`);
                 await FSP.mkdir(PATH.dirname(path), { recursive: true });
                 const env = this.toEnv(defaultEnv);
                 await FSP.writeFile(path, env, 'utf-8');
-                Debug.log(`environment variables file &C6[${path}]&R &C2was created successfully`);
+                Logger.log(`environment variables file &C6[${path}]&R &C2was created successfully`);
             } catch (error) {
-                Debug.log(`environment variables file &C6[${path}]&R &C1could not be created`);
+                Logger.error(`environment variables file &C6[${path}]&R &C1could not be created`);
                 throw error;
             }
         }
@@ -45,7 +45,7 @@ export class Env {
         const result = this.extractEnv(env, defaultEnv);
         if (setEnv) this.setMany(result);
 
-        Debug.log(`environment variables loaded from &C6[${path}]`);
+        Logger.log(`environment variables loaded from &C6[${path}]`);
         return result;
     }
     /**
@@ -57,7 +57,7 @@ export class Env {
      * @throws Error if the environment variables file is not readable.
      */
     public static loadSync(path: string, options: Env.LoadOptions = {}): Env.EnvList {
-        Debug.log(`loading environment variables from &C6[${path}]`);
+        Logger.log(`loading environment variables from &C6[${path}]`);
         const defaultEnv = options.defaultEnv ?? {};
         const setEnv = options.setEnv ?? true;
 
@@ -65,14 +65,14 @@ export class Env {
             FS.mkdirSync(PATH.dirname(path), { recursive: true });
             const env = this.toEnv(defaultEnv);
             FS.writeFileSync(path, env, 'utf-8');
-            Debug.log(`environment variables file &C6[${path}]&R does not exist, creating it`);
+            Logger.log(`environment variables file &C6[${path}]&R does not exist, creating it`);
         }
 
         const env = FS.readFileSync(path, 'utf-8');
         const result = this.extractEnv(env, defaultEnv);
         if (setEnv) this.setMany(result);
 
-        Debug.log(`environment variables loaded from &C6[${path}]`);
+        Logger.log(`environment variables loaded from &C6[${path}]`);
         return result;
     }
     /**
@@ -113,7 +113,7 @@ export class Env {
         const value = process.env[key];
         if (value) return value;
         const { default: defaultVal, warning = false } = options;
-        if (warning) Debug.log(`&B3[warn]:&R &C6${key} &C3is not defined${defaultVal ? `, &C2using: &C6${defaultVal}` : ''}`);
+        if (warning) Logger.warn(`&B3[warn]:&R &C6${key} &C3is not defined${defaultVal ? `, &C2using: &C6${defaultVal}` : ''}`);
         return defaultVal;
     }
     /**
