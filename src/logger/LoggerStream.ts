@@ -32,7 +32,7 @@ export class LoggerStream extends Events<LoggerStream.EventMap> {
     protected async startup(): Promise<WriteStream> {
         if (this.isReady()) return this.vStream;
         this.vStream = await LoggerStream.create(this.path);
-        this.emit('start', this.vStream);
+        this.emit('startup', this.vStream);
         await this.flush();
         return this.vStream;
     }
