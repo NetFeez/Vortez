@@ -1,7 +1,9 @@
 import { createWriteStream, WriteStream } from "node:fs";
 import FS from "node:fs/promises";
 
-import { Events, Path } from "../utilities/Utilities.js";
+import { Events } from "@netfeez/common";
+
+import { Path } from "../utilities/Utilities.js";
 import LoggerError from "./LoggerError.js";
 
 export class LoggerStream extends Events<LoggerStream.EventMap> {

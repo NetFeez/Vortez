@@ -1,4 +1,6 @@
-import Utilities, { Schema, Flatten } from "../../utilities/Utilities.js";
+import { Schema, Flatten } from "@netfeez/common";
+
+import Utilities from "../../utilities/Utilities.js";
 import _Loader from "./Loader.js";
 
 export const DEFAULT_FOLDER_TEMPLATE = Utilities.Path.module('global/template/folder.vhtml');

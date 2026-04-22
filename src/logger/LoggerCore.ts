@@ -1,9 +1,10 @@
+import { Time } from "@netfeez/common";
+
 import Path from "../utilities/Path.js";
 import ConsoleUI from "../utilities/ConsoleUI.js";
 
 import LoggerStream from "./LoggerStream.js";
 import Formatter from "./Formatter.js";
-import Date from "./Date.js";
 
 export class LoggerCore {
     protected static rootPath: string = '.logs';
@@ -66,8 +67,7 @@ export class LoggerCore {
         });
     }
     protected static compilePath(path: string, date?: Date): string {
-        const now = date ?? new Date();
-        path = now.format(path);
+        path = Time.format(path, date);
         return Path.normalize(path); 
     }
 }

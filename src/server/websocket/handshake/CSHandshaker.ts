@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'crypto';
 import { Duplex } from 'stream';
-
-import { Events } from '../../../utilities/Utilities.js';
 import { IncomingHttpHeaders } from 'http';
+
+import { Events } from '@netfeez/common';
 
 export class CSHandShaker extends Events<CSHandShaker.EventMap> {
     private secWebSocketKey: string;

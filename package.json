@@ -44,5 +44,8 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "@netfeez/common": "^1.0.2"
   }
 }

@@ -1,4 +1,4 @@
-import { Events } from '../../../utilities/Utilities.js';
+import { Events } from '@netfeez/common';
 
 import Frame from '../frame/Frame.js';
 import Message from './Message.js';

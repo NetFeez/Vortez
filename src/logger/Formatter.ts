@@ -1,6 +1,6 @@
 import { inspect } from "node:util";
 
-import Date from "./Date.js";
+import { Time } from "@netfeez/common";
 
 export class Formatter {
     protected readonly format: Formatter.Format;
@@ -16,7 +16,7 @@ export class Formatter {
         return lines.map(line => this.formatMessage(date, level, name, line));
     }
     protected formatMessage(date: Date, level: string, name: string, message: string): string {
-        let dateFormatted = date.format(this.format.timestampFormat);
+        let dateFormatted = Time.format(this.format.timestampFormat);
         let line = this.format.messageFormat
             .replace('{timestamp}', this.format.timestamp ? dateFormatted : '')
             .replace('{level}',     this.format.level     ? level         : '')

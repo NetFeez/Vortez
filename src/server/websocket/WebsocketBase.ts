@@ -8,7 +8,8 @@ import type { Duplex } from 'stream';
 
 import { randomUUID } from 'crypto';
 
-import { Events } from '../../utilities/Utilities.js';
+import { Events } from '@netfeez/common';
+
 import LoggerManager from '../LoggerManager.js';
 
 import Codec from './Codec.js';

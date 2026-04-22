@@ -1,7 +1,8 @@
 import CRYPTO from 'crypto';
 import { Duplex } from 'stream';
 
-import { Events } from '../../../utilities/Utilities.js';
+import { Events } from '@netfeez/common';
+
 import Request from '../../Request.js';
 import Cookie from '../../Cookie.js';
 
