@@ -4,7 +4,7 @@
  * @license Apache-2.0
  */
 
-import Logger from "../logger/Logger.js";
+import { Logger } from "@netfeez/vterm";
 
 export class LoggerManager {
     private static instance: LoggerManager | null;

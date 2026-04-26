@@ -8,7 +8,8 @@ import HTTP from 'http';
 import FS from 'fs';
 import HTTPS from 'https';
 
-import Utilities from '../utilities/Utilities.js';
+import { Path } from '@netfeez/common-node';
+
 import _LoggerManager from './LoggerManager.js';
 import _ServerDebug from './ServerDebug.js';
 import _Config from './config/Config.js';
@@ -53,7 +54,7 @@ export class Server {
 		this.HttpsServer = null;
 		this.protocol = null;
 		this.logger = _LoggerManager.getInstance();
-		this.router.addFolder('/vortez:global', Utilities.Path.module('global'));
+		this.router.addFolder('/vortez:global', Path.module('global'));
 	}
 	/**
 	 * Starts the server.
@@ -201,8 +202,8 @@ export class Server {
 	 * @returns An object containing the certificate and key as Buffers.
 	 */
 	public static async loadCertificates(pathCert: string, pathKey: string): Promise<Server.Certificates> {
-    	pathCert = Utilities.Path.normalize(pathCert);
-        pathKey = Utilities.Path.normalize(pathKey);
+    	pathCert = Path.normalize(pathCert);
+        pathKey = Path.normalize(pathKey);
         const certInfo = await FS.promises.stat(pathCert);
         const keyInfo = await FS.promises.stat(pathKey);
         if (!(certInfo.isFile())) return Promise.reject('The certificate path is not a file');

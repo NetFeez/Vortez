@@ -6,7 +6,7 @@
 import FS from 'fs';
 import PATH from 'path';
 
-import Utilities from '../../utilities/Utilities.js';
+import { Path } from '@netfeez/common-node';
 
 export class PathSecurity {
 	private static readonly maxRealPathCacheSize = 128;
@@ -19,8 +19,8 @@ export class PathSecurity {
 	 * @returns A safe absolute path or null if the path escapes the base.
 	 */
 	public static async resolveInsideBase(base: string, plus: string): Promise<string | null> {
-		base = Utilities.Path.resolve(base);
-		plus = Utilities.Path.normalize(plus);
+		base = Path.resolve(base);
+		plus = Path.normalize(plus);
 
 		if (this.hasTraversalUnderflow(plus)) return null;
 
@@ -72,8 +72,8 @@ export class PathSecurity {
 	 */
 	private static getCandidate(base: string, plus: string): string {
 		plus = plus.replace(/^[\\/]+/, '');
-		const candidate = Utilities.Path.join(base, plus);
-		return Utilities.Path.resolve(candidate);
+		const candidate = Path.join(base, plus);
+		return Path.resolve(candidate);
 	}
     /**
      * Retrieves a safe real path for the given base path, using caching to optimize performance while preventing cache overflow.

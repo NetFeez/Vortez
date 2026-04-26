@@ -1,6 +1,6 @@
 {
   "name": "vortez",
-  "version": "5.0.3",
+  "version": "6.0.0-dev.1",
   "description": "a module for web server creation",
   "type": "module",
   "main": "build/Vortez.js",
@@ -46,6 +46,8 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
-    "@netfeez/common": "^1.0.2"
+    "@netfeez/common": "^1.0.3",
+    "@netfeez/common-node": "^1.0.1",
+    "@netfeez/vterm": "^1.0.0"
   }
 }

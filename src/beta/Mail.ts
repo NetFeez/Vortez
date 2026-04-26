@@ -4,13 +4,12 @@
  * @description add the mail sender to the Vortez.
  * @license Apache-2.0
  */
-
-import Logger from '../logger/Logger.js';
-
 import TLS from 'tls';
 import NET from 'net';
 import FS from 'fs';
 import CRYPTO from 'crypto';
+
+import { Logger } from '@netfeez/vterm';
 
 export const $Mail = new Logger({
     logger: {

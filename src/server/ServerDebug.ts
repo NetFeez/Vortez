@@ -3,9 +3,9 @@
  * @description Utility to help with debugging tasks and server development.
  * @license Apache-2.0
  */
+import { DebugUI } from '@netfeez/vterm';
 
 import type Server from './Server.js';
-import DebugUI from '../utilities/DebugUI.js';
 
 export class ServerDebug extends DebugUI {
     public constructor(

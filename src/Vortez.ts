@@ -5,9 +5,9 @@
  * @license Apache-2.0
  */
 
-export { Logger } from "./logger/Logger.js";
+export { Logger } from "@netfeez/vterm";
+export * as Utilities from "@netfeez/common-node";
 export { Template } from "./Template/Template.js";
-export { Utilities } from "./utilities/Utilities.js";
 export * as Beta from "./beta/Beta.js";
 export { ServerError } from "./server/ServerError.js";
 export { Router } from "./server/router/Router.js";

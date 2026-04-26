@@ -5,9 +5,11 @@
  */
 
 import { promises as FSP } from "fs";
-import Logger from "../../logger/Logger.js";
+import { Logger } from "@netfeez/vterm";
+import { File, Path } from "@netfeez/common-node";
+
+
 import Config from "./Config.js";
-import Utilities from "../../utilities/Utilities.js";
 
 const logger = new Logger({ name: 'Config' });
 
@@ -19,7 +21,7 @@ export class Loader {
      */
     public static async load(path: string): Promise<Config> {
         logger.log(`loading config from &C6[${path}]`);
-        if (!await Utilities.File.exists(path)) {
+        if (!await File.exists(path)) {
             const config = new Config({});
             logger.log(`config file &C6[${path}]&R does not exist, creating it`);
             await Loader.save(path, config);
@@ -42,7 +44,7 @@ export class Loader {
      * @returns A promise that resolves when the config is saved.
      */
     public static async save(path: string, config: Config): Promise<void> {
-        const dir = Utilities.Path.dirname(path);
+        const dir = Path.dirname(path);
         await FSP.mkdir(dir, { recursive: true });
         const content = config.toJson();
         await FSP.writeFile(path, content, 'utf8');

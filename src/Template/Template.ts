@@ -3,11 +3,11 @@
  * @description Add the vhtml template engine to the Vortez.
  * @license Apache-2.0
  */
-
 import { promises as FSP, createReadStream } from 'fs';
 import { Readable } from 'stream';
 
-import Utilities from '../utilities/Utilities.js';
+import { Path, File } from '@netfeez/common-node';
+
 import Compiler from './Compiler.js';
 import { StreamCompiler } from './StreamCompiler.js';
 
@@ -26,8 +26,8 @@ export class Template {
      * @throws Error if the file does not exist.
      */
     public static async load(path: string, data: Compiler.Data): Promise<string> {
-        path = Utilities.Path.normalize(path);
-		if (!Utilities.File.exists(path)) throw new Error('template file does not exist');
+        path = Path.normalize(path);
+		if (!await File.exists(path)) throw new Error('template file does not exist');
         const details = await FSP.stat(path);
         if (!details.isFile()) throw new Error('the path is not a template file');
         const template = await FSP.readFile(path);
@@ -42,8 +42,8 @@ export class Template {
      * @returns A Readable stream with the compiled content.
      */
     public static async stream(path: string, data: Compiler.Data): Promise<Readable> {
-        path = Utilities.Path.normalize(path);
-		if (!Utilities.File.exists(path)) throw new Error('template file does not exist');
+        path = Path.normalize(path);
+		if (!await File.exists(path)) throw new Error('template file does not exist');
 		const details = await FSP.stat(path);
 
         if (!details.isFile()) throw new Error('the path is not a template file');

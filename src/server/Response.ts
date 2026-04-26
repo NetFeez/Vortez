@@ -10,9 +10,10 @@ import PATH from 'path';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
+import { File, Path } from '@netfeez/common-node';
+import { Logger } from "@netfeez/vterm";
+
 import Request from './Request.js';
-import Logger from '../logger/Logger.js';
-import Utilities from '../utilities/Utilities.js';
 import Template from '../Template/Template.js';
 import Config from './config/Config.js';
 import PathSecurity from './security/PathSecurity.js';
@@ -134,7 +135,7 @@ export class Response {
 	 * @throws If the file does not exist or is not accessible.
 	 */
 	public async sendFile(path: string, options: Response.options = {}): Promise<void>  {
-		path = Utilities.Path.normalize(path);
+		path = Path.normalize(path);
         try {
             const details = await FS.promises.stat(path);
             if (!details.isFile()) return await this.sendError(500, '[Response Error] - Provided path is not a file.');
@@ -193,7 +194,7 @@ export class Response {
 	 * @throws If the folder does not exist or is invalid.
 	 */
 	public async sendFolder(base: string, plus: string = ''): Promise<void> {
-		const basePath = Utilities.Path.resolve(base || Utilities.Path.rootDir);
+		const basePath = Path.resolve(base || Path.rootDir);
 		const path = await PathSecurity.resolveInsideBase(basePath, plus);
 
 		if (!path) {
@@ -207,7 +208,7 @@ export class Response {
 		}
 		
         try {
-			if (!await Utilities.File.exists(path)) return void await this.sendError(404, 'The requested URL was not found');
+			if (!await File.exists(path)) return void await this.sendError(404, 'The requested URL was not found');
             const details = await FS.promises.stat(path);
             if (details.isFile()) return await this.sendFile(path);
 			if (!details.isDirectory()) return await this.sendError(404, 'The requested URL was not found');
@@ -218,7 +219,7 @@ export class Response {
                     folder
                 });
             } else {
-				await this.sendTemplate(Utilities.Path.module('global/template/folder.vhtml'), {
+				await this.sendTemplate(Path.module('global/template/folder.vhtml'), {
                     Url: this.request.url,
                     folder
                 });
@@ -233,7 +234,7 @@ export class Response {
 	 * @throws If the template cannot be loaded.
 	 */
 	public async sendTemplate(path: string, data: object, options: Response.options = {}): Promise<void> {
-		path = Utilities.Path.normalize(path);
+		path = Path.normalize(path);
         try {
             const template = await Template.stream(path, data);
 			const status = options.status ?? 200;
@@ -262,7 +263,7 @@ export class Response {
 	public async sendError(status: number, message: string): Promise<void> {
         try {
             if (this.templates.error) return await this.sendTemplate(this.templates.error, { status, message }, { status });
-            else await this.sendTemplate(Utilities.Path.module('global/template/error.vhtml'), { status, message }, { status });
+            else await this.sendTemplate(Path.module('global/template/error.vhtml'), { status, message }, { status });
         } catch(error) {
 			logger.error(`error sending error: ${this.request.session.id}`, error);
 			const headers = this.generateHeaders('txt');
@@ -332,7 +333,7 @@ export class Response {
 		if (envVersion) return envVersion;
 
 		try {
-			const packagePath = Utilities.Path.module('package.json');
+			const packagePath = Path.module('package.json');
 			const raw = FS.readFileSync(packagePath, 'utf8');
 			const data = JSON.parse(raw) as { version?: string };
 			if (typeof data.version === 'string' && data.version.length > 0) return data.version;

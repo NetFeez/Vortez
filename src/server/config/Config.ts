@@ -1,10 +1,10 @@
 import { Schema, Flatten } from "@netfeez/common";
+import { Path } from "@netfeez/common-node";
 
-import Utilities from "../../utilities/Utilities.js";
 import _Loader from "./Loader.js";
 
-export const DEFAULT_FOLDER_TEMPLATE = Utilities.Path.module('global/template/folder.vhtml');
-export const DEFAULT_ERROR_TEMPLATE = Utilities.Path.module('global/template/error.vhtml');
+export const DEFAULT_FOLDER_TEMPLATE = Path.module('global/template/folder.vhtml');
+export const DEFAULT_ERROR_TEMPLATE = Path.module('global/template/error.vhtml');
 
 export const SCHEMA_LOGGER_PROP = new Schema({
     show: { type: 'boolean', default: true },
