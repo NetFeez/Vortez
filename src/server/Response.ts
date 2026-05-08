@@ -266,9 +266,22 @@ export class Response {
             else await this.sendTemplate(Path.module('global/template/error.vhtml'), { status, message }, { status });
         } catch(error) {
 			logger.error(`error sending error: ${this.request.session.id}`, error);
-			const headers = this.generateHeaders('txt');
-            await this.send(`Error: ${status} -> ${message}`, { status: status, headers });
+			await this.sendPlainError(status, message);
 		}
+	}
+	/**
+	 * Sends a minimal plain-text error response without using templates.
+	 * @param status - The HTTP status code of the error.
+	 * @param message - The error message.
+	 */
+	private async sendPlainError(status: number, message: string): Promise<void> {
+		if (this.isSent) return;
+		try {
+			const headers = this.generateHeaders('txt');
+			this.sendHeaders(status, headers);
+			this._isSended = true;
+			await this.httpResponse.end(`Error: ${status} -> ${message}`, 'utf-8');
+		} catch (error) { logger.error(`error sending plain error: ${this.request.session.id}`, error); }
 	}
 	/**
 	 * Handles errors that occur during file sending operations.
