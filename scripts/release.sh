@@ -8,8 +8,8 @@ set -euo pipefail
 
 bash scripts/test.sh
 
-echo -e "\x1B[36m====== No publishes before refactor tests process ====== \x1B[0m";
-exit 1
+# echo -e "\x1B[36m====== No publishes before refactor tests process ====== \x1B[0m";
+# exit 1
 
 # ====== Main Process ======
 
