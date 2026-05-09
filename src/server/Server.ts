@@ -54,7 +54,7 @@ export class Server {
 		this.HttpsServer = null;
 		this.protocol = null;
 		this.logger = _LoggerManager.getInstance();
-		this.router.addFolder('/vortez:global', Path.module('global'));
+		this.router.addFolder('/vortez:global', Path.relativeToMe(import.meta, '../../global'));
 	}
 	/**
 	 * Starts the server.

@@ -3,8 +3,8 @@ import { Path } from "@netfeez/common-node";
 
 import _Loader from "./Loader.js";
 
-export const DEFAULT_FOLDER_TEMPLATE = Path.module('global/template/folder.vhtml');
-export const DEFAULT_ERROR_TEMPLATE = Path.module('global/template/error.vhtml');
+export const DEFAULT_FOLDER_TEMPLATE = Path.relativeToMe(import.meta, '../../../global/template/folder.vhtml');
+export const DEFAULT_ERROR_TEMPLATE = Path.relativeToMe(import.meta, '../../../global/template/error.vhtml');
 
 export const SCHEMA_LOGGER_PROP = new Schema({ type: 'object', properties: {
     show: { type: 'boolean', default: true },
