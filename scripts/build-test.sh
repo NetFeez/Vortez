@@ -6,11 +6,11 @@ set -euo pipefail
 
 BUILD_DIR=build-tests
 TEST_PROJECT=tsconfig.tests.json
-OUTPUT=compile.log
+OUTPUT=output.log
 
 # ====== Preparation process ======
 
-bash scripts/compile.sh
+bash scripts/build.sh
 
 # ====== Main Process ======
 

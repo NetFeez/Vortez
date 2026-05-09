@@ -8,7 +8,7 @@ TEST_MAIN=build-test/test.js
 
 # ====== Preparation process ======
 
-bash scripts/compile-test.sh
+bash scripts/build-test.sh
 
 # ====== Main Process ======
 

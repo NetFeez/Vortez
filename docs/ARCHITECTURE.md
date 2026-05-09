@@ -109,7 +109,7 @@ This gives stable defaults while preserving explicit overrides.
 
 ```mermaid
 flowchart LR
-    A[npm run compile] --> B[scripts/compile.sh]
+    A[npm run build] --> B[scripts/build.sh]
     B --> C[tsc build to build/]
     D[npm test] --> E[scripts/test.sh]
     E --> F[tsc source]
