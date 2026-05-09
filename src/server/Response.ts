@@ -240,7 +240,7 @@ export class Response {
 			const status = options.status ?? 200;
 			const headers = options.headers || this.generateHeaders('html');
 			await this.send(template, { status, headers, encode: options.encode });
-		} catch(error) { await this.catchError(error, 'sending template'); }
+		} catch(error) { await this.catchError(error, 'sending template', true); }
 	}
 	/**
 	 * Sends data in JSON format.
@@ -261,13 +261,8 @@ export class Response {
 	 * @param message - The error message.
 	 */
 	public async sendError(status: number, message: string): Promise<void> {
-        try {
-            if (this.templates.error) return await this.sendTemplate(this.templates.error, { status, message }, { status });
-            else await this.sendTemplate(Path.module('global/template/error.vhtml'), { status, message }, { status });
-        } catch(error) {
-			logger.error(`error sending error: ${this.request.session.id}`, error);
-			await this.sendPlainError(status, message);
-		}
+        if (this.templates.error) return await this.sendTemplate(this.templates.error, { status, message }, { status });
+        else await this.sendTemplate(Path.module('global/template/error.vhtml'), { status, message }, { status });
 	}
 	/**
 	 * Sends a minimal plain-text error response without using templates.
@@ -287,16 +282,18 @@ export class Response {
 	 * Handles errors that occur during file sending operations.
 	 * @param error - The error that occurred.
 	 * @param doing - A description of the operation being performed when the error occurred (e.g., "sending file", "sending folder").
+	 * @param disableTemplate - A boolean indicating whether to disable template rendering for the error response. If true, a plain-text error response will be sent instead of using an error template.
 	 * @returns A promise that resolves when the error response has been sent.
 	 * @remarks This method logs the error and sends an appropriate error response to the client based on the type of error encountered.
 	 * It uses the `getErrorStatus` and `getErrorMessage` methods to determine the correct HTTP status code and error message to send in the response.
 	 */
-	private async catchError(error: unknown, doing: string): Promise<void> {
+	private async catchError(error: unknown, doing: string, disableTemplate: boolean = false): Promise<void> {
 		if (this.isClientAbortError(error)) return;
 		logger.error(`&C1Error &C6${doing} &C1${this.request.session.id}`, error);
 		if (this.isSent) return;
 		const status = Response.getErrorStatus(error);
 		const message = Response.getErrorMessage(status);
+		if (disableTemplate) return await this.sendPlainError(status, message);
 		await this.sendError(status, message);
 	}
 	/**
