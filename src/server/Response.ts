@@ -194,7 +194,7 @@ export class Response {
 	 * @throws If the folder does not exist or is invalid.
 	 */
 	public async sendFolder(base: string, plus: string = ''): Promise<void> {
-		const basePath = Path.resolve(base || Path.rootDir);
+		const basePath = Path.resolve(base);
 		const path = await PathSecurity.resolveInsideBase(basePath, plus);
 
 		if (!path) {
@@ -219,7 +219,7 @@ export class Response {
                     folder
                 });
             } else {
-				await this.sendTemplate(Path.module('global/template/folder.vhtml'), {
+				await this.sendTemplate(Path.relativeToMe(import.meta, '../../global/template/folder.vhtml'), {
                     Url: this.request.url,
                     folder
                 });
@@ -262,7 +262,7 @@ export class Response {
 	 */
 	public async sendError(status: number, message: string): Promise<void> {
         if (this.templates.error) return await this.sendTemplate(this.templates.error, { status, message }, { status });
-        else await this.sendTemplate(Path.module('global/template/error.vhtml'), { status, message }, { status });
+        else await this.sendTemplate(Path.relativeToMe(import.meta, '../../global/template/error.vhtml'), { status, message }, { status });
 	}
 	/**
 	 * Sends a minimal plain-text error response without using templates.
@@ -343,7 +343,7 @@ export class Response {
 		if (envVersion) return envVersion;
 
 		try {
-			const packagePath = Path.module('package.json');
+			const packagePath = Path.relativeToMe(import.meta, '../../package.json');
 			const raw = FS.readFileSync(packagePath, 'utf8');
 			const data = JSON.parse(raw) as { version?: string };
 			if (typeof data.version === 'string' && data.version.length > 0) return data.version;
