@@ -6,53 +6,41 @@ import _Loader from "./Loader.js";
 export const DEFAULT_FOLDER_TEMPLATE = Path.module('global/template/folder.vhtml');
 export const DEFAULT_ERROR_TEMPLATE = Path.module('global/template/error.vhtml');
 
-export const SCHEMA_LOGGER_PROP = new Schema({
+export const SCHEMA_LOGGER_PROP = new Schema({ type: 'object', properties: {
     show: { type: 'boolean', default: true },
     save: { type: 'boolean', default: true }
-});
+}});
 
-export const SCHEMA_LOGGER = new Schema({
+export const SCHEMA_LOGGER = new Schema({ type: 'object', properties: {
     showAll: { type: 'boolean', default: false },
-    server: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
-    request: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
-    response: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema },
-    websocket: { type: 'object', default: {}, schema: SCHEMA_LOGGER_PROP.schema }
-});
+    server: SCHEMA_LOGGER_PROP.root,
+    request: SCHEMA_LOGGER_PROP.root,
+    response: SCHEMA_LOGGER_PROP.root,
+    websocket: SCHEMA_LOGGER_PROP.root
+}});
 
-export const SCHEMA_SSL = new Schema({
+export const SCHEMA_SSL = new Schema({ type: 'object', properties: {
     cert: { type: 'string', required: true },
     key: { type: 'string', required: true },
     port: { type: 'number', default: 443, minimum: 0, maximum: 65535 }
-});
+}});
 
-export const SCHEMA_TEMPLATES = new Schema({
+export const SCHEMA_TEMPLATES = new Schema({ type: 'object', properties: {
     folder: { type: 'string', default: DEFAULT_FOLDER_TEMPLATE },
     error: { type: 'string', default: DEFAULT_ERROR_TEMPLATE }
-});
+}});
 
-export const SCHEMA_ROUTING = new Schema({
+export const SCHEMA_ROUTING = new Schema({ type: 'object', properties: {
     algorithm: { type: 'string', enum: ['FIFO', 'Tree'], default: 'FIFO' }
-});
+}});
 
-export const SCHEMA_HANDLER = new Schema({
+export const SCHEMA_HANDLER = Schema.fromObject({
     host: { type: 'string', default: 'localhost' },
     port: { type: 'number', default: 80, minimum: 0, maximum: 65535 },
-    ssl: { type: 'object', nullable: true, default: null, schema: SCHEMA_SSL.schema },
-    routing: { type: 'object', default: {
-        algorithm: 'FIFO'
-    }, schema: SCHEMA_ROUTING.schema },
-    templates: { type: 'object', default: {
-            folder: DEFAULT_FOLDER_TEMPLATE,
-            error: DEFAULT_ERROR_TEMPLATE
-        }, schema: SCHEMA_TEMPLATES.schema
-    },
-    logger: { type: 'object', default: {
-        showAll: false,
-        server: { show: true, save: true },
-        request: { show: true, save: true },
-        response: { show: true, save: true },
-        websocket: { show: true, save: true }
-    }, schema: SCHEMA_LOGGER.schema }
+    ssl: SCHEMA_SSL.root,
+    routing: SCHEMA_ROUTING.root,
+    templates: SCHEMA_TEMPLATES.root,
+    logger: SCHEMA_LOGGER.root
 });
 
 export type SCHEMA_HANDLER = typeof SCHEMA_HANDLER;
