@@ -4,10 +4,10 @@
  * @license Apache-2.0
  */
 
-import type { Duplex } from 'stream';
-import { randomUUID } from 'crypto';
+import type { Duplex } from 'node:stream';
+import { randomUUID } from 'node:crypto';
 
-import { Events } from '@netfeez/common';
+import { BufferedEvents } from '@netfeez/common';
 
 import LoggerManager from '../LoggerManager.js';
 
@@ -20,71 +20,9 @@ import Handshaker from './handshake/Handshaker.js';
 
 const logger = LoggerManager.getInstance().webSocket;
 
-class EventBuffer<EventMap extends Events.EventMap> extends Events<EventMap> {
-    private vBuffer: EventBuffer.Buffer<EventMap> = {};
-    public buffering: boolean = true
-    protected autoFlush: boolean = true;
 
-    /**
-     * flush pending events. This method is used to emit any buffered events that were stored while there were no listeners for those events.
-     * It checks for buffered 'message', 'message:text', 'message:binary', and 'error' events and emits them if there are listeners available.
-     * Additionally, it handles re-emission of 'open' and 'close' events if they were emitted before listeners were added.
-     * This ensures that all relevant events are properly emitted to listeners once they are registered, allowing for correct handling of WebSocket events in the application.
-     * 
-     * If you are using this class as a we client, you can use it after add your listeners.
-     * 
-     * If you are using this class as a web server, you can use it after routing and executed the action rule on the router o middleware exec (vortez context).
-     * 
-     * Here in **Vortez**, the WebsocketSSInit instance is created in the router on receive upgrade request.
-     * Before it is executed the middleware stack -> executed the action rule on the router and automatically is called flush() method to emit the buffered events.
-     * we are sure that the events will be received with your instance of Websocket on server side if you use `vortez`
-     * 
-     * If you are using the class as a client ``WebsocketCSInit`` or out of Vortez, you can call it after add your listeners to make sure that you will receive the events emitted during the handshake phase.
-     * @remarks This method is essential for ensuring that all relevant events are emitted to listeners, especially in cases where events may have been emitted before listeners were registered. By calling this method after adding listeners, you can ensure that any buffered events are properly emitted and handled by the listeners, allowing for correct functionality of the WebSocket connection in your application.
-     */
-    public flush(): void {
-        this.buffering = false;
-        for (const name in this.vBuffer) {
-            if (!this.is(name)) continue;
-            const buffer = this.vBuffer[name] ?? [];
-            for (const args of buffer) super.emit(name, ...args);
-            delete this.vBuffer[name];
-        }
-    }
-    /**
-     * Flush a specific event from the buffer.
-     * @param name - The name of the event to flush.
-     */
-    public flushEvent(name: string & keyof EventMap): void {
-        if (!this.is(name)) return;
-        const buffer = this.vBuffer[name] ?? [];
-        delete this.vBuffer[name];
-        for (const args of buffer) super.emit(name, ...args);
-    }
-    public override on<E extends string & keyof EventMap>(name: E, listener: Events.Listener<EventMap[E]>): void {
-        super.on(name, listener);
-        if (this.autoFlush) this.flushEvent(name);
-    }
-    protected override emit<E extends string & keyof EventMap>(...event: [name: E, ...args: EventMap[E]]): void {
-        if (!this.buffering) return super.emit(...event);
-        const [name, ...args] = event;
-        if (this.buffering && this.eventCount(name) === 0) {
-            this.vBuffer[name] = this.vBuffer[name] ?? [];
-            this.vBuffer[name].push(args);
-        } else super.emit(...event);
-    }
-    /**
-     * Type guard to check if the given event name is a valid key in the EventMap.
-     * This method is used to ensure type safety when accessing the event buffer and emitting events, allowing for proper handling of events based on their defined types in the EventMap.
-     * @param name - The name of the event to check.
-     */
-    private is<T extends string>(name: T): name is T & keyof EventMap { return name in this.vBuffer; }
-}
-namespace EventBuffer {
-    export type Buffer<EventMap> = { [name in keyof EventMap]?: EventMap[name][]; };
-}
 
-export abstract class Websocket extends EventBuffer<Websocket.EventMap> {
+export abstract class Websocket extends BufferedEvents<Websocket.EventMap> {
     protected vMainStatus?: Websocket.Status;
 
     protected readonly abstract handshaker: Handshaker;
