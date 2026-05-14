@@ -1,5 +1,5 @@
 import Request from '../Request.js';
-import Websocket from '../websocket/Websocket.js';
+import ws from '../websocket/ws.js';
 import Middleware from './middleware/Middleware.js';
 import WsMiddleware from './middleware/WsMiddleware.js';
 import Rule from './Rule.js';
@@ -9,7 +9,7 @@ export class WsRule extends Rule<WsRule.action> {
         urlRule: string, action: WsRule.action,
         public readonly middleware: WsMiddleware = new WsMiddleware()
     ) { super(urlRule, action); }
-    public exec(request: Request, connection: Websocket.WebsocketSSInit, state?: Middleware.State): Promise<void> {
+    public exec(request: Request, connection: ws.Server, state?: Middleware.State): Promise<void> {
         request.ruleParams = this.getParams(request.url);
         return this.middleware.run(request, connection, this.action, state);
     }
@@ -34,6 +34,6 @@ export class WsRule extends Rule<WsRule.action> {
     }
 }
 export namespace WsRule {
-    export type action = (request: Request, client: Websocket, state: Middleware.State) => Promise<void>;
+    export type action = (request: Request, client: ws.Websocket, state: Middleware.State) => Promise<void>;
 }
 export default WsRule;

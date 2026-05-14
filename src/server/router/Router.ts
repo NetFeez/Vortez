@@ -20,7 +20,7 @@ import _Tree from './algorithm/Tree.js';
 
 import Request from '../Request.js';
 import Response from '../Response.js';
-import Websocket from '../websocket/Websocket.js';
+import Websocket from '../websocket/ws.js';
 import LoggerManager from '../LoggerManager.js';
 import Config from '../config/Config.js';
 
@@ -119,11 +119,11 @@ export class Router {
 	 */
 	public upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): void {
 		const request = new Request(HttpRequest);
-		const websocket = new Websocket.WebsocketSSInit(request, Socket);
+		const websocket = new Websocket.Server(request, Socket);
 		const sessionID = request.cookies.get('Session');
 		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
 		const isRouted = this.routeWebSocket(request, websocket);
-		if (!isRouted) websocket.reject(404, `No route for: ${request.method} -> ${request.url}`);
+		if (!isRouted) websocket.reject(404, `No route for: ${request.method} -> ${request.url}`).catch(() => {});
 	}
 	/**
 	 * Routes incoming HTTP requests to be processed.
@@ -144,7 +144,7 @@ export class Router {
 	 * @remarks This method attempts to route the incoming WebSocket upgrade request using the routing algorithm.
 	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
 	 */
-	public routeWebSocket(request: Request, websocket: Websocket.WebsocketSSInit): boolean {
+	public routeWebSocket(request: Request, websocket: Websocket.Server): boolean {
 		return this.algorithm.route(request, websocket);
 	}
 	/**

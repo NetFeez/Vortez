@@ -17,7 +17,7 @@ import _Request from "./Request.js";
 import _Response from "./Response.js";
 import _Session from "./Session.js";
 import _Cookie from "./Cookie.js";
-import _WebSocket from "./websocket/Websocket.js";
+import _WebSocket from "./websocket/ws.js";
 import _Router from "./router/Router.js";
 import _ServerError from "./ServerError.js";
 
@@ -28,7 +28,7 @@ export { Request } from "./Request.js";
 export { Response } from "./Response.js";
 export { Session } from "./Session.js";
 export { Cookie } from "./Cookie.js";
-export { Websocket as WebSocket } from "./websocket/Websocket.js";
+export { Websocket as WebSocket } from "./websocket/ws.js";
 export { Router } from "./router/Router.js";
 export { ServerError } from "./ServerError.js";
 

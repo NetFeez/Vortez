@@ -2,7 +2,7 @@ import Algorithm from './Algorithm.js';
 
 import type Request from '../../Request.js';
 import Response from '../../Response.js';
-import Websocket from '../../websocket/Websocket.js';
+import Websocket from '../../websocket/ws.js';
 import HttpRule from '../HttpRule.js';
 import WsRule from '../WsRule.js';
 
@@ -16,7 +16,7 @@ export class FIFO extends Algorithm {
         rule.exec(request, client);
         return true;
     }
-    protected override routeWebsocket(request: Request, connection: Websocket.WebsocketSSInit): boolean {
+    protected override routeWebsocket(request: Request, connection: Websocket.Server): boolean {
         const rule = this.rules.find((rule): rule is WsRule => rule instanceof WsRule && rule.test(request));
         if (!rule) return false;
         rule.exec(request, connection);

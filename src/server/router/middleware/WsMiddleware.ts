@@ -9,7 +9,7 @@ import ServerError from '../../ServerError.js';
 import LoggerManager from '../../LoggerManager.js';
 import WsRule from '../WsRule.js';
 import Middleware from './Middleware.js';
-import Websocket from '../../websocket/Websocket.js';
+import Websocket from '../../websocket/ws.js';
 
 const logger = LoggerManager.getInstance();
 
@@ -22,7 +22,7 @@ export class WsMiddleware extends Middleware<WsRule> {
      * @param action The action to execute after the middleware pipeline.
      * @param state The state to pass to the middleware and action.
      */
-    public async run(request: Request, websocket: Websocket.WebsocketSSInit, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
+    public async run(request: Request, websocket: Websocket.Server, action: WsRule.action, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (error?: unknown) => {
@@ -30,7 +30,7 @@ export class WsMiddleware extends Middleware<WsRule> {
                 if (websocket.isClosed) return void logger.warn('websocket was closed when calling next()');
                 if (websocket.status === 'closed') return void logger.warn('websocket was rejected when calling next()');
                 if (index >= this.pipeline.length) {
-                    if (websocket.status === 'handshake') websocket.accept();
+                    if (websocket.status === 'handshake') await websocket.accept();
                     await action(request, websocket, state);
                     return websocket.flush();
                 }
@@ -43,7 +43,7 @@ export class WsMiddleware extends Middleware<WsRule> {
             else return this.runError(error, request, websocket, state);
         }
     }
-    public async runError(error: unknown, request: Request, websocket: Websocket.WebsocketSSInit, state: Middleware.State = {}): Promise<void> {
+    public async runError(error: unknown, request: Request, websocket: Websocket.Server, state: Middleware.State = {}): Promise<void> {
         try {
             let index = 0;
             const next: Middleware.next = async (caughtError?: unknown) => {
@@ -55,21 +55,21 @@ export class WsMiddleware extends Middleware<WsRule> {
             await next();
         } catch(error) { return this.errorHandler(error, request, websocket); }
     }
-    protected async errorHandler(error: unknown, request: Request, websocket: Websocket.WebsocketSSInit): Promise<void> {
+    protected async errorHandler(error: unknown, request: Request, websocket: Websocket.Server): Promise<void> {
         if (error instanceof ServerError) {
             if (error.isSended) return;
             if (websocket.isClosed) return void logger.error(error);
             if (websocket.status !== 'handshake') return;
-            websocket.reject(error.status, error.message);
+            await websocket.reject(error.status, error.message);
         } else if (error instanceof Error) {
             logger.error(error);
             if (websocket.isClosed || websocket.status !== 'handshake') return;
-            websocket.reject(500, error.message);
+            await websocket.reject(500, error.message);
         } else {
             logger.error(error);
             if (websocket.isClosed || websocket.status !== 'handshake') return;
             if (websocket.isClosed) return;
-            websocket.reject(500, 'Internal Server Error');
+            await websocket.reject(500, 'Internal Server Error');
         }
     }
 }

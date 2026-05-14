@@ -6,7 +6,7 @@
 
 import Request from '../Request.js';
 import Response from '../Response.js';
-import Websocket from '../websocket/Websocket.js';
+import Websocket from '../websocket/ws.js';
 
 export abstract class Rule<T extends any> {
     /** The UrlRule with which the routing rule was created */

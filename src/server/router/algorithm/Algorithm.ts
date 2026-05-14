@@ -1,6 +1,6 @@
 import type Request from '../../Request.js';
 import Response from '../../Response.js';
-import Websocket from '../../websocket/Websocket.js';
+import Websocket from '../../websocket/ws.js';
 import HttpRule from '../HttpRule.js';
 import WsRule from '../WsRule.js';
 
@@ -32,9 +32,9 @@ export abstract class Algorithm {
      * @param client - The client to route the request to.
      * @returns True if the request was routed, false otherwise.
      */
-    public route(request: Request, client: Response | Websocket.WebsocketSSInit): boolean {
+    public route(request: Request, client: Response | Websocket.Server): boolean {
         if (client instanceof Response) return this.routeHttp(request, client);
-        else if (client instanceof Websocket.WebsocketSSInit) return this.routeWebsocket(request, client);
+        else if (client instanceof Websocket.Server) return this.routeWebsocket(request, client);
         else throw new Error(`Invalid client type`);
     }
 }
