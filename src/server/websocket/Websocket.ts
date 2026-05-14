@@ -20,8 +20,6 @@ import Handshaker from './handshake/Handshaker.js';
 
 const logger = LoggerManager.getInstance().webSocket;
 
-
-
 export abstract class Websocket extends BufferedEvents<Websocket.EventMap> {
     protected vMainStatus?: Websocket.Status;
 
