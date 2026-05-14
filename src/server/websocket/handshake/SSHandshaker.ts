@@ -1,14 +1,14 @@
-import CRYPTO from 'crypto';
-import { Duplex } from 'stream';
+import CRYPTO from 'node:crypto';
+import { Duplex } from 'node:stream';
 
-import { Events } from '@netfeez/common';
+import { Async } from '@netfeez/common-node';
 
 import Request from '../../Request.js';
 import Cookie from '../../Cookie.js';
+import Handshaker from './Handshaker.js';
 
-export class SSHandshaker extends Events<SSHandshaker.EventMap> {
+export class SSHandshaker extends Handshaker {
     public static readonly WEBSOCKET_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-    public vStatus: SSHandshaker.Status = 'handshake';
     public constructor(
         private readonly socket: Duplex,
         private readonly Request: Request,
@@ -20,17 +20,19 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
       * 
       * @throws Will throw an error if the client's handshake request does not contain a valid Sec-WebSocket-Key or if any other issue occurs during the acceptance process. The error will be emitted as an 'error' event for handling by the caller.
       */
-    public accept(): void {
+    public async accept(): Promise<void> {
         try {
             const key = this.Request.headers['sec-websocket-key'];
             if (!key) throw new Error('Server handshake requires a key');
             const response = SSHandshaker.acceptMessage(key, this.Request.cookies);
-            this.socket.write(response);
-            this.vStatus = 'open';
-        } catch (error) {
-            this.vStatus = 'closed';
-            this.emit('error', error instanceof Error ? error : new Error(String(error)));
-        } finally { setImmediate(() => this.emit('finish', this.vStatus)); }
+            await Async.awaitEvent<void>((done, fail) => {
+                this.socket.write(response, (err) => {
+                    if (err) fail(err);
+                    else done();
+                });
+            });
+            this.finish('open');
+        } catch (error) { this.finish('closed', error instanceof Error ? error : new Error(String(error))); }
     }
     /**
      * Rejects the WebSocket handshake by sending an HTTP response with the specified status code and reason, and then closes the connection.
@@ -39,14 +41,15 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
      * 
      * @remarks The generated response will have a JSON body containing the provided code and reason, and will include any specified cookies in the headers. This response can be sent back to the client to indicate that the handshake request was rejected, along with the reason for rejection.
      */
-    public reject(code: number = 400, reason: string = 'Bad Request'): void {
+    public async reject(code: number = 400, reason: string = 'Bad Request'): Promise<void> {
         try {
             const response = SSHandshaker.rejectMessage(code, reason, this.Request.cookies);
-            this.socket.write(response);
-            this.socket.end();
-            this.vStatus = 'closed';
-        } catch (error) { this.emit('error', error instanceof Error ? error : new Error(String(error))); }
-        finally { setImmediate(() => this.emit('finish', this.vStatus)); }
+            await Async.awaitEvent<void>((done, fail) => {
+                this.socket.write(response);
+                this.socket.end(() => done());
+            });
+            this.finish('closed');
+        } catch (error) { this.finish('closed', error instanceof Error ? error : new Error(String(error))); }
     }
     /**
      * Generates the Sec-WebSocket-Accept key for the server handshake response based on the client's Sec-WebSocket-Key.
@@ -93,7 +96,7 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
             ? cookies.setters.map((setter) => `Set-Cookie: ${setter}`)
             : [];
         return [
-            'HTTP/1.1 400 Bad Request',
+            `HTTP/1.1 ${code} ${reason}`,
             'Content-Type: application/json',
             `Content-Length: ${Buffer.byteLength(body)}`,
             ...setters,
@@ -102,11 +105,5 @@ export class SSHandshaker extends Events<SSHandshaker.EventMap> {
         ].join('\r\n');
     }
 }
-export namespace SSHandshaker {
-    export type Status = 'handshake' | 'open' | 'closed';
-    export type EventMap = {
-        finish: [status: SSHandshaker.Status];
-        error: [error: Error];
-    }
-}
+export namespace SSHandshaker {}
 export default SSHandshaker;
