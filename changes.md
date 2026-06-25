@@ -1,3 +1,25 @@
+# version (6.0.0)
+## ⚠️ Breaking Changes
+### (Server/Cookie)
+- The `getSetters()` method has been removed from the `Cookie` class. Use the `setters` getter property instead.
+- This change breaks compatibility with any code or tests that relied on `getSetters()`. Update your code to use `cookie.setters`.
+
+## ➕ Added
+- **(WebSocket/Orchestrator)**: Introduced `Websocket` orchestrator as the main entry point for WebSocket management.
+- **(WebSocket/Handshake)**: Added `SSHandshaker` and `CSHandshaker` for RFC-6455 negotiation.
+- **(WebSocket/Base)**: Implemented `WebsocketBase` as the core functional socket class.
+- **(WebSocket/Init)**: Added `WebsocketSSInit` and `WebsocketCSInit` for specialized handshake flows.
+- **(WebSocket/Protocol)**: Added binary `Frame` and `Header` parsing/decoding, and `Codec` for client/server data masking and payload management.
+- **(WebSocket/Events)**: Added `Events` utility class for event-driven architecture.
+- **(WebSocket/Assembler)**: Added `MessageAssembler` to handle fragmented WebSocket messages.
+
+## ✏️ Changes
+- **(Router/WsMiddleware)**: Updated `Router` and `WsMiddleware` to support the new WebSocket API routing and middleware with new pipeline.
+- **(Server/Cookie & Response)**: Refactored for handshake compatibility.
+
+## ❌ Removed
+- **(WebSocket/Chunk.ts)**: Removed deprecated `Chunk.ts` in favor of the new `Frame` system.
+
 # version (5.0.0)
 ## 📒 Notes
 - **Breaking Change**: The server's debugging interface has been refactored. Users interacting with the old `DebugUI` will need to adapt to the new `ServerDebug` module.
@@ -12,6 +34,12 @@
 - **(Server/DebugUI)**: Deleted the old `DebugUI.ts` which was tightly coupled with the `Server` class.
 ## 🐞 Fixes
 ## ✏️ Changes
+
+# version (6.0.0)
+## ⚠️ Breaking Changes
+### (Server/Cookie)
+- The `getSetters()` method has been removed from the `Cookie` class. Use the `setters` getter property instead.
+- This change breaks compatibility with any code or tests that relied on `getSetters()`. Update your code to use `cookie.setters`.
 - **(Vortez/DebugUI)**: The entire debugging system has been refactored for modularity. **This is a breaking change.**
   - The `DebugUI` is no longer part of the `Server` class but is now composed of a generic `DebugUI` from utilities and a specific `ServerDebug` module.
   - This decoupling allows other packages to leverage the `DebugUI` from `vortez`.
