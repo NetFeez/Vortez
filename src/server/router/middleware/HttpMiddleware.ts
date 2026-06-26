@@ -17,7 +17,7 @@ import Middleware from './Middleware.js';
 const logger = LoggerManager.getInstance();
 
 export class HttpMiddleware extends Middleware<HttpRule> {
-    public readonly [MIDDLEWARE.http] = true;
+    public readonly [MIDDLEWARE.HTTP] = true;
 
     public clone(): HttpMiddleware { return new HttpMiddleware([...this.pipeline], [...this.errorPipeline]); }
     /**

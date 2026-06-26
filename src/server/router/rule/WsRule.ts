@@ -7,7 +7,7 @@ import WsMiddleware from '../middleware/WsMiddleware.js';
 import Rule from './Rule.js';
 
 export class WsRule extends Rule<WsRule.action> {
-    public [RULE.WEBSOCKET] = true;
+    public [RULE.websocket] = true;
 
     public constructor(
         urlRule: string, action: WsRule.action,

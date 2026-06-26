@@ -13,7 +13,7 @@ import HttpRule from '../rule/HttpRule.js';
 import WsRule from '../rule/WsRule.js';
 
 export abstract class Middleware<Rule extends HttpRule | WsRule> {
-    public [MIDDLEWARE.base] = true;
+    public [MIDDLEWARE.BASE] = true;
 
     public constructor(
         protected readonly pipeline: Middleware.action<Rule>[] = [],

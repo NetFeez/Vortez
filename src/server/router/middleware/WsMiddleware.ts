@@ -16,7 +16,7 @@ import Websocket from '../../websocket/ws.js';
 const logger = LoggerManager.getInstance();
 
 export class WsMiddleware extends Middleware<WsRule> {
-    public readonly [MIDDLEWARE.websocket] = true;
+    public readonly [MIDDLEWARE.WEBSOCKET] = true;
 
     public clone(): WsMiddleware { return new WsMiddleware([...this.pipeline], [...this.errorPipeline]); }
     /**

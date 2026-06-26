@@ -23,18 +23,18 @@ export const RULE: {
 // ========== Middleware Symbols ==========
 //
 
-export const MW_BASE = Symbol('MW_BASE');
-export const MW_HTTP = Symbol('MW_HTTP');
-export const MW_WEBSOCKET = Symbol('MW_WEBSOCKET');
+export const MIDDLEWARE_BASE = Symbol('MW_BASE');
+export const MIDDLEWARE_HTTP = Symbol('MW_HTTP');
+export const MIDDLEWARE_WEBSOCKET = Symbol('MW_WEBSOCKET');
 
-export const MW: {
-    BASE: typeof MW_BASE;
-    HTTP: typeof MW_HTTP;
-    WEBSOCKET: typeof MW_WEBSOCKET;
+export const MIDDLEWARE: {
+    BASE: typeof MIDDLEWARE_BASE;
+    HTTP: typeof MIDDLEWARE_HTTP;
+    WEBSOCKET: typeof MIDDLEWARE_WEBSOCKET;
 } = {
-    BASE: MW_BASE,
-    HTTP: MW_HTTP,
-    WEBSOCKET: MW_WEBSOCKET,
+    BASE: MIDDLEWARE_BASE,
+    HTTP: MIDDLEWARE_HTTP,
+    WEBSOCKET: MIDDLEWARE_WEBSOCKET,
 }
 
 //
