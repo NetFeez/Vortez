@@ -1,4 +1,6 @@
-import type { Duplex } from 'stream';
+import { CLIENT } from '../../support/symbols.js';
+
+import type { Duplex } from 'node:stream';
 
 import type Request from '../Request.js';
 
@@ -6,6 +8,8 @@ import SSHandshaker from './handshake/SSHandshaker.js';
 import Websocket from './Websocket.js';
 
 export class WebsocketServer extends Websocket {
+    public readonly [CLIENT.WEBSOCKET] = true;
+
     protected handshaker: SSHandshaker;
     public constructor(request: Request, socket: Duplex) { super(socket);
         this.handshaker = new SSHandshaker(this.connection, request);

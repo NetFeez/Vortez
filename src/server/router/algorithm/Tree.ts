@@ -1,7 +1,10 @@
+import { CLIENT } from '../../../support/symbols.js';
+
 import type Request from '../../Request.js';
+import type Response from '../../Response.js';
+import type Websocket from '../../websocket/ws.js';
+
 import Algorithm from './Algorithm.js';
-import Response from '../../Response.js';
-import Websocket from '../../websocket/ws.js';
 import FIFO from './FIFO.js';
 
 class RouteNode {
@@ -36,7 +39,7 @@ export class Tree extends Algorithm {
     public constructor() { super();
         this.root = new RouteNode();
     }
-    public get allRules(): Algorithm.ruleType[] { return this.root.allRules; }
+    public override get allRules(): Algorithm.ruleType[] { return this.root.allRules; }
     public override add(...rules: Algorithm.ruleType[]): void {
         for (const rule of rules) {
             const segments = this.splitPath(rule.urlRule);

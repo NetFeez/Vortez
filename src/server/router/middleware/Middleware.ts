@@ -4,13 +4,17 @@
  * @license Apache-2.0
  */
 
+import { MIDDLEWARE } from '../../../support/symbols.js';
+
 import Request from '../../Request.js';
 import Response from '../../Response.js';
 import Websocket from '../../websocket/ws.js';
-import HttpRule from '../HttpRule.js';
-import WsRule from '../WsRule.js';
+import HttpRule from '../rule/HttpRule.js';
+import WsRule from '../rule/WsRule.js';
 
 export abstract class Middleware<Rule extends HttpRule | WsRule> {
+    public [MIDDLEWARE.base] = true;
+
     public constructor(
         protected readonly pipeline: Middleware.action<Rule>[] = [],
         protected readonly errorPipeline: Middleware.errorAction<Rule>[] = []

@@ -1,10 +1,13 @@
-import Request from '../Request.js';
-import Response from '../Response.js';
+import { RULE } from '../../../support/symbols.js';
+
+import Request from '../../Request.js';
+import Response from '../../Response.js';
 import BaseRule from './Rule.js';
-import HttpMiddleware from './middleware/HttpMiddleware.js';
-import Middleware from './middleware/Middleware.js';
+import HttpMiddleware from '../middleware/HttpMiddleware.js';
+import Middleware from '../middleware/Middleware.js';
 
 export class HttpRule extends BaseRule<HttpRule.action> {
+    public [RULE.HTTP] = true;
     /**
      * Creates a routing rule for Vortez.
      * @param method - The HTTP method of the rule.

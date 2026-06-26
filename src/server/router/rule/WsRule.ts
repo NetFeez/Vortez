@@ -1,13 +1,13 @@
-import { RULE } from '../../support/symbols.js';
+import { RULE } from '../../../support/symbols.js';
 
-import Request from '../Request.js';
-import ws from '../websocket/ws.js';
-import Middleware from './middleware/Middleware.js';
-import WsMiddleware from './middleware/WsMiddleware.js';
-import Rule from './rule/Rule.js';
+import Request from '../../Request.js';
+import ws from '../../websocket/ws.js';
+import Middleware from '../middleware/Middleware.js';
+import WsMiddleware from '../middleware/WsMiddleware.js';
+import Rule from './Rule.js';
 
 export class WsRule extends Rule<WsRule.action> {
-    public [RULE.websocket] = true;
+    public [RULE.WEBSOCKET] = true;
 
     public constructor(
         urlRule: string, action: WsRule.action,

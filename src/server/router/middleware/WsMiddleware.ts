@@ -4,16 +4,20 @@
  * @license Apache-2.0
  */
 
+import { MIDDLEWARE } from '../../../support/symbols.js';
+
 import Request from '../../Request.js';
 import ServerError from '../../ServerError.js';
 import LoggerManager from '../../LoggerManager.js';
-import WsRule from '../WsRule.js';
+import WsRule from '../rule/WsRule.js';
 import Middleware from './Middleware.js';
 import Websocket from '../../websocket/ws.js';
 
 const logger = LoggerManager.getInstance();
 
 export class WsMiddleware extends Middleware<WsRule> {
+    public readonly [MIDDLEWARE.websocket] = true;
+
     public clone(): WsMiddleware { return new WsMiddleware([...this.pipeline], [...this.errorPipeline]); }
     /**
      * Runs the middleware pipeline.

@@ -4,17 +4,21 @@
  * @license Apache-2.0
  */
 
+import { MIDDLEWARE } from '../../../support/symbols.js';
+
 import Request from '../../Request.js';
 import Response from '../../Response.js';
 import ServerError from '../../ServerError.js';
 import LoggerManager from '../../LoggerManager.js';
 
-import HttpRule from '../HttpRule.js';
+import HttpRule from '../rule/HttpRule.js';
 import Middleware from './Middleware.js';
 
 const logger = LoggerManager.getInstance();
 
 export class HttpMiddleware extends Middleware<HttpRule> {
+    public readonly [MIDDLEWARE.http] = true;
+
     public clone(): HttpMiddleware { return new HttpMiddleware([...this.pipeline], [...this.errorPipeline]); }
     /**
      * Runs the middleware pipeline.

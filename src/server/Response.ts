@@ -4,11 +4,13 @@
  * @license Apache-2.0
  */
 
-import HTTP from 'http';
-import FS from 'fs';
-import PATH from 'path';
-import { Readable } from 'stream';
-import { pipeline } from 'stream/promises';
+import { CLIENT } from '../support/symbols.js';
+
+import HTTP from 'node:http';
+import FS from 'node:fs';
+import PATH from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import { File, Path } from '@netfeez/common-node';
 import { Logger } from "@netfeez/vterm";
@@ -21,6 +23,8 @@ import PathSecurity from './security/PathSecurity.js';
 const logger = new Logger({ name: 'Response' });
 
 export class Response {
+	public readonly [CLIENT.HTTP] = true;
+
 	public static readonly contentTypeMap: Response.contentTypeMap = {
         'html': 'text/html',
         'js':   'text/javascript',

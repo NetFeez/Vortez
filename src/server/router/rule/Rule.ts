@@ -4,11 +4,15 @@
  * @license Apache-2.0
  */
 
-import Request from '../Request.js';
-import Response from '../Response.js';
-import Websocket from '../websocket/ws.js';
+import { RULE } from '../../../support/symbols.js';
+
+import Request from '../../Request.js';
+import Response from '../../Response.js';
+import Websocket from '../../websocket/ws.js';
 
 export abstract class Rule<T extends any> {
+    public [RULE.BASE] = true;
+
     /** The UrlRule with which the routing rule was created */
     private _urlRule: string;
     /** The regular expression for the routing rule */
