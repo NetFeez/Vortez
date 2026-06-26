@@ -2,11 +2,11 @@ import { RULE } from '../../../support/symbols.js';
 
 import Request from '../../Request.js';
 import Response from '../../Response.js';
-import BaseRule from './Rule.js';
+import Rule from './Rule.js';
 import HttpMiddleware from '../middleware/HttpMiddleware.js';
 import Middleware from '../middleware/Middleware.js';
 
-export class HttpRule extends BaseRule<HttpRule.action> {
+export class HttpRule extends Rule<HttpRule.action> {
     public [RULE.HTTP] = true;
     /**
      * Creates a routing rule for Vortez.
