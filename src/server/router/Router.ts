@@ -7,9 +7,9 @@
 import HTTP from 'http';
 import { Duplex } from 'stream';
 
-import _Rule from './Rule.js';
-import _WsRule from './WsRule.js';
-import _HttpRule from './HttpRule.js';
+import _Rule from './rule/Rule.js';
+import _WsRule from './rule/WsRule.js';
+import _HttpRule from './rule/HttpRule.js';
 import _WsMiddleware from './middleware/WsMiddleware.js';
 import _HttpMiddleware from './middleware/HttpMiddleware.js';
 import _Middleware from './middleware/Middleware.js';
@@ -24,9 +24,9 @@ import Websocket from '../websocket/ws.js';
 import LoggerManager from '../LoggerManager.js';
 import Config from '../config/Config.js';
 
-export { Rule } from './Rule.js';
-export { WsRule } from './WsRule.js';
-export { HttpRule } from './HttpRule.js';
+export { Rule } from './rule/Rule.js';
+export { WsRule } from './rule/WsRule.js';
+export { HttpRule } from './rule/HttpRule.js';
 
 const logger = LoggerManager.getInstance();
 
