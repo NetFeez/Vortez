@@ -1,6 +1,6 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Contains routing rule logic for Vortez.
+ * @description Implements the base Rule class for Vortez routing system.
  * @license Apache-2.0
  */
 
@@ -8,94 +8,95 @@ import { RULE } from '../../../support/symbols.js';
 
 import Request from '../../Request.js';
 import Response from '../../Response.js';
-import Websocket from '../../websocket/ws.js';
+import ws from '../../websocket/ws.js';
+import Middleware from '../middleware/Middleware.js';
+import Pipeline from '../middleware/Pipeline.js';
 
-export abstract class Rule<T extends any> {
+export abstract class Rule<Content extends any> {
     public [RULE.BASE] = true;
 
-    /** The UrlRule with which the routing rule was created */
-    private _urlRule: string;
-    /** The regular expression for the routing rule */
-    private _expression: RegExp;
-    /** The executable content for the routing rule */
-    public readonly action: T;
-    /**
-     * Creates a routing rule for Vortez.
-     * @param urlRule - The URL rule adopted by this Rule instance.
-     * @param action - The executable content of the rule.
-     */
-    public constructor(urlRule: string, action: T) {
-        urlRule = Rule.cleanUrlRule(urlRule);
-        this._urlRule = urlRule;
-        this._expression = this.createExpression(urlRule);
-        this.action = action;
+    protected vTemplate: string;
+    protected vExpression: RegExp;
+    protected vContent: Content;
+    public readonly pipeline: Pipeline;
+
+    public readonly abstract identifier: 'router' | 'http' | 'ws' | 'custom-${string}';
+
+    public constructor(template: string, content: Content, pipeline: Pipeline = new Pipeline()) {
+        this.vTemplate = template = Rule.normalize(template);
+        this.vExpression = Rule.create(template);
+        this.vContent = content;
+        this.pipeline = pipeline;
     }
-    public get urlRule(): string { return this._urlRule; }
-    public set urlRule(urlRule: string) {
-        urlRule = Rule.cleanUrlRule(urlRule);
-        this._urlRule = urlRule;
-        this._expression = this.createExpression(urlRule);
+    public get content(): Content { return this.vContent; }
+    public get expression(): RegExp { return this.vExpression; }
+    public get template(): string { return this.vTemplate; }
+    public set template(template: string) {
+        throw new Error('Cannot set template on Rule instance. Create a new Rule instance instead.');
+        // [NOTE]: Temporally disabled to prevent breaking changes. If you need to change the template, create a new Rule instance instead.
+        this.vTemplate = template = Rule.normalize(template);
+        this.vExpression = Rule.create(template);
     }
-    public get expression(): RegExp { return this._expression; }
     /**
-     * Executes the rule's content.
-     * @param request - The Request that matched the rule.
-     * @param client - The client that made the request.
+     * Adds middleware to the routing rule's pipeline.
+     * @param items - The middleware to add to the pipeline.
+     * @returns The current Rule instance.
+     * @Remarks This method allows you to add middleware to the routing rule's pipeline, which will be executed before the rule's content is executed.
      */
-    public abstract exec(request: Request, client: Rule.ClientType): Promise<void>;
+    public use(...items: (Middleware.Type | Pipeline)[]): this {
+        this.pipeline.use(...items);
+        return this;
+    }
     /**
-     * Checks whether a URL matches this route.
-     * Also sets the Request.ruleParams.
-     * @param request - The incoming request.
+     * Executes the rule pipeline plus the rule content.
+     * @param request - The request received by the router.
+     * @param client - The client associated with the request.
+     * @param state - Shared middleware state.
      */
-    public test(request: Request): boolean { return this._expression.test(request.url); }
+    public abstract exec(request: Request, client: Response | ws.Server, state?: Middleware.State): Promise<void>;
     /**
-     * Retrieves the ruleParams from the routing rule if available.
+     * Tests whether a request matches the routing rule.
+     * @param request - The request to test.
+     * @param args - Additional arguments to pass to the test method.
+     * @returns True if the request matches the routing rule, false otherwise.
+     * @Remarks This method is abstract and must be implemented by subclasses.
+     * 
+     * @virtual
+     */
+    public test(request: Request, ...args: any[]): boolean { return this.vExpression.test(request.url); };
+    /**
+     * Gets the parameters from the URL based on the routing rule.
      * @param path - The URL to resolve.
+     * @returns An object containing the parameters from the URL.
+     * @Remarks ``$surplus`` is a special parameter that contains the remaining part of the URL after the matched route.
      */
-    public getParams(path: string): Rule.ruleParams {
-        const math = this._expression.exec(path);
-        if (!math) return {};
-        return { ...math.groups };
+    public params(path: string): Rule.ruleParams {
+        const math = this.vExpression.exec(path);
+        return { ...math?.groups };
     }
     /**
-     * Extracts the surplus URL using the rule's expression.
-     * @param url - The full URL to extract from.
+     * Gets the surplus from the URL based on the routing rule.
+     * @param url - The URL to resolve.
+     * @returns The surplus from the URL.
+     * @Remarks obtains the remaining part of the url using ``params()`` and returns the value of the ``$surplus`` parameter.
      */
-    public getSurplus(url: string): string {
-        const { $surplus = '' } = this.getParams(url);
+    public surplus(url: string): string {
+        const { $surplus = '' } = this.params(url);
         return $surplus;
     }
-    /**
-     * Creates a regular expression for route matching.
-     * @param urlRule - The UrlRule used to form the RegExp.
-     * @throws Invalid URL rule format
-     */
-    public createExpression(urlRule: string): RegExp {
-        return Rule.createExpression(urlRule);
+    protected static normalize(template: string): string {
+        if (!template.startsWith('/')) template = '/' + template;
+        if (template.endsWith('/')) template = template.slice(0, -1);
+        template = template.replace(/\/+/g, '/');
+        return template;
     }
-    /**
-     * Cleans the URL rule.
-     * @param urlRule - The URL rule to clean.
-     */
-    private static cleanUrlRule(urlRule: string): string {
-        if (!urlRule.startsWith('/')) urlRule = '/' + urlRule;
-        if (urlRule.endsWith('/')) urlRule = urlRule.slice(0, -1);
-        urlRule = urlRule.replace(/\/+/g, '/');
-        return urlRule;
-    }
-    /**
-     * Creates a regular expression for route matching.
-     * @param urlRule - The UrlRule used to form the RegExp.
-     * @throws Invalid URL rule format
-     */
-    private static createExpression(urlRule: string): RegExp {
+    protected static create(template: string): RegExp {
         const validators = {
             paramRequired: /^\$(?<param>(?!\$).+)$/,
             paramOptional: /^\$\?(?<param>(?!\$).+)$/,
             escape: /\\(?![\$\[\]\*\+\?\.\(\)\{\}\^\|\-])|(?<!\\)[\$\[\]\*\+\?\.\(\)\{\}\^\|\-]/gi,
         };
-        const zones = urlRule.split('/').slice(1);
+        const zones = template.split('/').slice(1);
         let generated = '^';
 
         for (let index = 0; index < zones.length; index ++) {
@@ -128,7 +129,7 @@ export abstract class Rule<T extends any> {
 }
 
 export namespace Rule {
-    export type ClientType =Websocket | Response;
+    export type ClientType = ws | Response;
     export interface ruleParams {
         [name: string]: string | undefined;
     }
