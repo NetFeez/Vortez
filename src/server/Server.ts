@@ -18,6 +18,7 @@ import _Session from "./Session.js";
 import _Cookie from "./Cookie.js";
 import _WebSocket from "./websocket/ws.js";
 import _Router from "./router/Router.js";
+import _Middleware from "./router/middleware/Middleware.js";
 import _ServerError from "./ServerError.js";
 import { Gate } from './router/Gate.js';
 
@@ -30,6 +31,7 @@ export { Session } from "./Session.js";
 export { Cookie } from "./Cookie.js";
 export { Websocket as WebSocket } from "./websocket/ws.js";
 export { Router } from "./router/Router.js";
+export { Middleware } from "./router/middleware/Middleware.js";
 export { ServerError } from "./ServerError.js";
 
 const logger = _LoggerManager.getInstance();
@@ -209,6 +211,7 @@ export namespace Server {
     export import Session = _Session
     export import WebSocket = _WebSocket
     export import Router = _Router;
+	export import Middleware = _Middleware;
 	export import LoggerManager = _LoggerManager;
 	export import ServerDebug = _ServerDebug;
 	export import ServerError = _ServerError;

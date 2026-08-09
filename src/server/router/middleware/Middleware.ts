@@ -25,43 +25,52 @@ export namespace Middleware {
 
     export type Next = (error?: unknown) => void | Promise<void>;
 
-    export class HttpMiddleware extends Middleware<HttpMiddleware.Action> {
+    export class Http extends Middleware<Http.Action> {
         public [MIDDLEWARE.HTTP] = true;
         public readonly identifier = 'http';
     }
 
-    export namespace HttpMiddleware {
+    export namespace Http {
         export type Action = (request: Request, response: Response, next: Next, state: State) => void | Promise<void>;
     }
 
-    export class WebsocketMiddleware extends Middleware<WebsocketMiddleware.Action> {
+    export class Ws extends Middleware<Ws.Action> {
         public [MIDDLEWARE.WEBSOCKET] = true;
         public readonly identifier = 'websocket';
     }
 
-    export namespace WebsocketMiddleware {
+    export namespace Ws {
         export type Action = (request: Request, websocket: ws.Server, next: Next, state: State) => void | Promise<void>;
     }
 
-    export class HttpErrorMiddleware extends Middleware<HttpErrorMiddleware.Action> {
+    export class HttpError extends Middleware<HttpError.Action> {
         public [MIDDLEWARE.HTTP_ERROR] = true;
         public readonly identifier = 'http-error';
     }
 
-    export namespace HttpErrorMiddleware {
+    export namespace HttpError {
         export type Action = (error: unknown, request: Request, response: Response, next: Next, state: State) => void | Promise<void>;
     }
 
-    export class WebsocketErrorMiddleware extends Middleware<WebsocketErrorMiddleware.Action> {
+    export class WsError extends Middleware<WsError.Action> {
         public [MIDDLEWARE.WEBSOCKET_ERROR] = true;
         public readonly identifier = 'websocket-error';
     }
 
-    export namespace WebsocketErrorMiddleware {
+    export namespace WsError {
         export type Action = (error: unknown, request: Request, websocket: ws.Server, next: Next, state: State) => void | Promise<void>;
     }
 
-    export type Type = HttpMiddleware | WebsocketMiddleware | HttpErrorMiddleware | WebsocketErrorMiddleware;
+    export type Type = Http | Ws | HttpError | WsError;
 }
+
+export import HttpMiddleware = Middleware.Http;
+export import WebsocketMiddleware = Middleware.Ws;
+export import HttpErrorMiddleware = Middleware.HttpError;
+export import WebsocketErrorMiddleware = Middleware.WsError;
+
+export type State = Middleware.State;
+export type Next = Middleware.Next;
+export type MiddlewareType = Middleware.Type;
 
 export default Middleware;

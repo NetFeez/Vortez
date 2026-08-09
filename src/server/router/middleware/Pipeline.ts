@@ -74,7 +74,7 @@ export class Pipeline {
             return this.runWsError(error, errorPipe, request, ws, state);
         }
     }
-    protected async runHttpError(error: unknown, errorPipe: Middleware.HttpErrorMiddleware[], request: Request, response: Response, state: Middleware.State): Promise<void> {
+    protected async runHttpError(error: unknown, errorPipe: Middleware.HttpError[], request: Request, response: Response, state: Middleware.State): Promise<void> {
         try {
             let index = 0;
             const nextError = async (caughtError?: unknown): Promise<void> => {
@@ -87,7 +87,7 @@ export class Pipeline {
             await nextError();
         } catch (err) { return this.fallbackErrorHandler(err, request, response); }
     }
-    protected async runWsError(error: unknown, errorPipe: Middleware.WebsocketErrorMiddleware[], request: Request, ws: ws.Server, state: Middleware.State): Promise<void> {
+    protected async runWsError(error: unknown, errorPipe: Middleware.WsError[], request: Request, ws: ws.Server, state: Middleware.State): Promise<void> {
         try {
             let index = 0;
             const nextError = async (caughtError?: unknown): Promise<void> => {
