@@ -1,106 +1,67 @@
-/**
- * @author NetFeez <netfeez.dev@gmail.com>
- * @description Manages the middleware pipeline.
- * @license Apache-2.0
- */
+import { MIDDLEWARE } from "../../../support/symbols.js";
 
-import { MIDDLEWARE } from '../../../support/symbols.js';
+import type Request from "../../Request.js";
+import type Response from "../../Response.js";
+import type ws from "../../websocket/ws.js";
 
-import Request from '../../Request.js';
-import Response from '../../Response.js';
-import Websocket from '../../websocket/ws.js';
-import HttpRule from '../rule/HttpRule.js';
-import WsRule from '../rule/WsRule.js';
-
-export abstract class Middleware<Rule extends HttpRule | WsRule> {
+export abstract class Middleware<Action extends (...args: any[]) => void | Promise<void>> {
     public [MIDDLEWARE.BASE] = true;
-
-    public constructor(
-        protected readonly pipeline: Middleware.action<Rule>[] = [],
-        protected readonly errorPipeline: Middleware.errorAction<Rule>[] = []
-    ) {}
+    public abstract readonly identifier: string;
+    public readonly action: Action;
+    public constructor(action: Action) { this.action = action; }
     /**
-     * Adds a new action to the middleware pipeline.
-     * @param action - The action to add.
+     * Executes the middleware's action.
+     * @param args - The arguments to pass to the middleware's action.
      */
-    public use(action: Middleware.action<Rule> | Middleware<Rule>) {
-        if (action instanceof Middleware) this.pipeline.push(...action.pipeline);
-        else this.pipeline.push(action);
-        return this;
-    }
-    /**
-     * Adds a action to the middleware error pipeline.
-     * @param action - The action to add.
-     */
-    public useError(action: Middleware.errorAction<Rule> | Middleware<Rule>) {
-        if (action instanceof Middleware) this.errorPipeline.push(...action.errorPipeline);
-        else this.errorPipeline.push(action);
-        return this;
-    }
-    /**
-     * Merges another middleware pipeline.
-     * @param middleware - The middleware to merge.
-     */
-
-    public merge(middleware: Middleware<Rule>) {
-        this.pipeline.push(...middleware.pipeline);
-        this.errorPipeline.push(...middleware.errorPipeline);
-        return this;
-    }
-    /**
-     * Merges another middleware pipeline at the start.
-     * @param middleware - The middleware to merge.
-     */
-    public mergeAtStart(middleware: Middleware<Rule>) {
-        this.pipeline.unshift(...middleware.pipeline);
-        this.errorPipeline.unshift(...middleware.errorPipeline);
-        return this;
-    }    
-    /**
-     * Clones the middleware pipeline.
-     * @returns The cloned middleware pipeline.
-     */
-    public abstract clone(): Middleware<Rule>;
-    /**
-     * Runs the middleware pipeline.
-     * @param args - The arguments to pass to the action.
-     */
-    public abstract run(...args: any[]): Promise<void>;
-    /**
-     * Runs the middleware error pipeline.
-     * @param args - The arguments to pass to the action.
-     */
-    public abstract runError(...args: any[]): Promise<void>;
-    /**
-     * Gets the middleware names.
-     * @returns The middleware names.
-     */
-    public get middlewareNames(): string[] {
-        return this.pipeline.map(action => action.name);
-    }
-    /**
-     * Gets the error middleware names.
-     * @returns The error middleware names.
-     */
-    public get errorMiddlewareNames(): string[] {
-        return this.errorPipeline.map(action => action.name);
-    }
+    public run(...args: Parameters<Action>): void | Promise<void> {
+        return this.action(...args);
+    };
 }
+
 export namespace Middleware {
     export interface State {
         [key: string]: any;
     }
-    export type next = (error?: unknown) => Promise<void>;
-    export namespace action {
-        export type http = (request: Request, response: Response, next: next, state: State) => Promise<void>;
-        export type ws = (request: Request, client: Websocket.Server, next: next, state: State) => Promise<void>;
+
+    export type Next = (error?: unknown) => void | Promise<void>;
+
+    export class HttpMiddleware extends Middleware<HttpMiddleware.Action> {
+        public [MIDDLEWARE.HTTP] = true;
+        public readonly identifier = 'http';
     }
-    export namespace errorAction {
-        export type http = (error: unknown, request: Request, response: Response, next: next, state: State) => Promise<void>;
-        export type ws = (error: unknown, request: Request, client: Websocket.Server, next: next, state: State) => Promise<void>;
+
+    export namespace HttpMiddleware {
+        export type Action = (request: Request, response: Response, next: Next, state: State) => void | Promise<void>;
     }
-    export type action<Rule extends HttpRule | WsRule> = Rule extends WsRule ? action.ws : action.http;
-    export type errorAction<Rule extends HttpRule | WsRule> = Rule extends WsRule ? errorAction.ws : errorAction.http;
+
+    export class WebsocketMiddleware extends Middleware<WebsocketMiddleware.Action> {
+        public [MIDDLEWARE.WEBSOCKET] = true;
+        public readonly identifier = 'websocket';
+    }
+
+    export namespace WebsocketMiddleware {
+        export type Action = (request: Request, websocket: ws.Server, next: Next, state: State) => void | Promise<void>;
+    }
+
+    export class HttpErrorMiddleware extends Middleware<HttpErrorMiddleware.Action> {
+        public [MIDDLEWARE.HTTP_ERROR] = true;
+        public readonly identifier = 'http-error';
+    }
+
+    export namespace HttpErrorMiddleware {
+        export type Action = (error: unknown, request: Request, response: Response, next: Next, state: State) => void | Promise<void>;
+    }
+
+    export class WebsocketErrorMiddleware extends Middleware<WebsocketErrorMiddleware.Action> {
+        public [MIDDLEWARE.WEBSOCKET_ERROR] = true;
+        public readonly identifier = 'websocket-error';
+    }
+
+    export namespace WebsocketErrorMiddleware {
+        export type Action = (error: unknown, request: Request, websocket: ws.Server, next: Next, state: State) => void | Promise<void>;
+    }
+
+    export type Type = HttpMiddleware | WebsocketMiddleware | HttpErrorMiddleware | WebsocketErrorMiddleware;
 }
 
 export default Middleware;
