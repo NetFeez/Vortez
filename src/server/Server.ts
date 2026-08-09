@@ -174,8 +174,8 @@ export class Server {
 		const port = sslOptions.port ?? 443;
 		const cert = await Server.loadCertificates(sslOptions.cert, sslOptions.key);
 		const https = HTTPS.createServer(cert);
-		https.on('request', this.gate.requestManager.bind(this.router));
-		https.on('upgrade', this.gate.upgradeManager.bind(this.router));
+		https.on('request', this.gate.requestManager.bind(this.gate));
+		https.on('upgrade', this.gate.upgradeManager.bind(this.gate));
 		return new Promise((resolve, reject) => {
 			const errorHandler = (error: Error): void => {
 				https.off('error', errorHandler);
