@@ -1,299 +1,276 @@
 /**
  * @author NetFeez <netfeez.dev@gmail.com>
- * @description Router v2 proposal: strategy-based routing (FIFO/Tree) with backward-compatible API.
+ * @description Router: routing using Algorithm.find + Pipeline orchestration (v2 design).
  * @license Apache-2.0
  */
 
-import HTTP from 'http';
-import { Duplex } from 'stream';
+import { CLIENT, RULE } from '../../support/symbols.js';
 
-import _Rule from './rule/Rule.js';
-import _WsRule from './rule/WsRule.js';
-import _HttpRule from './rule/HttpRule.js';
-import _WsMiddleware from './middleware/WsMiddleware.js';
-import _HttpMiddleware from './middleware/HttpMiddleware.js';
-import _Middleware from './middleware/Middleware.js';
+import type Request from '../Request.js';
+import type Response from '../Response.js';
+import type ws from '../websocket/ws.js';
+import LoggerManager from '../LoggerManager.js';
+import Config from '../config/Config.js';
 
 import _Algorithm from './algorithm/Algorithm.js';
 import _FIFO from './algorithm/FIFO.js';
 import _Tree from './algorithm/Tree.js';
 
-import Request from '../Request.js';
-import Response from '../Response.js';
-import Websocket from '../websocket/ws.js';
-import LoggerManager from '../LoggerManager.js';
-import Config from '../config/Config.js';
-
-export { Rule } from './rule/Rule.js';
-export { WsRule } from './rule/WsRule.js';
-export { HttpRule } from './rule/HttpRule.js';
+import _Pipeline from './middleware/Pipeline.js';
+import _Middleware from './middleware/Middleware.js';
+import _HttpRule from './rule/HttpRule.js';
+import _WsRule from './rule/WsRule.js';
+import _RouterRule from './rule/RouterRule.js';
+import Rule from './rule/Rule.js';
 
 const logger = LoggerManager.getInstance();
 
 export class Router {
-	public static AlgorithmMap: Router.AlgorithmMap = {
-		FIFO: _FIFO,
-		Tree: _Tree
-	};
+    public static AlgorithmMap: Router.AlgorithmMap = {
+        FIFO: _FIFO,
+        Tree: _Tree,
+    };
 
-	public readonly algorithm: Router.Algorithm;
-	public readonly httpMiddleware: Router.HttpMiddleware;
-	public readonly wsMiddleware: Router.WsMiddleware;
+    public readonly algorithm: _Algorithm;
+    public readonly pipeline: _Pipeline;
 
-	/**
-	 * Creates a router for rule management.
-	 * @param config - The server configuration.
-	 * @param rules - An optional array of routing rules to initialize the router with.
-	 * @param options - Additional options for configuring the router, including middleware and algorithm choice.
-	 */
-	public constructor(
-		public config: Config = new Config({}),
-		rules: Router.rules[] = [],
-		options: Router.Options = {}
-	) {
-		const {
-			http: httpMiddleware = new Router.HttpMiddleware(),
-			ws: wsMiddleware = new Router.WsMiddleware(),
-			algorithm = 'FIFO',
-		} = options;
+    public constructor(
+        public config: Config = new Config({}),
+        algorithm: keyof Router.AlgorithmMap | _Algorithm = 'FIFO'
+    ) {
+        this.algorithm = Router.getAlgorithm(algorithm);
+        this.pipeline = new _Pipeline();
+    }
 
-		this.httpMiddleware = httpMiddleware;
-		this.wsMiddleware = wsMiddleware;
-		this.algorithm = Router.getAlgorithm(algorithm);
-		this.addRules(...rules);
-	}
+    /**
+     * Tests whether a request matches any routing rule in the router.
+     * @param request - The request to test.
+     * @param client - The client that made the request.
+     * @returns True if the request matches any routing rule, false otherwise.
+     */
+    public test(request: Request): boolean {
+        const rule = this.algorithm.test(request) || null;
+        return !!rule;
+    }
 
-	/** HTTP rules view (computed from algorithm). */
-	public get httpRules(): Router.HttpRule[] {
-		return this.algorithm.allRules.filter((rule): rule is Router.HttpRule => rule instanceof Router.HttpRule);
-	}
+    /**
+     * Routes a request to the appropriate rule based on the request and client type (HTTP or WebSocket).
+     * @param request - The Request object representing the incoming request.
+     * @param client - The client object, which can be either a Response (for HTTP) or a WebSocket.Server (for WebSocket).
+     * @returns A promise that resolves to true if a matching rule was found and executed, or false if no matching rule was found.
+     * @throws An error if the client type is invalid (not Response or WebSocket.Server).
+     * @remarks This method determines the type of client (HTTP or WebSocket) and calls the appropriate routing method (routeRequest or routeWebSocket) to find and execute the matching rule. If no matching rule is found, it returns false. If the client type is invalid, it throws an error.
+     */
+    public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}): Promise<boolean> {
+        const rule: Rule<any> | null = this.algorithm.find(request) || null;
+        if (!rule) return false;
+        const destination: _Pipeline.Destination = async (state) => rule.exec(request, client, state);
+        await this.pipeline.run(request, client, destination);
+        return true;
+    }
 
-	/** WebSocket rules view (computed from algorithm). */
-	public get wsRules(): Router.WsRule[] {
-		return this.algorithm.allRules.filter((rule): rule is Router.WsRule => rule instanceof Router.WsRule);
-	}
-	/**
-	 * Adds middleware actions to the router.
-	 * @param middleware - The middleware to be added.
-	 * @remarks Applies to rules added after this call.
-	 */
-	public use(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
-		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.use(middleware);
-		else this.wsMiddleware.use(middleware);
-		return this;
-	}
-	/**
-	 * Adds middleware error actions to the router.
-	 * @param middleware - The middleware to be added.
-	 * @remarks Applies to rules added after this call.
-	 */
-	public useError(middleware: Router.HttpMiddleware | Router.WsMiddleware): this {
-		if (middleware instanceof Router.HttpMiddleware) this.httpMiddleware.useError(middleware);
-		else this.wsMiddleware.useError(middleware);
-		return this;
-	}
-	/**
-	 * Triggered when the server receives an HTTP request.
-	 * @param request - The received HTTP request.
-	 * @param response - The server response handler.
-	 * @returns True if the request was routed, false otherwise.
-	 * @remarks This method attempts to route the incoming HTTP request using the routing algorithm.
-	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
-	 */
-	public async requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): Promise<void> {
-		const request = new Request(HttpRequest);
-		const response = new Response(request, HttpResponse, this.config.data.templates);
-		const sessionID = request.cookies.get('Session');
-		logger.request.log(request.ip, request.method, request.url, sessionID);
-		const isRouted = this.routeRequest(request, response);
-		if (!isRouted && !response.isSent) await response.sendError(404, `No route for: ${request.method} -> ${request.url}`);
-	}
+    /**
+     * Creates a routing rule and adds it to the router.
+     * @param method - The HTTP method for the rule.
+     * @param template - The URL template for the rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance.
+     * @remarks This method creates a routing rule that executes the specified action when the URL template is matched.
+     * 
+     * @example
+     * // Create a rule to handle GET requests to '/home'
+     * router.action('GET', '/home', (req, res) => {
+     *     res.send('Welcome to the home page!');
+     * });
+     */
+    public action(method: Request.Method | 'ALL', template: string, action: _HttpRule.Content): _HttpRule {
+        const rule = new _HttpRule(method as Request.Method, template, action);
+        this.algorithm.add(rule);
+        return rule;
+    }
 
-	/**
-	 * Triggered when the server receives a WebSocket upgrade request.
-	 * @param request - The received WebSocket upgrade request.
-	 * @param webSocket - The WebSocket connection handler.
-	 * @returns True if the request was routed, false otherwise.
-	 * @remarks This method attempts to route the incoming WebSocket upgrade request using the routing algorithm.
-	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
-	 */
-	public upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): void {
-		const request = new Request(HttpRequest);
-		const websocket = new Websocket.Server(request, Socket);
-		const sessionID = request.cookies.get('Session');
-		logger.webSocket.log(request.ip, request.method, request.url, sessionID);
-		const isRouted = this.routeWebSocket(request, websocket);
-		if (!isRouted) websocket.reject(404, `No route for: ${request.method} -> ${request.url}`).catch(() => {});
-	}
-	/**
-	 * Routes incoming HTTP requests to be processed.
-	 * @param request - The received HTTP request.
-	 * @param response - The server response handler.
-	 * @returns True if the request was routed, false otherwise.
-	 * @remarks This method attempts to route the incoming HTTP request using the routing algorithm.
-	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
-	 */
-	public routeRequest(request: Request, response: Response): boolean {
-		return this.algorithm.route(request, response);
-	}
-	/**
-	 * Routes incoming WebSocket upgrade requests to be processed.
-	 * @param request - The received WebSocket upgrade request.
-	 * @param webSocket - The WebSocket connection handler.
-	 * @returns True if the request was routed, false otherwise.
-	 * @remarks This method attempts to route the incoming WebSocket upgrade request using the routing algorithm.
-	 * If a matching route is found, it processes the request and returns true; otherwise, it returns false, indicating that no suitable route was found for the request.
-	 */
-	public routeWebSocket(request: Request, websocket: Websocket.Server): boolean {
-		return this.algorithm.route(request, websocket);
-	}
-	/**
-	 * Adds multiple routing rules to the server.
-	 * @param rules - An array of rules to be added.
-	 * @returns The current router instance for chaining.
-	 * @remarks This method is a convenience function that allows adding multiple rules at once by internally calling the addRule method for each rule in the array.
-	 */
-	public addRules(...rules: Router.rules[]): this {
-		for (const rule of rules) this.addRule(rule);
-		return this;
-	}
-	/**
-	 * Adds a routing rule to the server.
-	 * @param rule - The rule to be added.
-	 * @returns The current router instance for chaining.
-	 * @remarks This method integrates the new rule into the routing algorithm and ensures that any associated middleware is properly merged.
-	 * Middleware is snapshotted at registration time; later global middleware additions do not mutate this rule.
-	 */
-	public addRule(rule: Router.rules): this {
-		if (rule instanceof Router.WsRule) rule.middleware.mergeAtStart(this.wsMiddleware);
-		else rule.middleware.mergeAtStart(this.httpMiddleware);
+    /**
+     * Creates a routing rule for GET requests and adds it to the router.
+     * @param template - The URL template for the GET rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the GET request.
+     * @remarks This method creates a routing rule that executes the specified action when a GET request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle GET requests to '/home'
+     * router.get('/home', (req, res) => { res.send('Welcome to the home page!'); });
+     */
+    public get(template: string, action: _HttpRule.Content): _HttpRule { return this.action('GET', template, action); }
+    /**
+     * Creates a routing rule for POST requests and adds it to the router.
+     * @param template - The URL template for the POST rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the POST request.
+     * @remarks This method creates a routing rule that executes the specified action when a POST request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle POST requests to '/submit'
+     * router.post('/submit', (req, res) => { res.send('Form submitted!'); });
+     */
+    public post(template: string, action: _HttpRule.Content): _HttpRule { return this.action('POST', template, action); }
+    /**
+     * Creates a routing rule for PUT requests and adds it to the router.
+     * @param template - The URL template for the PUT rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the PUT request.
+     * @remarks This method creates a routing rule that executes the specified action when a PUT request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle PUT requests to '/update'
+     * router.put('/update', (req, res) => { res.send('Resource updated!'); });
+     */
+    public put(template: string, action: _HttpRule.Content): _HttpRule { return this.action('PUT', template, action); }
+    /**
+     * Creates a routing rule for DELETE requests and adds it to the router.
+     * @param template - The URL template for the DELETE rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the DELETE request.
+     * @remarks This method creates a routing rule that executes the specified action when a DELETE request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle DELETE requests to '/delete'
+     * router.delete('/delete', (req, res) => { res.send('Resource deleted!'); });
+     */
+    public delete(template: string, action: _HttpRule.Content): _HttpRule { return this.action('DELETE', template, action); }
+    /**
+     * Creates a routing rule for PATCH requests and adds it to the router.
+     * @param template - The URL template for the PATCH rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the PATCH request.
+     * @remarks This method creates a routing rule that executes the specified action when a PATCH request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle PATCH requests to '/update'
+     * router.patch('/update', (req, res) => { res.send('Resource updated!'); });
+     */
+    public patch(template: string, action: _HttpRule.Content): _HttpRule { return this.action('PATCH', template, action); }
+    /**
+     * Creates a routing rule for HEAD requests and adds it to the router.
+     * @param template - The URL template for the HEAD rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the HEAD request.
+     * @remarks This method creates a routing rule that executes the specified action when a HEAD request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle HEAD requests to '/status'
+     * router.head('/status', (req, res) => { res.send('OK'); });
+     */
+    public head(template: string, action: _HttpRule.Content): _HttpRule { return this.action('HEAD', template, action); }
+    /**
+     * Creates a routing rule for OPTIONS requests and adds it to the router.
+     * @param template - The URL template for the OPTIONS rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created HttpRule instance for the OPTIONS request.
+     * @remarks This method creates a routing rule that executes the specified action when an OPTIONS request matches the URL template.
+     * 
+     * @example
+     * // Create a rule to handle OPTIONS requests to '/api'
+     * router.options('/api', (req, res) => { res.send('Allowed methods: GET, POST'); });
+     */
+    public options(template: string, action: _HttpRule.Content): _HttpRule { return this.action('OPTIONS', template, action); }
 
-		this.algorithm.add(rule);
-		return this;
-	}
-	/**
-	 * Mounts another router onto this router, optionally under a specific URL path.
-	 * @param router - The router to be mounted.
-	 * @param urlRule - An optional URL path to mount the router under. If not provided, the router's rules will be added at the root level.
-	 * @returns The current router instance for chaining.
-	 * @remarks This method allows you to compose routers together, enabling modular route management.
-	 * When a URL path is specified, all routes from the mounted router will be prefixed with that path.
-	 * Mounted rules keep their existing middleware order and then receive this router middleware at start through addRule().
-	 */
-	public mount(router: Router, urlRule?: string): this {
-		const httpRules = router.httpRules.map((rule) => {
-			const newUrlRule = urlRule ? `${urlRule}/${rule.urlRule}` : rule.urlRule;
-			return new Router.HttpRule(rule.method, newUrlRule, rule.action, rule.middleware.clone());
-		});
-		const wsRules = router.wsRules.map((rule) => {
-			const newUrlRule = urlRule ? `${urlRule}/${rule.urlRule}` : rule.urlRule;
-			return new Router.WsRule(newUrlRule, rule.action, rule.middleware.clone());
-		});
-		this.addRules(...httpRules, ...wsRules);
-		return this;
-	}
-	/**
-	 * Adds an action routing rule.
-	 * @param method - The HTTP method to respond to.
-	 * @param urlRule - The URL path for the action.
-	 * @param action - The action to be executed.
-	 */
-	public addAction(method: Request.Method, urlRule: string, action: Router.HttpRule.action): Router.HttpRule {
-		const rule = new Router.HttpRule(method, urlRule, action);
-		this.addRule(rule);
-		return rule;
-	}
-	/**
-	 * Adds a file routing rule.
-	 * @param urlRule - The URL path to listen on.
-	 * @param source - The path to the file to be served.
-	 */
-	public addFile(urlRule: string, source: string): Router.HttpRule {
-		const rule = Router.HttpRule.file(urlRule, source);
-		this.addRule(rule);
-		return rule;
-	}
-	/**
-	 * Adds a folder routing rule.
-	 * @param urlRule - The URL path to listen on.
-	 * @param source - The path to the folder to be served.
-	 */
-	public addFolder(urlRule: string, source: string): this {
-		const rule = Router.HttpRule.folder(urlRule, source);
-		this.addRule(rule);
-		return this;
-	}
-	/**
-	 * Adds a WebSocket routing rule.
-	 * @param urlRule - The URL path to listen on.
-	 * @param action - The action to be executed when a WebSocket connection is established on the specified URL path.
-	 * @returns The created WebSocket rule.
-	 */
-	public addWebsocket(urlRule: string, action: Router.WsRule.action): Router.WsRule {
-		const rule = new Router.WsRule(urlRule, action);
-		this.addRules(rule);
-		return rule;
-	}
-	/**
-	 * Creates a new router instance with the same configuration and middleware but without any rules.
-	 * @returns A new RouterV2 instance.
-	 * @remarks This method is useful for creating sub-routers that share the same configuration and middleware but have different routing rules.
-	 */
-	public createRouter(): Router {
-		const algorithm = this.algorithm instanceof Router.Tree ? new Router.Tree() : new Router.FIFO();
-		return new Router(this.config, [], {
-			http: this.httpMiddleware.clone(),
-			ws: this.wsMiddleware.clone(),
-			algorithm,
-		});
-	}
-	/**
-	 * Gets an algorithm instance based on the provided input, which can be either a string key or an instance of the algorithm.
-	 * @param algorithm - The algorithm to retrieve, either as a string key or an instance.
-	 * @returns An instance of the requested algorithm.
-	 * @throws Will throw an error if the algorithm key is not found in the AlgorithmMap.
-	 * @remarks If the algorithm is provided as a string and is not found in the AlgorithmMap,it defaults to FIFO and logs a warning.
-	 * @example
-	 * // Using a string key to get an algorithm instance
-	 * const fifoAlgorithm = RouterV2.getAlgorithm('FIFO');
-	 *
-	 * // Using an instance directly
-	 * const treeAlgorithm = new RouterV2.Tree();
-	 * const retrievedTreeAlgorithm = RouterV2.getAlgorithm(treeAlgorithm);
-	 */
-	public static getAlgorithm(algorithm: keyof Router.AlgorithmMap | Router.Algorithm): Router.Algorithm {
-		if (algorithm instanceof Router.Algorithm) return algorithm;
+    /**
+     * Creates a routing rule to send a file to the client and adds it to the router.
+     * @param template - The URL template for the file rule.
+     * @param source - The path of the file to send.
+     * @returns The created HttpRule instance for the file.
+     * @remarks This method creates a routing rule that sends a file to the client when the specified URL template is matched.
+     * 
+     * @example
+     * // Create a rule to serve the 'index.html' file when the URL is '/home'
+     * router.file('/home', './public/index.html');
+     */
+    public file(template: string, source: string): _HttpRule {
+        const rule = _HttpRule.file(template, source);
+        this.algorithm.add(rule);
+        return rule;
+    }
 
-		const AlgorithmClass = this.AlgorithmMap[algorithm];
-		if (AlgorithmClass) return new AlgorithmClass();
-		logger.warn(`&C3Algorithm &C6${algorithm} &C3not found. Defaulting to &C6FIFO&C3.`);
-		return new Router.FIFO();
-	}
+    /**
+     * Creates a routing rule to send a folder to the client and adds it to the router.
+     * @param template - The URL template for the folder rule.
+     * @param source - The path of the folder to send.
+     * @returns The created HttpRule instance for the folder.
+     * @remarks This method creates a routing rule that sends a folder to the client when the specified URL template is matched.
+     * It automatically appends '/*' to the template if it doesn't already end with it.
+     * 
+     * @example
+     * // Create a rule to serve files from the 'public' folder when the URL starts with '/static'
+     * router.folder('/static', './public');
+     */
+    public folder(template: string, source: string): _HttpRule {
+        const rule = _HttpRule.folder(template, source);
+        this.algorithm.add(rule);
+        return rule;
+    }
+
+    /**
+     * Creates a WebSocket routing rule and adds it to the router.
+     * @param template - The URL template for the WebSocket rule.
+     * @param action - The action to execute when the rule is matched.
+     * @returns The created WebSocket rule.
+     * @remarks This method creates a WebSocket routing rule that executes the specified action when the URL template is matched.
+     */
+    public ws(template: string, action: _WsRule.Content): _WsRule {
+        const rule = new _WsRule(template, action);
+        this.algorithm.add(rule);
+        return rule;
+    }
+
+    /**
+     * Adds multiple routing rules to the router.
+     * @param rules - An array of routing rules to add.
+     * @returns The Router instance for chaining.
+     * @remarks This method allows adding multiple routing rules at once. Each rule can be an instance of HttpRule or WsRule.
+     * 
+     * @example
+     * // Add multiple rules to the router
+     * router.multiple(
+     *     new HttpRule('GET', '/home', (req, res) => { res.send('Home'); }),
+     *     new HttpRule('POST', '/submit', (req, res) => { res.send('Submitted'); }),
+     *     HttpRule.file('/manifest.json', './assets/manifest.json'),
+     *     HttpRule.folder('/static', './public'),
+     *     new WsRule('/chat', (req, ws) => {  Ws.on('message', console.log); })
+     * );
+     */
+    public multiple(...rules: (_HttpRule | _WsRule)[]): this {
+        for (const rule of rules) this.algorithm.add(rule);
+        return this;
+    }
+
+    /**
+     * Gets the algorithm instance based on the provided algorithm name or instance.
+     * @param algorithm - The name of the algorithm or an instance of the algorithm.
+     * @returns An instance of the specified algorithm.
+     * @remarks If the algorithm name is not found in the AlgorithmMap, it defaults to FIFO.
+     */
+    private static getAlgorithm(algorithm: keyof Router.AlgorithmMap | _Algorithm): _Algorithm {
+        if (algorithm instanceof _Algorithm) return algorithm;
+        const AlgorithmClass = Router.AlgorithmMap[algorithm];
+        if (AlgorithmClass) return new AlgorithmClass();
+        logger.warn(`Algorithm ${algorithm} not found. Defaulting to FIFO.`);
+        return new _FIFO();
+    }
 }
 
 export namespace Router {
-	export import Rule = _Rule;
-	export import WsRule = _WsRule;
-	export import HttpRule = _HttpRule;
-	export import WsMiddleware = _WsMiddleware;
-	export import HttpMiddleware = _HttpMiddleware;
-	export import Middleware = _Middleware;
-	export import Algorithm = _Algorithm;
-	export import FIFO = _FIFO;
-	export import Tree = _Tree;
+    export import Algorithm = _Algorithm;
+    export import FIFO = _FIFO;
+    export import Tree = _Tree;
+    export import Pipeline = _Pipeline;
+    export import Middleware = _Middleware;
+    export import HttpRule = _HttpRule;
+    export import WsRule = _WsRule;
 
-	export type algorithmName = keyof Router.AlgorithmMap;
-
-	export interface AlgorithmMap {
-		FIFO: typeof FIFO;
-		Tree: typeof Tree;
-	}
-	export interface Options {
-		http?: HttpMiddleware;
-		ws?: WsMiddleware;
-		algorithm?: algorithmName | Algorithm;
-	}
-	export type rules = WsRule | HttpRule;
+    export interface AlgorithmMap {
+        FIFO: typeof _FIFO;
+        Tree: typeof _Tree;
+    }
 }
 
 export default Router;
