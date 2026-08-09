@@ -223,6 +223,29 @@ export class Router {
     }
 
     /**
+     * Creates a sub-router and adds it to the router with a specified URL template.
+     * @param template - The URL template for the sub-router.
+     * @param options - Optional configuration for the sub-router, including a custom router instance, configuration, algorithm, and pipeline.
+     * @returns The created sub-router instance.
+     * @remarks This method allows for the creation of nested routers, enabling modular routing structures. The sub-router can have its own rules and configurations.
+     * 
+     * @example
+     * // Create a sub-router for '/api' with its own rules
+     * const apiRouter = router.router('/api', {
+     *     config: new Config({ ... }),
+     *     algorithm: 'Tree',
+     * });
+     * apiRouter.get('/users', (req, res) => { res.send('User list'); });
+     */
+    public router(template: string, options: Router.SubRouterOptions = {}): Router {
+        const config = options.config ?? this.config;
+        const subRouter = options.router ?? new Router(config, options.algorithm);
+        const rule = new _RouterRule(template, subRouter, options.pipeline);
+        this.algorithm.add(rule);
+        return subRouter;
+    }
+
+    /**
      * Adds multiple routing rules to the router.
      * @param rules - An array of routing rules to add.
      * @returns The Router instance for chaining.
@@ -270,6 +293,13 @@ export namespace Router {
     export interface AlgorithmMap {
         FIFO: typeof _FIFO;
         Tree: typeof _Tree;
+    }
+
+    export type SubRouterOptions = {
+        router?: Router;
+        config?: Config;
+        algorithm?: keyof AlgorithmMap | _Algorithm;
+        pipeline?: _Pipeline;
     }
 }
 
