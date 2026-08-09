@@ -5,10 +5,9 @@
  */
 
 import HTTP from 'http';
-import FS from 'fs';
 import HTTPS from 'https';
 
-import { Path } from '@netfeez/common-node';
+import { Async, File, Path } from '@netfeez/common-node';
 
 import _LoggerManager from './LoggerManager.js';
 import _ServerDebug from './ServerDebug.js';
@@ -20,6 +19,7 @@ import _Cookie from "./Cookie.js";
 import _WebSocket from "./websocket/ws.js";
 import _Router from "./router/Router.js";
 import _ServerError from "./ServerError.js";
+import { Gate } from './router/Gate.js';
 
 export { LoggerManager } from './LoggerManager.js';
 export { ServerDebug } from './ServerDebug.js';
@@ -38,6 +38,7 @@ export class Server {
 	private protocol: Server.Protocol | null;
 	private HttpServer: HTTP.Server | null;
 	private HttpsServer: HTTP.Server | null;
+	private gate: Gate;
 	public router: Server.Router;
 	public config: Server.Config;
 	public logger: Server.LoggerManager;
@@ -54,7 +55,8 @@ export class Server {
 		this.HttpsServer = null;
 		this.protocol = null;
 		this.logger = _LoggerManager.getInstance();
-		this.router.addFolder('/vortez:global', Path.relativeToMe(import.meta, '../../global'));
+		this.gate = new Gate(this.router);
+		this.router.folder('/vortez:global', Path.relativeToMe(import.meta, '../../global'));
 	}
 	/**
 	 * Starts the server.
@@ -119,19 +121,19 @@ export class Server {
 	 * Stops the HTTP server.
 	 */
 	private async stopHTTP(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			if (this.HttpServer) this.HttpServer.close((error) => error ? reject(error) : resolve());
-			else resolve();
-		});
+		return Async.awaitEvent((done, fail) => {
+			if (this.HttpServer) this.HttpServer.close((error) => error ? fail(error) : done());
+			else done();
+		}, 3000);
 	}
 	/**
 	 * Stops the HTTPS server.
 	 */
 	private async stopHTTPS(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			if (this.HttpsServer) this.HttpsServer.close((error) => error ? reject(error) : resolve());
-			else resolve();
-		});
+		return Async.awaitEvent((done, fail) => {
+			if (this.HttpsServer) this.HttpsServer.close((error) => error ? fail(error) : done());
+			else done();
+		}, 3000);
 	}
 	/**
 	 * Restarts the server.
@@ -148,8 +150,8 @@ export class Server {
 	 */
 	private async initHTTP(port: number, host: string): Promise<HTTP.Server> {
 		const http = HTTP.createServer();
-		http.on('request', this.router.requestManager.bind(this.router));
-		http.on('upgrade', this.router.upgradeManager.bind(this.router));
+		http.on('request', this.gate.requestManager.bind(this.gate));
+		http.on('upgrade', this.gate.upgradeManager.bind(this.gate));
 		return new Promise((resolve, reject) => {
 			const errorHandler = (error: Error): void => {
 				http.off('error', errorHandler);
@@ -172,8 +174,8 @@ export class Server {
 		const port = sslOptions.port ?? 443;
 		const cert = await Server.loadCertificates(sslOptions.cert, sslOptions.key);
 		const https = HTTPS.createServer(cert);
-		https.on('request', this.router.requestManager.bind(this.router));
-		https.on('upgrade', this.router.upgradeManager.bind(this.router));
+		https.on('request', this.gate.requestManager.bind(this.router));
+		https.on('upgrade', this.gate.upgradeManager.bind(this.router));
 		return new Promise((resolve, reject) => {
 			const errorHandler = (error: Error): void => {
 				https.off('error', errorHandler);
@@ -187,29 +189,14 @@ export class Server {
 		});
 	}
 	/**
-	 * Defines default `.vhtml` templates for the server.
-	 * @param name - The name of the template.
-	 * @param path - The path to the `.vhtml` template file.
-	 */
-	public setTemplate(name: keyof Server.Config['data']['templates'], path: string): Server {
-		this.config.data.templates[name] = path;
-		return this;
-	}
-	/**
 	 * Loads the SSL key and certificate and returns their content as strings.
 	 * @param pathCert Path to the SSL certificate.
 	 * @param pathKey Path to the SSL key.
 	 * @returns An object containing the certificate and key as Buffers.
 	 */
 	public static async loadCertificates(pathCert: string, pathKey: string): Promise<Server.Certificates> {
-    	pathCert = Path.normalize(pathCert);
-        pathKey = Path.normalize(pathKey);
-        const certInfo = await FS.promises.stat(pathCert);
-        const keyInfo = await FS.promises.stat(pathKey);
-        if (!(certInfo.isFile())) return Promise.reject('The certificate path is not a file');
-        if (!(keyInfo.isFile())) return Promise.reject('The key path is not a file');
-        const cert = await FS.promises.readFile(pathCert);
-        const key = await FS.promises.readFile(pathKey);
+		const key = await File.read(pathKey).catch(() => { throw new Error(`Failed to read key file at ${pathKey}`); });
+    	const cert = await File.read(pathCert).catch(() => { throw new Error(`Failed to read certificate file at ${pathCert}`); });
         return { cert, key };
   	}
 }

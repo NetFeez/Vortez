@@ -4,10 +4,18 @@
  * @license Apache-2.0
  */
 import { DebugUI } from '@netfeez/vterm';
+import Grouper from '@netfeez/vterm/logger/Grouper';
 
 import type Server from './Server.js';
+import { RULE } from '../support/symbols.js';
 
 export class ServerDebug extends DebugUI {
+    public readonly group: Grouper.GroupOptions = {
+        open: '&C(#FFB4DC)╭─',
+        line: '&C(#FFB4DC)├─',
+        item: '&C(#FFB4DC)│ &R',
+        stop: '&C(#FFB4DC)╰─',
+    };
     public constructor(
         public server: Server
     ) { super();
@@ -21,35 +29,31 @@ export class ServerDebug extends DebugUI {
     }
     /** Prints the server rules to the console. */
     public showRules() {
-		this.out.info('&C(255,180,220)╭─────────────────────────────────────────────');
-        this.out.info('&C(255,180,220)│ &C2 Rules added to server router');
-		this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
+		this.out.group(this.group);
+        this.out.info('&C2 Rules added to server router');
+        this.out.line();
         const algorithm = this.server.config.get('routing.algorithm') ?? 'FIFO';
-        this.out.info(`&C(255,180,220)│ &C3 algorithm: &C6${algorithm}`);
+        this.out.info(`&C3 algorithm: &C6${algorithm}`);
 
         if (algorithm === 'Tree') {
             this.printTreeRules();
-            this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
+            this.out.groupEnd();
             return;
         }
 
-        for (const rule of this.server.router.httpRules) {
-            this.out.info(`&C(255,180,220)│ &C3 http rule: &C2${rule.method.padStart(5, ' ')} &R-> &C6${rule.urlRule}`);
+        for (const rule of this.server.router.algorithm.rules) {
+            if (RULE.HTTP in rule) this.out.info(`&C3 http rule: &C2${rule.method.padStart(5, ' ')} &R-> &C6${rule.template}`);
+            else if (RULE.WEBSOCKET in rule) this.out.info(`&C3 ws rule: &C6${rule.template}`);
         }
-        for (const rule of this.server.router.wsRules) {
-            this.out.info(`&C(255,180,220)│ &C3 ws rule: &C6${rule.urlRule}`);
-        }
-        this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
+        this.out.groupEnd();
     }
 
     private printTreeRules() {
         const root: ServerDebug.RouteTreeNode = { children: new Map(), rules: [] };
 
-        for (const rule of this.server.router.httpRules) {
-            this.addRuleToTree(root, rule.urlRule, `http ${rule.method}`);
-        }
-        for (const rule of this.server.router.wsRules) {
-            this.addRuleToTree(root, rule.urlRule, 'ws');
+        for (const rule of this.server.router.algorithm.rules) {
+            if (RULE.HTTP in rule) this.addRuleToTree(root, rule.template, `http ${rule.method}`);
+            else if (RULE.WEBSOCKET in rule) this.addRuleToTree(root, rule.template, 'ws');
         }
 
         this.out.info('&C(255,180,220)│ &C3 tree nodes:');
@@ -109,38 +113,38 @@ export class ServerDebug extends DebugUI {
     /** Prints the server configuration to the console. */
     public showConfig() {
         const { config } = this.server;
-        this.out.info('&C(255,180,220)╭─────────────────────────────────────────────');
-        this.out.info('&C(255,180,220)│ &C2 Server Configuration');
-        this.out.info('&C(255,180,220)├─────────────────────────────────────────────');
-        this.out.info(`&C(255,180,220)│ &C3Port: &C6${config.get('port')}`);
-        this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.get('host')}`);
-        this.out.info(`&C(255,180,220)│ &C3Host: &C6${config.get('host')}`);
+        this.out.group(this.group);
+        this.out.info('&C2 Server Configuration');
+        this.out.line();
+        this.out.info(`&C3Port: &C6${config.get('port')}`);
+        this.out.info(`&C3Host: &C6${config.get('host')}`);
+        this.out.info(`&C3Host: &C6${config.get('host')}`);
 
-        this.out.info(`&C(255,180,220)│ &C3routing options`);
-        this.out.info(`&C(255,180,220)│   - &C3algorithm: &C6${config.get('routing.algorithm')}`);
+        this.out.info(`&C3routing options`);
+        this.out.info(`  - &C3algorithm: &C6${config.get('routing.algorithm')}`);
 
         if (config.data.ssl) {
-            this.out.info(`&C(255,180,220)│ &C3ssl options`);
-            this.out.info(`&C(255,180,220)│   - &C3enabled: &C6${config.get('ssl.port') ?? 443}`);
-            this.out.info(`&C(255,180,220)│   - &C3cert: &C6${config.get('ssl.cert')}`);
-            this.out.info(`&C(255,180,220)│   - &C3key: &C6${config.get('ssl.key')}`);
+            this.out.info(`&C3ssl options`);
+            this.out.info(`  - &C3enabled: &C6${config.get('ssl.port') ?? 443}`);
+            this.out.info(`  - &C3cert: &C6${config.get('ssl.cert')}`);
+            this.out.info(`  - &C3key: &C6${config.get('ssl.key')}`);
         }
-        this.out.info(`&C(255,180,220)│ &C3server templates`);
+        this.out.info(`&C3server templates`);
         for (const name in config.data.templates) {
             const path = config.data.templates[name as keyof Server.Config['data']['templates']] ?? 'undefined';
-            this.out.info(`&C(255,180,220)│   - &C3${name}: &C6${path}`);
+            this.out.info(`  - &C3${name}: &C6${path}`);
         }
-        this.out.info(`&C(255,180,220)│ &C3Debug options`);
-        this.out.info(`&C(255,180,220)│   - &C3 showAll: &C6${config.get('logger.showAll')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show server logs: &C6${config.get('logger.server.show')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save server logs: &C6${config.get('logger.server.save')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show requests logs: &C6${config.get('logger.request.show')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save requests logs: &C6${config.get('logger.request.save')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show responses logs: &C6${config.get('logger.response.show')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save responses logs: &C6${config.get('logger.response.save')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 show websockets logs: &C6${config.get('logger.websocket.show')}`);
-        this.out.info(`&C(255,180,220)│   - &C3 save websockets logs: &C6${config.get('logger.websocket.save')}`);
-        this.out.info('&C(255,180,220)╰─────────────────────────────────────────────');
+        this.out.info(`&C3Debug options`);
+        this.out.info(`  - &C3 showAll: &C6${config.get('logger.showAll')}`);
+        this.out.info(`  - &C3 show server logs: &C6${config.get('logger.server.show')}`);
+        this.out.info(`  - &C3 save server logs: &C6${config.get('logger.server.save')}`);
+        this.out.info(`  - &C3 show requests logs: &C6${config.get('logger.request.show')}`);
+        this.out.info(`  - &C3 save requests logs: &C6${config.get('logger.request.save')}`);
+        this.out.info(`  - &C3 show responses logs: &C6${config.get('logger.response.show')}`);
+        this.out.info(`  - &C3 save responses logs: &C6${config.get('logger.response.save')}`);
+        this.out.info(`  - &C3 show websockets logs: &C6${config.get('logger.websocket.show')}`);
+        this.out.info(`  - &C3 save websockets logs: &C6${config.get('logger.websocket.save')}`);
+        this.out.groupEnd();
     }
 }
 
