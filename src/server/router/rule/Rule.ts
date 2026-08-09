@@ -32,8 +32,6 @@ export abstract class Rule<Content extends any> {
     public get expression(): RegExp { return this.vExpression; }
     public get template(): string { return this.vTemplate; }
     public set template(template: string) {
-        throw new Error('Cannot set template on Rule instance. Create a new Rule instance instead.');
-        // [NOTE]: Temporally disabled to prevent breaking changes. If you need to change the template, create a new Rule instance instead.
         this.vTemplate = template = Rule.normalize(template);
         this.vExpression = Rule.create(template);
     }

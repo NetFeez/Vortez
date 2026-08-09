@@ -36,7 +36,8 @@ export class Router {
 
     public constructor(
         public config: Config = new Config({}),
-        algorithm: keyof Router.AlgorithmMap | _Algorithm = 'FIFO'
+        algorithm: keyof Router.AlgorithmMap | _Algorithm = 'FIFO',
+        protected prefix: string = ''
     ) {
         this.algorithm = Router.getAlgorithm(algorithm);
         this.pipeline = new _Pipeline();
@@ -70,6 +71,16 @@ export class Router {
     }
 
     /**
+     * Adds middleware functions or pipelines to the router's pipeline.
+     * @param items - The middleware functions or pipelines to add.
+     * @returns The router instance for chaining.
+     */
+    public use(...items: (_Middleware.Type | _Pipeline)[]): this {
+        this.pipeline.use(...items);
+        return this;
+    }
+
+    /**
      * Creates a routing rule and adds it to the router.
      * @param method - The HTTP method for the rule.
      * @param template - The URL template for the rule.
@@ -83,8 +94,9 @@ export class Router {
      *     res.send('Welcome to the home page!');
      * });
      */
-    public action(method: Request.Method | 'ALL', template: string, action: _HttpRule.Content): _HttpRule {
-        const rule = new _HttpRule(method as Request.Method, template, action);
+    public action(method: Request.Method, template: string, action: _HttpRule.Content): _HttpRule {
+        template = this.templatePrefix(template);
+        const rule = new _HttpRule(method, template, action);
         this.algorithm.add(rule);
         return rule;
     }
@@ -186,6 +198,7 @@ export class Router {
      * router.file('/home', './public/index.html');
      */
     public file(template: string, source: string): _HttpRule {
+        template = this.templatePrefix(template);
         const rule = _HttpRule.file(template, source);
         this.algorithm.add(rule);
         return rule;
@@ -204,6 +217,7 @@ export class Router {
      * router.folder('/static', './public');
      */
     public folder(template: string, source: string): _HttpRule {
+        template = this.templatePrefix(template);
         const rule = _HttpRule.folder(template, source);
         this.algorithm.add(rule);
         return rule;
@@ -217,6 +231,7 @@ export class Router {
      * @remarks This method creates a WebSocket routing rule that executes the specified action when the URL template is matched.
      */
     public ws(template: string, action: _WsRule.Content): _WsRule {
+        template = this.templatePrefix(template);
         const rule = new _WsRule(template, action);
         this.algorithm.add(rule);
         return rule;
@@ -238,10 +253,12 @@ export class Router {
      * apiRouter.get('/users', (req, res) => { res.send('User list'); });
      */
     public router(template: string, options: Router.SubRouterOptions = {}): Router {
+        template = this.templatePrefix(template);
         const config = options.config ?? this.config;
         const subRouter = options.router ?? new Router(config, options.algorithm);
         const rule = new _RouterRule(template, subRouter, options.pipeline);
         this.algorithm.add(rule);
+        subRouter.prefix = template;
         return subRouter;
     }
 
@@ -262,17 +279,30 @@ export class Router {
      * );
      */
     public multiple(...rules: (_HttpRule | _WsRule)[]): this {
-        for (const rule of rules) this.algorithm.add(rule);
+        for (const rule of rules) {
+            if (!rule.template.startsWith(this.prefix)) rule.template = this.templatePrefix(rule.template);
+            this.algorithm.add(rule);
+        }
         return this;
     }
 
+    /**
+     * Prefixes a template with the router's prefix.
+     * @param template - The template to prefix.
+     * @returns The prefixed template.
+     */
+    protected templatePrefix(template: string): string {
+        if (!this.prefix) return template.startsWith('/') ? template : '/' + template;
+        const combined = `${this.prefix}/${template}`;
+        return combined.replace(/\/+/g, '/');
+    }
     /**
      * Gets the algorithm instance based on the provided algorithm name or instance.
      * @param algorithm - The name of the algorithm or an instance of the algorithm.
      * @returns An instance of the specified algorithm.
      * @remarks If the algorithm name is not found in the AlgorithmMap, it defaults to FIFO.
      */
-    private static getAlgorithm(algorithm: keyof Router.AlgorithmMap | _Algorithm): _Algorithm {
+    protected static getAlgorithm(algorithm: keyof Router.AlgorithmMap | _Algorithm): _Algorithm {
         if (algorithm instanceof _Algorithm) return algorithm;
         const AlgorithmClass = Router.AlgorithmMap[algorithm];
         if (AlgorithmClass) return new AlgorithmClass();

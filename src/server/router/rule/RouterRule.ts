@@ -18,7 +18,10 @@ export class RouterRule extends Rule<Router> {
         template: string,
         content: Router,
         pipeline: Pipeline = new Pipeline()
-    ) { super(template, content, pipeline); }
+    ) {
+        template = template.endsWith('/*') ? template : template + '/*';
+        super(template, content, pipeline);
+    }
 
     /**
      * Tests whether a request matches the routing rule.

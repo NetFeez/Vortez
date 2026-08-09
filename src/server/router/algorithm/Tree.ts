@@ -105,10 +105,8 @@ export class Tree extends Algorithm {
     }
     
     public override find(request: Request): Algorithm.ruleType | null {
-        request.ruleParams = {};
         const node = this.navigate(request);
-        if (!node) return null;
-        return node.fifo.find(request);
+        return node ? node.fifo.find(request) : null;
     }
 }
 export namespace Tree {};

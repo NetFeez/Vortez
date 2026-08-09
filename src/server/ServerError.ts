@@ -1,7 +1,7 @@
 export class ServerError extends Error {
     public constructor(
+        public readonly status: number,
         public readonly message: string,
-        public readonly status: number = 500,
         public readonly options: ServerError.Options = {}
     ) { super(message, { cause: options.cause }) }
     public get isSended() { return this.options.isSended ?? false; }

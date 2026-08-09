@@ -1,9 +1,9 @@
 import { CLIENT, RULE } from '../../../support/symbols.js';
 
 import type Request from '../../Request.js';
-import type HttpRule from '../rule/HttpRule.js';
+import HttpRule from '../rule/HttpRule.js';
+import WsRule from '../rule/WsRule.js';
 import type RouterRule from '../rule/RouterRule.js';
-import type WsRule from '../rule/WsRule.js';
 
 import Algorithm from './Algorithm.js';
 
@@ -21,7 +21,11 @@ export class FIFO extends Algorithm {
         }
     }
     public override find(request: Request): Algorithm.ruleType | null {
-        return this.httpRules.find(rule => rule.test(request)) || this.wsRules.find(rule => rule.test(request)) || null;
+        let rule: Algorithm.ruleType | null = null;
+        if (HttpRule.isHttpRequest(request)) rule = this.httpRules.find(r => r.test(request)) || null;
+        else if (WsRule.isWebsocketRequest(request)) rule = this.wsRules.find(r => r.test(request)) || null;
+        if (!rule) rule = this.routerRules.find(r => r.test(request)) || null;
+        return rule;
     }
 }
 export namespace FIFO {}
