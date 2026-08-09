@@ -14,8 +14,9 @@ export class FIFO extends Algorithm {
     public override get rules(): (HttpRule | WsRule | RouterRule)[] { return [...this.httpRules, ...this.wsRules, ...this.routerRules]; }
     public override add(...rules: Algorithm.ruleType[]): Promise<void> | void {
         for (const rule of rules) {
-            if (RULE.HTTP in rule) this.httpRules.push(rule as HttpRule);
-            else if (RULE.WEBSOCKET in rule) this.wsRules.push(rule as WsRule);
+            if (RULE.HTTP in rule) this.httpRules.push(rule);
+            else if (RULE.WEBSOCKET in rule) this.wsRules.push(rule);
+            else if (RULE.ROUTER in rule) this.routerRules.push(rule);
             else throw new Error(`Invalid rule type: ${rule}`);
         }
     }
