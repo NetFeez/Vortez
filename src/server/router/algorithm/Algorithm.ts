@@ -1,46 +1,38 @@
-import { CLIENT } from '../../../support/symbols.js';
-
 import type Request from '../../Request.js';
 import type Response from '../../Response.js';
-import type Websocket from '../../websocket/ws.js';
 import type HttpRule from '../rule/HttpRule.js';
 import type WsRule from '../rule/WsRule.js';
+import type ws from '../../websocket/ws.js';
+import RouterRule from '../rule/RouterRule.js';
 
 export abstract class Algorithm {
     /** Get all rules in the routing algorithm. */
-    public abstract get allRules(): Algorithm.ruleType[];
+    public abstract get rules(): Algorithm.ruleType[];
     /**
      * Add a rule to the routing algorithm.
      * @param rule - The rule to add.
      */
     public abstract add(...rules: Algorithm.ruleType[]): Promise<void> | void;
     /**
-     * Route a request to a rule.
-     * @param request - The request to route.
-     * @param client - The client to route the request to.
-     * @returns True if the request was routed, false otherwise.
+     * Find a rule that matches the request and client.
+     * @param request - The request to match.
+     * @param client - The client to match.
+     * @returns The matching rule, or null if no rule matches.
+     * @remarks This method is used by the router to find a rule that matches the incoming request and client.
      */
-    protected abstract routeHttp(request: Request, client: Response): boolean;
+    public abstract find(request: Request): Algorithm.ruleType | null;
     /**
-     * Route a request to a rule.
-     * @param request - The request to route.
-     * @param client - The client to route the request to.
-     * @returns True if the request was routed, false otherwise.
+     * Test whether a request and client match any rule in the routing algorithm.
+     * @param request - The request to test.
+     * @param client - The client to test.
+     * @returns True if a rule matches, false otherwise.
+     * @remarks This method is used by the router to determine whether a request and client match any rule in the routing algorithm.
      */
-    protected abstract routeWebsocket(request: Request, client: Websocket): boolean;
-    /**
-     * Route a request to a rule.
-     * @param request - The request to route.
-     * @param client - The client to route the request to.
-     * @returns True if the request was routed, false otherwise.
-     */
-    public route(request: Request, client: Response | Websocket.Server): boolean {
-        if (CLIENT.HTTP in client) return this.routeHttp(request, client);
-        else if (CLIENT.WEBSOCKET in client) return this.routeWebsocket(request, client);
-        else throw new Error(`Invalid client type`);
+    public test(request: Request): boolean {
+        return this.find(request) !== null;
     }
 }
 export namespace Algorithm {
-    export type ruleType = HttpRule | WsRule;
+    export type ruleType = HttpRule | WsRule | RouterRule;
 }
 export default Algorithm;

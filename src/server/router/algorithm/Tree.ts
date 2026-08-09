@@ -3,6 +3,8 @@ import { CLIENT } from '../../../support/symbols.js';
 import type Request from '../../Request.js';
 import type Response from '../../Response.js';
 import type Websocket from '../../websocket/ws.js';
+import type HttpRule from '../rule/HttpRule.js';
+import type WsRule from '../rule/WsRule.js';
 
 import Algorithm from './Algorithm.js';
 import FIFO from './FIFO.js';
@@ -11,17 +13,17 @@ class RouteNode {
     public statics: RouteNode.statics;
     public params?: RouteNode.Param;
     public wildcard?: RouteNode;
-    public rules: FIFO;
+    public fifo: FIFO;
 
     public constructor() {
         this.statics = new Map();
-        this.rules = new FIFO();
+        this.fifo = new FIFO();
     }
-    public get allRules(): Algorithm.ruleType[] {
-        const rules = [...this.rules.allRules];
-        if (this.wildcard) rules.push(...this.wildcard.allRules);
-        if (this.params) rules.push(...this.params.node.allRules);
-        for (const node of this.statics.values()) rules.push(...node.allRules);
+    public get rules(): Algorithm.ruleType[] {
+        const rules = [...this.fifo.rules];
+        if (this.wildcard) rules.push(...this.wildcard.rules);
+        if (this.params) rules.push(...this.params.node.rules);
+        for (const node of this.statics.values()) rules.push(...node.rules);
         return rules;
     }
 }
@@ -39,10 +41,10 @@ export class Tree extends Algorithm {
     public constructor() { super();
         this.root = new RouteNode();
     }
-    public override get allRules(): Algorithm.ruleType[] { return this.root.allRules; }
+    public override get rules(): Algorithm.ruleType[] { return this.root.rules; }
     public override add(...rules: Algorithm.ruleType[]): void {
         for (const rule of rules) {
-            const segments = this.splitPath(rule.urlRule);
+            const segments = this.splitPath(rule.template);
             let currentNode = this.root;
             for (let index = 0; index < segments.length; index++) {
                 const segment = segments[index];
@@ -53,7 +55,7 @@ export class Tree extends Algorithm {
                     const isOptional = segment.startsWith('$?');
                     const paramName = segment.replace(/^\$\??/, '');
 					if (isOptional && index === segments.length - 1) {
-						currentNode.rules.add(rule);
+						currentNode.fifo.add(rule);
 						break;
 					}
                     currentNode.params ??= { name: paramName, isOptional, node: new RouteNode() };
@@ -65,32 +67,8 @@ export class Tree extends Algorithm {
                     currentNode = currentNode.statics.get(segment)!;
                 }
             }
-            currentNode.rules.add(rule);
+            currentNode.fifo.add(rule);
         }
-    }
-    /**
-     * Route a request to a rule.
-     * @param request - The request to route.
-     * @param client - The client to route the request to.
-     * @returns True if the request was routed, false otherwise.
-     */
-    protected override routeHttp(request: Request, client: Response): boolean {
-        request.ruleParams = {}; 
-        const node = this.navigate(request);
-        if (!node) return false;
-        return node.rules.route(request, client);
-    }
-    /**
-     * Route a websocket to a rule.
-     * @param request - The request to route.
-     * @param client - The client to route the request to.
-     * @returns True if the request was routed, false otherwise.
-     */
-    protected override routeWebsocket(request: Request, client: Websocket.Server): boolean {
-        request.ruleParams = {};
-        const node = this.navigate(request);
-        if (!node) return false;
-        return node.rules.route(request, client);
     }
     /**
      * Navigate to a route node.
@@ -111,7 +89,7 @@ export class Tree extends Algorithm {
             } else if (currentNode.wildcard) {
                 currentNode = currentNode.wildcard;
                 break;
-            } else if (currentNode.rules.allRules.some((rule) => rule.test(request))) {
+            } else if (currentNode.fifo.rules.some((rule) => rule.test(request))) {
                 return currentNode;
             } else return null;
         }
@@ -124,6 +102,13 @@ export class Tree extends Algorithm {
      */
     private splitPath(path: string): string[] {
         return path.split('/').filter(p => p.length > 0);
+    }
+    
+    public override find(request: Request): Algorithm.ruleType | null {
+        request.ruleParams = {};
+        const node = this.navigate(request);
+        if (!node) return null;
+        return node.fifo.find(request);
     }
 }
 export namespace Tree {};
