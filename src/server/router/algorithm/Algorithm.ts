@@ -14,6 +14,12 @@ export abstract class Algorithm {
      */
     public abstract add(...rules: Algorithm.ruleType[]): Promise<void> | void;
     /**
+     * Remove all rules from the routing algorithm.
+     * @remarks This method is used by the router to clear all rules from the routing algorithm.
+     * It is called when the router is reset or when a new routing algorithm is set.
+     */
+    public abstract clear(): Promise<void> | void;
+    /**
      * Find a rule that matches the request and client.
      * @param request - The request to match.
      * @param client - The client to match.

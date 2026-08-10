@@ -103,7 +103,9 @@ export class Tree extends Algorithm {
     private splitPath(path: string): string[] {
         return path.split('/').filter(p => p.length > 0);
     }
-    
+    public override clear(): Promise<void> | void {
+        this.root = new RouteNode();
+    }
     public override find(request: Request): Algorithm.ruleType | null {
         const node = this.navigate(request);
         return node ? node.fifo.find(request) : null;

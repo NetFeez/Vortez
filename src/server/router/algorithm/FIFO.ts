@@ -20,6 +20,11 @@ export class FIFO extends Algorithm {
             else throw new Error(`Invalid rule type: ${rule}`);
         }
     }
+    public override clear(): Promise<void> | void {
+        this.httpRules = [];
+        this.wsRules = [];
+        this.routerRules = [];
+    }
     public override find(request: Request): Algorithm.ruleType | null {
         let rule: Algorithm.ruleType | null = null;
         if (HttpRule.isHttpRequest(request)) rule = this.httpRules.find(r => r.test(request)) || null;
