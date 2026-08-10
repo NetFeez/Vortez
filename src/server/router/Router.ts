@@ -311,9 +311,9 @@ export class Router {
      * @param template - The template to prefix.
      * @returns The prefixed template.
      */
-    protected templatePrefix(template: string): string {
-        if (!this.prefix) return template.startsWith('/') ? template : '/' + template;
-        const combined = `${this.prefix}/${template}`;
+    protected templatePrefix(template: string, prefix: string = this.prefix): string {
+        if (!prefix) return template.startsWith('/') ? template : '/' + template;
+        const combined = `${prefix}/${template}`;
         return combined.replace(/\/+/g, '/');
     }
     /**
