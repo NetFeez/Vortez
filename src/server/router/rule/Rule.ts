@@ -90,8 +90,8 @@ export abstract class Rule<Content extends any> {
     }
     protected static create(template: string): RegExp {
         const validators = {
-            paramRequired: /^\$(?<param>(?!\$).+)$/,
-            paramOptional: /^\$\?(?<param>(?!\$).+)$/,
+            paramRequired: /^(?:\:|\$)(?<param>(?!\$).+)$/,
+            paramOptional: /^(?:\:|\$)\?(?<param>(?!\$).+)$/,
             escape: /\\(?![\$\[\]\*\+\?\.\(\)\{\}\^\|\-])|(?<!\\)[\$\[\]\*\+\?\.\(\)\{\}\^\|\-]/gi,
         };
         const zones = template.split('/').slice(1);

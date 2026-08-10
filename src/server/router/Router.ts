@@ -69,6 +69,7 @@ export class Router {
     public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}): Promise<boolean> {
         const rule: Rule<any> | null = this.vAlgorithm.find(request) || null;
         if (!rule) return false;
+        request.ruleParams = rule.params(request.url);
         const destination: _Pipeline.Destination = async (state) => rule.exec(request, client, state);
         await this.pipeline.run(request, client, destination);
         return true;
