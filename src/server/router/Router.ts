@@ -10,7 +10,6 @@ import type Request from '../Request.js';
 import type Response from '../Response.js';
 import type ws from '../websocket/ws.js';
 import LoggerManager from '../LoggerManager.js';
-import Config from '../config/Config.js';
 
 import _Algorithm from './algorithm/Algorithm.js';
 import _FIFO from './algorithm/FIFO.js';
@@ -31,16 +30,21 @@ export class Router {
         Tree: _Tree,
     };
 
-    public readonly algorithm: _Algorithm;
+    protected vAlgorithm: _Algorithm;
     public readonly pipeline: _Pipeline;
 
     public constructor(
-        public config: Config = new Config({}),
         algorithm: keyof Router.AlgorithmMap | _Algorithm = 'FIFO',
         protected prefix: string = ''
     ) {
-        this.algorithm = Router.getAlgorithm(algorithm);
+        this.vAlgorithm = Router.getAlgorithm(algorithm);
         this.pipeline = new _Pipeline();
+    }
+
+    public get algorithm(): _Algorithm { return this.vAlgorithm; }
+    public set algorithm(algorithm: keyof Router.AlgorithmMap | _Algorithm) {
+        this.vAlgorithm = Router.getAlgorithm(algorithm);
+        this.vAlgorithm.add(...this.vAlgorithm.rules);
     }
 
     /**
@@ -50,7 +54,7 @@ export class Router {
      * @returns True if the request matches any routing rule, false otherwise.
      */
     public test(request: Request): boolean {
-        const rule = this.algorithm.test(request) || null;
+        const rule = this.vAlgorithm.test(request) || null;
         return !!rule;
     }
 
@@ -63,7 +67,7 @@ export class Router {
      * @remarks This method determines the type of client (HTTP or WebSocket) and calls the appropriate routing method (routeRequest or routeWebSocket) to find and execute the matching rule. If no matching rule is found, it returns false. If the client type is invalid, it throws an error.
      */
     public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}): Promise<boolean> {
-        const rule: Rule<any> | null = this.algorithm.find(request) || null;
+        const rule: Rule<any> | null = this.vAlgorithm.find(request) || null;
         if (!rule) return false;
         const destination: _Pipeline.Destination = async (state) => rule.exec(request, client, state);
         await this.pipeline.run(request, client, destination);
@@ -97,7 +101,7 @@ export class Router {
     public action(method: Request.Method, template: string, action: _HttpRule.Content): _HttpRule {
         template = this.templatePrefix(template);
         const rule = new _HttpRule(method, template, action);
-        this.algorithm.add(rule);
+        this.vAlgorithm.add(rule);
         return rule;
     }
 
@@ -200,7 +204,7 @@ export class Router {
     public file(template: string, source: string): _HttpRule {
         template = this.templatePrefix(template);
         const rule = _HttpRule.file(template, source);
-        this.algorithm.add(rule);
+        this.vAlgorithm.add(rule);
         return rule;
     }
 
@@ -219,7 +223,7 @@ export class Router {
     public folder(template: string, source: string): _HttpRule {
         template = this.templatePrefix(template);
         const rule = _HttpRule.folder(template, source);
-        this.algorithm.add(rule);
+        this.vAlgorithm.add(rule);
         return rule;
     }
 
@@ -233,7 +237,7 @@ export class Router {
     public ws(template: string, action: _WsRule.Content): _WsRule {
         template = this.templatePrefix(template);
         const rule = new _WsRule(template, action);
-        this.algorithm.add(rule);
+        this.vAlgorithm.add(rule);
         return rule;
     }
 
@@ -252,13 +256,21 @@ export class Router {
      * });
      * apiRouter.get('/users', (req, res) => { res.send('User list'); });
      */
-    public router(template: string, options: Router.SubRouterOptions = {}): Router {
+    public router(template: string, router: Router | Router.SubRouterOptions = {}): Router {
         template = this.templatePrefix(template);
-        const config = options.config ?? this.config;
-        const subRouter = options.router ?? new Router(config, options.algorithm);
-        const rule = new _RouterRule(template, subRouter, options.pipeline);
-        this.algorithm.add(rule);
-        subRouter.prefix = template;
+        
+        let subRouter: Router;
+        if (router instanceof Router) {
+            router.prefix = template;
+            subRouter = router;
+        } else {
+            const { algorithm = 'FIFO', pipeline = new _Pipeline() } = router;
+            subRouter = new Router(algorithm, template);
+            subRouter.pipeline.use(pipeline);
+        }
+
+        const rule = new _RouterRule(template, subRouter);
+        this.vAlgorithm.add(rule);
         return subRouter;
     }
 
@@ -281,7 +293,7 @@ export class Router {
     public multiple(...rules: (_HttpRule | _WsRule)[]): this {
         for (const rule of rules) {
             if (!rule.template.startsWith(this.prefix)) rule.template = this.templatePrefix(rule.template);
-            this.algorithm.add(rule);
+            this.vAlgorithm.add(rule);
         }
         return this;
     }
@@ -326,8 +338,6 @@ export namespace Router {
     }
 
     export type SubRouterOptions = {
-        router?: Router;
-        config?: Config;
         algorithm?: keyof AlgorithmMap | _Algorithm;
         pipeline?: _Pipeline;
     }

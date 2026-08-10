@@ -6,17 +6,19 @@ import Response from "../Response.js";
 import Websocket from "../websocket/ws.js";
 import LoggerManager from "../LoggerManager.js";
 
+import type Config from "../config/Config.js";
 import type Router from "./Router.js";
 
 export class Gate {
     public constructor(
+        private readonly config: Config,
         private readonly router: Router,
         private readonly logger = LoggerManager.getInstance()
     ) {}
 
     public async requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): Promise<void> {
         const request = new Request(HttpRequest);
-        const response = new Response(request, HttpResponse, this.router.config.data.templates);
+        const response = new Response(request, HttpResponse, this.config.data.templates);
         const sessionID = request.cookies.get('Session');
         this.logger.request.log(request.ip, request.method, request.url, sessionID);
         const routed = await this.router.route(request, response);
