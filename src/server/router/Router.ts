@@ -264,8 +264,12 @@ export class Router {
         let subRouter: Router;
         if (router instanceof Router) {
             router.prefix = template;
-            const oldRules = router.algorithm.rules;
-            router.algorithm = router.algorithm;
+            const rules = router.algorithm.rules.map(rule => {
+                rule.template = this.templatePrefix(rule.template)
+                return rule;
+            });
+            router.algorithm.clear();
+            router.algorithm.add(...rules);
             subRouter = router;
         } else {
             const { algorithm = 'FIFO', pipeline = new _Pipeline() } = router;
