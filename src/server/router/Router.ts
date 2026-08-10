@@ -43,8 +43,9 @@ export class Router {
 
     public get algorithm(): _Algorithm { return this.vAlgorithm; }
     public set algorithm(algorithm: keyof Router.AlgorithmMap | _Algorithm) {
+        const rules = this.vAlgorithm.rules;
         this.vAlgorithm = Router.getAlgorithm(algorithm);
-        this.vAlgorithm.add(...this.vAlgorithm.rules);
+        this.vAlgorithm.add(...rules);
     }
 
     /**
@@ -263,6 +264,8 @@ export class Router {
         let subRouter: Router;
         if (router instanceof Router) {
             router.prefix = template;
+            const oldRules = router.algorithm.rules;
+            router.algorithm = router.algorithm;
             subRouter = router;
         } else {
             const { algorithm = 'FIFO', pipeline = new _Pipeline() } = router;
