@@ -22,7 +22,7 @@ export class Gate {
         const sessionID = request.cookies.get('Session');
         this.logger.request.log(request.ip, request.method, request.url, sessionID);
         const routed = await this.router.route(request, response);
-        if (!routed && !response.isSent) await response.sendError(404, `No route for: ${request.method} -> ${request.url}`);
+        if (!routed && !response.isSent) await response.status(404).send(`No route for: ${request.method} -> ${request.url}`);
     }
 
     public async upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): Promise<void> {
