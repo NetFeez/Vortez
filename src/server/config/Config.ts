@@ -25,11 +25,6 @@ export const SCHEMA_SSL = new Schema({ type: 'object', properties: {
     port: { type: 'number', default: 443, minimum: 0, maximum: 65535 }
 }});
 
-export const SCHEMA_TEMPLATES = new Schema({ type: 'object', properties: {
-    folder: { type: 'string', default: DEFAULT_FOLDER_TEMPLATE },
-    error: { type: 'string', default: DEFAULT_ERROR_TEMPLATE }
-}});
-
 export const SCHEMA_ROUTING = new Schema({ type: 'object', properties: {
     algorithm: { type: 'string', enum: ['FIFO', 'Tree'], default: 'FIFO' }
 }});
@@ -39,7 +34,6 @@ export const SCHEMA_HANDLER = Schema.fromObject({
     port: { type: 'number', default: 80, minimum: 0, maximum: 65535 },
     ssl: SCHEMA_SSL.root,
     routing: SCHEMA_ROUTING.root,
-    templates: SCHEMA_TEMPLATES.root,
     logger: SCHEMA_LOGGER.root
 });
 

@@ -10,20 +10,20 @@
     <body>
         <div id="folder" class="center-X">
             <div class="content">
-                <h1 class="path">Folder: {{Url}}</h1>
+                <h1 class="path">Folder: {{url}}</h1>
                 <div class="options">
-                    <vortez-if name="Url" condition="!=" expected="/">
-                        <a class="back" href="{{Url}}/../">Back</a>
+                    <vortez-if name="url" condition="!=" expected="/">
+                        <a class="back" href="{{url}}/../">Back</a>
                     <vortez-else />
                         <span class="back disabled">Back</span>
                     </vortez-if>
-                    <input id="input-path" type="search" placeholder="enter the path... {{Url}}" value="{{Url}}"/>
-                    <input id="input-change"type="button" value="change"/>
+                    <input id="input-path" type="search" placeholder="enter the path... {{url}}" value="{{url}}"/>
+                    <input id="input-change" type="button" value="change"/>
                 </div>
                 <ul class="list">
                     <vortez-each name="folder" value="name">
                         <li>
-                            <vortez-if name="Url" condition="==" expected="/">
+                            <vortez-if name="url" condition="==" expected="/">
                                 <a class="item" href="./{{name}}">
                                     <vortez-if name="name" condition="==" expected="style">
                                         <span class="folder">[Folder]</span>
@@ -31,7 +31,7 @@
                                     {{name}}
                                 </a>
                             <vortez-else />
-                                <a class="item" href="{{Url}}/{{name}}">{{name}}</a>
+                                <a class="item" href="{{url}}/{{name}}">{{name}}</a>
                             </vortez-if>
                         </li>
                     </vortez-each>
@@ -44,7 +44,7 @@
                     window.location.href = inputPath.value;
                 });
                 inputPath.addEventListener('keydown', (event) => {
-                    inputPath.value.length <= '{{Url}}'.length && event.key == 'Backspace'
+                    inputPath.value.length <= '{{url}}'.length && event.key == 'Backspace'
                     ? event.preventDefault()
                     : false;
                 })

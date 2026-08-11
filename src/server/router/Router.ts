@@ -193,15 +193,15 @@ export class Router {
     public options(template: string, action: _HttpRule.Content): _HttpRule { return this.action('OPTIONS', template, action); }
 
     /**
-     * Creates a routing rule to send a file to the client and adds it to the router.
-     * @param template - The URL template for the file rule.
-     * @param source - The path of the file to send.
-     * @returns The created HttpRule instance for the file.
-     * @remarks This method creates a routing rule that sends a file to the client when the specified URL template is matched.
+     * Creates a new HttpRule for serving a file.
+     * @param template - The URL pattern to match for this rule.
+     * @param path - The file system path of the file to serve.
+     * @returns A new instance of HttpRule configured to serve the specified file.
+     * @remarks This method creates a routing rule that serves a file when the specified URL template is matched.
      * 
      * @example
-     * // Create a rule to serve the 'index.html' file when the URL is '/home'
-     * router.file('/home', './public/index.html');
+     * // Create a rule to serve a file when the URL matches '/static/file.txt'
+     * router.file('/static/file.txt', './public/file.txt');
      */
     public file(template: string, source: string): _HttpRule {
         template = this.templatePrefix(template);
@@ -211,20 +211,23 @@ export class Router {
     }
 
     /**
-     * Creates a routing rule to send a folder to the client and adds it to the router.
-     * @param template - The URL template for the folder rule.
-     * @param source - The path of the folder to send.
-     * @returns The created HttpRule instance for the folder.
-     * @remarks This method creates a routing rule that sends a folder to the client when the specified URL template is matched.
-     * It automatically appends '/*' to the template if it doesn't already end with it.
+     * Creates a new HttpRule for serving a folder.
+     * @param template - The URL pattern to match for this rule.
+     * @param path - The base path of the folder to serve.
+     * @param renderer - The folder renderer function to customize the response for folder contents. If null, a default template will be used.
+     * @returns A new instance of HttpRule configured to serve the specified folder.
      * 
      * @example
      * // Create a rule to serve files from the 'public' folder when the URL starts with '/static'
      * router.folder('/static', './public');
+     * router.folder('/static', './public', (_, response) => response.status(403).send('Forbidden'));
+     * router.folder('/static', './public', (request, response, state) => {
+     *     response.sendJson({ message: 'Folder contents', folder: state.folder, url: request.url });
+     * });
      */
-    public folder(template: string, source: string): _HttpRule {
+    public folder(template: string, source: string, action: _HttpRule.FolderRenderer | null = null): _HttpRule {
         template = this.templatePrefix(template);
-        const rule = _HttpRule.folder(template, source);
+        const rule = _HttpRule.folder(template, source, action);
         this.vAlgorithm.add(rule);
         return rule;
     }

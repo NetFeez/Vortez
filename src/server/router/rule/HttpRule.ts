@@ -30,12 +30,7 @@ export class HttpRule extends Rule<HttpRule.Content> {
         pipeline: Pipeline = new Pipeline()
     ) { super(template, content, pipeline); }
 
-    /**
-     * Tests whether a request matches the routing rule.
-     * @param request - The request to test.
-     * @returns True if the request matches the routing rule, false otherwise.
-     * @Remarks This method overrides the base Rule.test() method to add additional checks for HTTP requests.
-     */
+
     public override test(request: Request): boolean {
         if (this.method !== 'ALL' && this.method !== request.method) return false;
         if (!HttpRule.isHttpRequest(request)) return false;
@@ -50,10 +45,9 @@ export class HttpRule extends Rule<HttpRule.Content> {
     }
 
     /**
-     * Tests whether a request is an HTTP request.
-     * @param request - The request to test.
-     * @returns True if the request is an HTTP request, false otherwise.
-     * @Remarks This method is used by the router to determine whether a request is an HTTP request or a WebSocket request.
+     * Determines if the given request is an HTTP request.
+     * @param request - The request to check.
+     * @returns True if the request is an HTTP request; otherwise, false.
      */
     public static isHttpRequest(request: Request): boolean {
         if ('upgrade' in request.headers) return false;
@@ -63,64 +57,90 @@ export class HttpRule extends Rule<HttpRule.Content> {
     }
 
     /**
-     * Creates a routing rule.
-     * @param method - The HTTP method of the rule.
-     * @param urlRule - The URL rule adopted by this Rule instance.
-     * @param action - The executable content of the rule.
-     * @param middleware - The middleware to clone.
+     * Creates a new HttpRule for handling a specific HTTP method and URL pattern.
+     * @param method - The HTTP method (e.g., 'GET', 'POST') to match for this rule.
+     * @param template - The URL pattern to match for this rule.
+     * @param action - The action function to execute when the rule is matched.
+     * @returns A new instance of HttpRule configured with the specified method, URL pattern, action, and middleware pipeline.
+     * 
+     * @example
+     * // Create a rule to handle GET requests to '/api/data'
+     * router.action('GET', '/api/data', async (request, response) => {
+     *     const data = await fetchDataFromDatabase();
+     *     response.sendJson(data);
+     * }
      */
-    public static action(method: Request.Method, urlRule: string, action: HttpRule.Content, pipeline?: Pipeline): HttpRule {
-        return new HttpRule(method, urlRule, action, pipeline);
-    }
-    /**
-     * Creates a routing rule to send a folder to the client.
-     * @param urlRule - The URL rule adopted by this Rule instance.
-     * @param path - The path of the folder to send.
-     * @param template - The template to use for rendering the folder contents.
-     */
-    public static folder(urlRule: string, path: string, template?: string): HttpRule {
-        template = template || Path.relativeToMe(import.meta, '../../global/template/folder.vhtml');
-        if (urlRule.endsWith('/')) urlRule += '*';
-        if (!urlRule.endsWith('/*')) urlRule += '/*';
-        const action = this.sendFolder.bind(this, path, template);
-        return new HttpRule('GET', urlRule, action);
-    }
-    /**
-     * Creates a routing rule to send a file to the client.
-     * @param urlRule - The URL rule adopted by this Rule instance.
-     * @param path - The path of the file to send.
-     * @param middleware - The middleware to clone.
-     */
-    public static file(urlRule: string, path: string, pipeline?: Pipeline): HttpRule {
-        const action = this.sendFile.bind(this, path);
-        return new HttpRule('GET', urlRule, action, pipeline);
+    public static action(method: Request.Method, template: string, action: HttpRule.Content): HttpRule {
+        return new HttpRule(method, template, action);
     }
 
     /**
-     * Sends a file to the client.
-     * @param path - The path of the file to send.
-     * @param request - The incoming request.
-     * @param client - The client that made the request.
+     * Creates a new HttpRule for serving a folder.
+     * @param template - The URL pattern to match for this rule.
+     * @param path - The base path of the folder to serve.
+     * @param renderer - The folder renderer function to customize the response for folder contents. If null, a default template will be used.
+     * @returns A new instance of HttpRule configured to serve the specified folder.
+     * 
+     * @example
+     * // Create a rule to serve files from the 'public' folder when the URL starts with '/static'
+     * router.folder('/static', './public');
+     * router.folder('/static', './public', (_, response) => response.status(403).send('Forbidden'));
+     * router.folder('/static', './public', (request, response, state) => {
+     *     response.sendJson({ message: 'Folder contents', folder: state.folder, url: request.url });
+     * });
      */
-    private static async sendFile(path: string, request: Request, client: Response): Promise<void> {
-        await client.sendFile(path);
+    public static folder(template: string, path: string, renderer: HttpRule.FolderRenderer | null = null): HttpRule {
+        if (template.endsWith('/')) template += '*';
+        if (!template.endsWith('/*')) template += '/*';
+        const action = this.sendFolderHandler.bind(this, path, renderer);
+        return new HttpRule('GET', template, action);
     }
 
     /**
-     * Sends a folder to the client.
-     * @param path - The path of the folder to send.
-     * @param template - The template to use for rendering the folder contents.
-     * @param request - The incoming request.
-     * @param client - The client that made the request.
+     * Creates a new HttpRule for serving a file.
+     * @param template - The URL pattern to match for this rule.
+     * @param path - The file system path of the file to serve.
+     * @returns A new instance of HttpRule configured to serve the specified file.
+     * @remarks This method creates a routing rule that serves a file when the specified URL template is matched.
+     * 
+     * @example
+     * // Create a rule to serve a file when the URL matches '/static/file.txt'
+     * router.file('/static/file.txt', './public/file.txt');
      */
-    private static async sendFolder(base: string, template: string, request: Request, client: Response): Promise<void> {
+    public static file(template: string, path: string,): HttpRule {
+        const action = this.sendFileHandler.bind(this, path);
+        return new HttpRule('GET', template, action);
+    }
+
+    /**
+     * Handles the sending of a file.
+     * This function is responsible for securely serving a file to the client.
+     * @param path - The path of the file to serve.
+     * @param request - The incoming HTTP request.
+     * @param response - The HTTP response object to send data back to the client.
+     * @throws { ServerError } Throws a ServerError if the requested file does not exist or is not a file.
+     * @returns A promise that resolves when the file has been sent to the client.
+     */
+    private static async sendFileHandler(path: string, request: Request, response: Response): Promise<void> {
+        await response.sendFile(path);
+    }
+
+    /**
+     * Handles the sending of a folder.
+     * This function is responsible for securely serving the contents of a folder,
+     * @param path - The base path of the folder to serve.
+     * @param renderer - The folder renderer function to customize the response for folder contents. If null, a default template will be used.
+     * @param request - The incoming HTTP request.
+     * @param client - The HTTP response object to send data back to the client.
+     * @throws { ServerError } Throws a ServerError if the requested path is outside the base folder or if the path does not exist.
+     * @returns A promise that resolves when the folder contents have been sent to the client.
+     */
+    private static async sendFolderHandler(path: string, renderer: HttpRule.FolderRenderer | null, request: Request, client: Response): Promise<void> {
         const { $surplus: plus = '' } = request.ruleParams;
 
-        // await client.sendFolder(path, $surplus);
-
-        const basePath = Path.resolve(base);
-        const path = await PathSecurity.resolveInsideBase(basePath, plus);
-        if (!path) {
+        const basePath = Path.resolve(path);
+        const securePath = await PathSecurity.resolveInsideBase(basePath, plus);
+        if (!securePath) {
             logger.warn(`&C2[Vortez Security] Vortez has detected a potential Path Traversal attack:`);
             logger.warn(` &C3- IP: &C6${request.ip}`);
             logger.warn(` &C3- URL: &C6${request.url}`);
@@ -128,17 +148,20 @@ export class HttpRule extends Rule<HttpRule.Content> {
             logger.warn(` &C3- Intento: &C6${plus}`);
             throw new ServerError(403, 'Forbidden: Outside of sandbox');
         }
-        if (!await File.exists(path)) throw new ServerError(404, 'The requested URL was not found');
-        const details = await fs.stat(path);
-        if (details.isFile()) return await client.sendFile(path);
+        if (!await File.exists(securePath)) throw new ServerError(404, 'The requested URL was not found');
+        const details = await fs.stat(securePath);
+        if (details.isFile()) return await client.sendFile(securePath);
         if (!details.isDirectory()) throw new ServerError(404, 'The requested URL was not found');
-        const folder = await fs.readdir(path);
-        await client.sendTemplate(template, { Url: request.url, folder });
+        const folder = await fs.readdir(securePath);
+        if (renderer) return await renderer(request, client, { folder });
+        const template = Path.relativeToMe(import.meta, '../../../../global/template/folder.vhtml');
+        await client.sendTemplate(template, { url: request.url, folder });
     }
 }
 
 export namespace HttpRule {
     export type Content = (request: Request, response: Response, state: Middleware.State) => void | Promise<void>;
+    export type FolderRenderer = (request: Request, response: Response, state: Middleware.State & { folder: string[] }) => void | Promise<void>;
 }
 
 export default HttpRule;
