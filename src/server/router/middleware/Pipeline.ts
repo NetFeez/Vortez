@@ -1,10 +1,12 @@
-import Request from '../../Request.js';
-import Response from '../../Response.js';
-import ws from '../../websocket/ws.js';
+import { CLIENT, MIDDLEWARE } from '../../../support/symbols.js';
+
+import type Request from '../../Request.js';
+import type Response from '../../Response.js';
+import type ws from '../../websocket/ws.js';
+import type Middleware from './Middleware.js';
+
 import ServerError from '../../ServerError.js';
 import LoggerManager from '../../LoggerManager.js';
-import Middleware from './Middleware.js';
-import { CLIENT, MIDDLEWARE } from '../../../support/symbols.js';
 
 const logger = LoggerManager.getInstance();
 
@@ -24,14 +26,14 @@ export class Pipeline {
 
     public async run(request: Request, client: Response | ws.Server, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {
         try {
-            if (client instanceof Response) return this.runHttp(request, client, destination, state);
-            else return this.runWs(request, client, destination, state);
-        } catch (error) { return this.runError(error, request, client, state); }
+            if (CLIENT.HTTP in client) return await this.runHttp(request, client, destination, state);
+            else return await this.runWs(request, client, destination, state);
+        } catch (error) { return await this.runError(error, request, client, state); }
     }
-    public runError(error: unknown, request: Request, client: Response | ws.Server, state: Middleware.State = {}): Promise<void> {
+    public async runError(error: unknown, request: Request, client: Response | ws.Server, state: Middleware.State = {}): Promise<void> {
         try {
-            if (client instanceof Response) return this.runHttpError(error, request, client, state);
-            else return this.runWsError(error, request, client, state);
+            if (CLIENT.HTTP in client) return await this.runHttpError(error, request, client, state);
+            else return await this.runWsError(error, request, client, state);
         } catch (error) { this.fallbackErrorHandler(error, request, client); return Promise.resolve(); }
     }
     protected async runHttp(request: Request, response: Response, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {
@@ -95,7 +97,7 @@ export class Pipeline {
         await nextError();
     }
     protected async fallbackErrorHandler(error: unknown, request: Request, client: Response | ws.Server): Promise<void> {
-        if (client instanceof Response) {
+        if (CLIENT.HTTP in client) {
             if (error instanceof ServerError) {
                 if (client.isSent) return void logger.warn('throw ApiError used when response was already sent');
                 return client.status(error.status).send(error.message);
