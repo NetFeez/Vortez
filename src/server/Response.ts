@@ -219,7 +219,7 @@ export class Response {
      */
     public async sendFile(path: string): Promise<void> {
         path = Path.normalize(path);
-		if  (!File.exists(path)) {
+		if  (!await File.exists(path)) {
 			logger.warn(`&C2[Vortez Warning] File not found: &C6${path}`);
 			throw new ServerError(404, 'The requested URL was not found');
         }
