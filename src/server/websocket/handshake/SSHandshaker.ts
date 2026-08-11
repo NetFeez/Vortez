@@ -4,7 +4,6 @@ import { Duplex } from 'node:stream';
 import { Async } from '@netfeez/common-node';
 
 import Request from '../../Request.js';
-import Cookie from '../../Cookie.js';
 import Handshaker from './Handshaker.js';
 
 export class SSHandshaker extends Handshaker {
@@ -24,7 +23,7 @@ export class SSHandshaker extends Handshaker {
         try {
             const key = this.Request.headers['sec-websocket-key'];
             if (!key) throw new Error('Server handshake requires a key');
-            const response = SSHandshaker.acceptMessage(key, this.Request.cookies);
+            const response = SSHandshaker.acceptMessage(key);
             await Async.awaitEvent<void>((done, fail) => {
                 this.socket.write(response, (err) => {
                     if (err) fail(err);
@@ -43,7 +42,7 @@ export class SSHandshaker extends Handshaker {
      */
     public async reject(code: number = 400, reason: string = 'Bad Request'): Promise<void> {
         try {
-            const response = SSHandshaker.rejectMessage(code, reason, this.Request.cookies);
+            const response = SSHandshaker.rejectMessage(code, reason);
             await Async.awaitEvent<void>((done, fail) => {
                 this.socket.write(response);
                 this.socket.end(() => done());
@@ -64,20 +63,15 @@ export class SSHandshaker extends Handshaker {
     /**
      * Generates an HTTP response message to accept a WebSocket handshake request with the appropriate headers.
      * @param key - The Sec-WebSocket-Key received from the client during the handshake request.
-     * @param cookies - Optional cookies to be included in the response.
      * @returns A complete HTTP response message as a string to be sent back to the client.
      */
-    private static acceptMessage(key: string, cookies?: Cookie): string {
+    private static acceptMessage(key: string): string {
         const acceptKey = SSHandshaker.generateAcceptKey(key);
-        const setters = cookies
-            ? cookies.setters.map((setter) => `Set-Cookie: ${setter}`)
-            : [];
         return [
             'HTTP/1.1 101 Switching Protocols',
             'Upgrade: websocket',
             'Connection: Upgrade',
             `Sec-WebSocket-Accept: ${acceptKey}`,
-            ...setters,
             '\r\n'
         ].join('\r\n');
     }
@@ -90,16 +84,12 @@ export class SSHandshaker extends Handshaker {
      * 
      * @remarks The generated response will have a JSON body containing the provided code and reason, and will include any specified cookies in the headers. This response can be sent back to the client to indicate that the handshake request was rejected, along with the reason for rejection.
      */
-    private static rejectMessage(code: number, reason: string, cookies?: Cookie): string {
+    private static rejectMessage(code: number, reason: string): string {
         const body = JSON.stringify({ code, reason }, null, 4);
-        const setters = cookies
-            ? cookies.setters.map((setter) => `Set-Cookie: ${setter}`)
-            : [];
         return [
             `HTTP/1.1 ${code} ${reason}`,
             'Content-Type: application/json',
             `Content-Length: ${Buffer.byteLength(body)}`,
-            ...setters,
             '\r\n',
             body
         ].join('\r\n');

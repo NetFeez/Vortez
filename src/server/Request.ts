@@ -4,9 +4,9 @@
  * @license Apache-2.0
  */
 
-import URI from 'url';
-import HTTP from 'http';
-import Session from './Session.js';
+import URI from 'node:url';
+import HTTP from 'node:http';
+
 import _BodyParser from './BodyParser.js';
 
 export { BodyParser } from './BodyParser.js';
@@ -27,9 +27,6 @@ export class Request {
 	/** Contains the request method. */
 	public method: Request.Method;
 
-	/** Contains the session of the device that made the request. */
-	public session: Session;
-
 	/** Contains the request body parser. */
 	private parser: Request.BodyParser;
 
@@ -42,6 +39,7 @@ export class Request {
 	/**
 	 * Creates the request form for `NetFeez-Labs/Server`.
 	 * @param httpRequest - The HTTP request received by the server.
+	 * @param options - Optional settings for the request.
 	 */
 	public constructor(
 		/** The HTTP request received by the server. */
@@ -54,7 +52,6 @@ export class Request {
 		this.searchParams = this.extractSearchParams(httpRequest.url || '/');
         this.headers = { ...httpRequest.headers };
 		this.cookies = this.extractCookies(httpRequest);
-		this.session = Session.get(this.cookies['v-ss-uuid']);
 		this.parser = new Request.BodyParser(this.headers, this.httpRequest);
 	}
 

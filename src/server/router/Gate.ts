@@ -18,9 +18,8 @@ export class Gate {
 
     public async requestManager(HttpRequest: HTTP.IncomingMessage, HttpResponse: HTTP.ServerResponse): Promise<void> {
         const request = new Request(HttpRequest);
-        const response = new Response(request, HttpResponse, this.config.data.templates);
-        const sessionID = request.cookies.get('Session');
-        this.logger.request.log(request.ip, request.method, request.url, sessionID);
+        const response = new Response(HttpResponse);
+        this.logger.request.log(request.ip, request.method, request.url);
         const routed = await this.router.route(request, response);
         if (!routed && !response.isSent) await response.status(404).send(`No route for: ${request.method} -> ${request.url}`);
     }
@@ -28,8 +27,7 @@ export class Gate {
     public async upgradeManager(HttpRequest: HTTP.IncomingMessage, Socket: Duplex): Promise<void> {
         const request = new Request(HttpRequest);
         const websocket = new Websocket.Server(request, Socket);
-        const sessionID = request.cookies.get('Session');
-        this.logger.webSocket.log(request.ip, request.method, request.url, sessionID);
+        this.logger.webSocket.log(request.ip, request.method, request.url);
         const routed = await this.router.route(request, websocket);
         if (!routed) websocket.reject(404, `No route for: ${request.method} -> ${request.url}`).catch(() => {});
     }

@@ -14,8 +14,6 @@ import _ServerDebug from './ServerDebug.js';
 import _Config from './config/Config.js';
 import _Request from "./Request.js";
 import _Response from "./Response.js";
-import _Session from "./Session.js";
-import _Cookie from "./Cookie.js";
 import _WebSocket from "./websocket/ws.js";
 import _Router from "./router/Router.js";
 import _Middleware from "./router/middleware/Middleware.js";
@@ -27,8 +25,6 @@ export { ServerDebug } from './ServerDebug.js';
 export { Config } from './config/Config.js';
 export { Request } from "./Request.js";
 export { Response } from "./Response.js";
-export { Session } from "./Session.js";
-export { Cookie } from "./Cookie.js";
 export { Websocket as WebSocket } from "./websocket/ws.js";
 export { Router } from "./router/Router.js";
 export { Middleware } from "./router/middleware/Middleware.js";
@@ -205,10 +201,8 @@ export class Server {
 
 export namespace Server {
 	export import Config = _Config;
-    export import Cookie = _Cookie
     export import Request = _Request
     export import Response = _Response
-    export import Session = _Session
     export import WebSocket = _WebSocket
     export import Router = _Router;
 	export import Middleware = _Middleware;

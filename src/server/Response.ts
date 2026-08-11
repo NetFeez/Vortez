@@ -29,7 +29,7 @@ export class Response {
     /** The version of the Vortez server. */
     private static readonly version = Response.loadVersion();
 
-	public static readonly contentTypeMap: Response.contentTypeMap = {
+	public static readonly ContentTypeMap: Response.ContentTypeMap = {
 		'html': 'text/html',
 		'js':   'text/javascript',
 		'css':  'text/css',
@@ -44,13 +44,6 @@ export class Response {
 		'wav':  'audio/x-wav',
 		'mp4':  'video/mp4',
 	};
-
-
-	/** Contains the request received by the server. */
-	public request: Request;
-
-	/** Contains the list of server response templates. */
-	private templates: Config['data']['templates'];
 
 	/** Contains the response to be sent by the server. */
 	public httpResponse: HTTP.ServerResponse;
@@ -76,12 +69,9 @@ export class Response {
 	 * @param httpResponse - The response to be sent by the server.
 	 * @param templates - The list of server response templates.
 	 */
-	public constructor(request: Request, httpResponse: HTTP.ServerResponse, templates: Config['data']['templates']) {
-		this.request = request;
-		this.templates = templates;
+	public constructor(httpResponse: HTTP.ServerResponse) {
 		this.httpResponse = httpResponse;
-
-		this.httpResponse.setHeader('X-Powered-By', 'MyNetFeez-Labs Vortez');
+		this.httpResponse.setHeader('X-Powered-By', 'Vortez');
 		this.httpResponse.setHeader('X-Version', Response.version);
 	}
 
@@ -130,6 +120,35 @@ export class Response {
 	}
 
 	/**
+	 * Sets a cookie in the response.
+	 * @param name - The name of the cookie.
+	 * @param value - The value of the cookie. If `null`, the cookie will be deleted.
+	 * @param options - Optional cookie settings.
+	 * @returns The current response instance.
+	 * @remarks Value can be `null` to delete the cookie. Options can include `domain`, `expires`, `httpOnly`, `path`, `sameSite`, `maxAge`, and `secure`.
+	 */
+	public cookie(name: string, value: string | null = null, options: Response.CookieOptions = {}): this {
+		this.cookies({ name, value, options });
+		return this;
+	}
+
+	/**
+	 * Sets multiple cookies in the response.
+	 * @param cookies - An array of cookie objects to set.
+	 * @returns The current response instance.
+	 * @remarks Each cookie object should have `name`, `value`, and optional `options`. value can be `null` to delete the cookie. Options can include `domain`, `expires`, `httpOnly`, `path`, `sameSite`, `maxAge`, and `secure`.
+	 */
+	public cookies(...cookies: Response.Cookie[]): this {
+		if (!this.vHeaders['set-cookie']) this.vHeaders['set-cookie'] = [];
+		if (!Array.isArray(this.vHeaders['set-cookie'])) this.vHeaders['set-cookie'] = [this.vHeaders['set-cookie']];
+		for (const cookie of cookies) {
+			const cookieString = this.cookieString(cookie.name, cookie.value, cookie.options ?? {});
+			this.vHeaders['set-cookie'].push(cookieString);
+		}
+		return this;
+	}
+
+	/**
 	 * Sets the encoding used for the response.
 	 * @param encode - The encoding used for the response.
 	 * @returns The current response instance.
@@ -165,8 +184,6 @@ export class Response {
 	private sendHeaders(): this {
         if (this.isHeadersSent) { logger.warn('[Response Warning] - Headers have already been sent.'); return this; }
 		const headers: HTTP.OutgoingHttpHeaders = { ...this.vHeaders };
-        const cookieSetters = this.request.cookies.setters;
-		if (cookieSetters.length > 0) headers['set-cookie'] = cookieSetters;
 		this.httpResponse.writeHead(this.vStatus, headers);
         return this;
 	}
@@ -215,48 +232,22 @@ export class Response {
 	/**
      * Sends a file as a response.
      * @param path - The file path to send.
+     * @param range - Optional custom range object or string range.
      * @throws If the file does not exist or is not accessible.
      */
-    public async sendFile(path: string): Promise<void> {
+    public async sendFile(path: string, range?: Partial<Response.Range> | string): Promise<void> {
         path = Path.normalize(path);
         const details = await FS.promises.stat(path);
         if (!details.isFile()) throw new ServerError(500, '[Response Error] - Provided path is not a file.');
         this.type(PATH.extname(path));
-        if (this.vAcceptRange && this.request.headers.range) {
-            const stream = this.createRangeStream(details.size, path);
+        if (this.vAcceptRange && range) {
+            const stream = this.createRangeStream(details.size, range, path);
             return await this.send(stream);
         }
         return await this
             .header('Content-Length', details.size.toString())
             .send(FS.createReadStream(path));
     }
-
-	/**
-	 * Sends the listing of a folder as a response.
-	 * @param base - The routing rule base path.
-	 * @param plus - The relative path received in the request.
-	 * @throws If the folder does not exist or is invalid.
-	 */
-	public async sendFolder(base: string, plus: string = ''): Promise<void> {
-		const basePath = Path.resolve(base);
-		const path = await PathSecurity.resolveInsideBase(basePath, plus);
-		if (!path) {
-			logger.warn(`&C2[Vortez Security] Vortez has detected a potential Path Traversal attack:`);
-			logger.warn(` &C3- IP: &C6${this.request.ip}`);
-			logger.warn(` &C3- Session ID: &C6${this.request.session.id}`);
-			logger.warn(` &C3- URL: &C6${this.request.url}`);
-			logger.warn(` &C3- Base: &C6${basePath}`);
-			logger.warn(` &C3- Intento: &C6${plus}`);
-			throw new ServerError(403, 'Forbidden: Outside of sandbox');
-		}
-		if (!await File.exists(path)) throw new ServerError(404, 'The requested URL was not found');
-		const details = await FS.promises.stat(path);
-		if (details.isFile()) return await this.sendFile(path);
-		if (!details.isDirectory()) throw new ServerError(404, 'The requested URL was not found');
-		const folder = await FS.promises.readdir(path);
-		const template = this.templates.folder ?? Path.relativeToMe(import.meta, '../../global/template/folder.vhtml');
-		await this.sendTemplate(template, { Url: this.request.url, folder });
-	}
 
 	/**
 	 * Sends a `.vhtml` template as a response.
@@ -293,6 +284,38 @@ export class Response {
 		throw new ServerError(status, message);
 	}
 
+	/**
+	 * Creates a cookie string for the given parameters.
+	 * @param name - The name of the cookie.
+	 * @param value - The value of the cookie.
+	 * @param options - The cookie options.
+	 * @returns The cookie string.
+	 */
+	private cookieString(name: string, value: string | null, options: Response.CookieOptions): string {
+		if (value === null) {
+			const { domain, path } = options;
+			return `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0${domain ? `; Domain=${domain}` : ''}${path ? `; Path=${path}` : ''}`;
+		} else {
+			const { domain, expires, httpOnly, maxAge, path, sameSite, secure } = options;
+			let setter = `${name}=${value}`;
+			if (domain)   setter += `; Domain=${domain}`;
+			if (expires)  setter += `; Expires=${expires.toUTCString()}`;
+			if (httpOnly) setter += '; HttpOnly';
+			if (maxAge)   setter += `; Max-Age=${maxAge}`;
+			if (path)     setter += `; Path=${path}`;
+			if (sameSite) setter += `; SameSite=${sameSite}`;
+			if (secure)   setter += '; Secure';
+			return setter;
+		}
+	}
+
+	/**
+	 * Checks if the provided error is a client abort error.
+	 * @param error - The error to check.
+	 * @returns True if the error is a client abort error, false otherwise.
+	 * @remarks This method checks for specific error codes and names that indicate a client has aborted the request.
+	 * It is used to handle cases where the client disconnects before the server can complete sending the response.
+	 */
 	private isClientAbortError(error: unknown): boolean {
 		if (!(error instanceof Error)) return false;
 		if ('code' in error && typeof error.code === 'string') return (
@@ -304,51 +327,56 @@ export class Response {
 		return error.name === 'AbortError';
 	}
 
-    /**
+	/**
      * Applies the requested byte range to the response.
      * @param size - The total size of the resource.
+     * @param range - Range object or raw range header string (e.g. "bytes=0-1023").
      * @param path - The file path of the resource.
      * @returns A readable stream for the requested range.
      * @throws If the requested range is invalid.
      */
-    private createRangeStream(size: number, path: string): FS.ReadStream {
-        const rangeHeader = this.request.headers.range;
-        if (!rangeHeader) throw new ServerError(416, 'Requested range exceeds file size');
-        const info = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader);
-        if (!info) throw new ServerError(416, 'Requested range exceeds file size');
-        const [, startString, endString] = info;
-        let start: number;
-        let end: number;
-        if (startString && endString) {
-            start = Number(startString);
-            end = Number(endString);
-        } else if (startString) {
-            start = Number(startString);
-            const maxSize = start + 1024 * 1000;
-            end = maxSize >= size ? size - 1 : maxSize;
-        } else if (endString) {
-            const suffixSize = Number(endString);
-            if (!Number.isInteger(suffixSize) || suffixSize <= 0) throw new ServerError(416, 'Requested range exceeds file size');
-            start = Math.max(size - suffixSize, 0);
-            end = size - 1;
-        } else throw new ServerError(416, 'Requested range exceeds file size');
-
-        if (
-            !Number.isInteger(start) ||
-            !Number.isInteger(end) ||
-            start < 0 ||
-            end < start ||
-            start >= size ||
-            end >= size
-        ) throw new ServerError(416, 'Requested range exceeds file size');
-
+    private createRangeStream(size: number, range: Partial<Response.Range> | string, path: string): FS.ReadStream {
+        const { start, end } = this.normalizeRange(range, size);
+        if (start < 0 || end < start || start >= size || end >= size) throw new ServerError(416, 'Requested range exceeds file size');
         const length = end - start + 1;
-
         this.status(206)
             .header('Content-Length', length.toString())
             .header('Content-Range', `bytes ${start}-${end}/${size}`);
-
         return FS.createReadStream(path, { start, end });
+    }
+
+	/**
+	 * Normalizes a range object or string into a valid range with start and end values.
+	 * @param range - The range object or string to normalize.
+	 * @param totalSize - The total size of the resource.
+	 * @returns A normalized range object with start and end values.
+	 * @throws If the range is invalid or cannot be normalized.
+	 * @remarks This method supports both string ranges (e.g., "bytes=0-1023") and partial range objects.
+	 * It ensures that the start and end values are within valid bounds based on the total size of the resource.
+	 */
+	private normalizeRange(range: Partial<Response.Range> | string, totalSize: number): Response.Range {
+        let start: number | undefined;
+        let end: number | undefined;
+
+        if (typeof range === 'string') {
+            const matches = range.replace(/bytes=/i, '').trim().split('-');
+            if (matches.length === 2) {
+                start = matches[0] ? parseInt(matches[0], 10) : undefined;
+                end = matches[1] ? parseInt(matches[1], 10) : undefined;
+            }
+        } else if (typeof range === 'object' && range !== null) {
+            start = 'start' in range ? range.start : undefined;
+            end = 'end' in range ? range.end : undefined;
+        }
+
+        if (start !== undefined && end === undefined) {
+            end = totalSize - 1;
+        } else if (start === undefined && end !== undefined) {
+            start = Math.max(0, totalSize - end);
+            end = totalSize - 1;
+        }
+        if (start === undefined || end === undefined || Number.isNaN(start) || Number.isNaN(end)) throw new ServerError(400, 'Invalid range');
+        return { start, end };
     }
 
 	/**
@@ -380,13 +408,32 @@ export class Response {
 	public static generateHeaders(extension: string): HTTP.OutgoingHttpHeaders {
 		extension = extension.startsWith('.') ? extension.slice(1) : extension;
 		extension = extension.toLowerCase();
-		const type = Response.contentTypeMap[extension];
+		const type = Response.ContentTypeMap[extension];
 		return { 'Content-Type': type ?? 'application/octet-stream' };
 	}
 }
 
 export namespace Response {
-	export interface contentTypeMap {
+	export interface Range {
+		start: number;
+		end: number;
+	}
+	export interface Cookie {
+		name: string;
+		value: string | null;
+		options?: Response.CookieOptions;
+	}
+	export interface CookieOptions {
+        domain?: string;
+        expires?: Date;
+        httpOnly?: boolean;
+        path?: string;
+        sameSite?: 'strict' | 'lax' | 'none';
+        maxAge?: number;
+        secure?: boolean;
+	}
+
+	export interface ContentTypeMap {
 		[key: string]: string | undefined;
 	}
 
