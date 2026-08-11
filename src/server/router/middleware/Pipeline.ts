@@ -26,6 +26,10 @@ export class Pipeline {
         if (client instanceof Response) return this.runHttp(request, client, destination, state);
         else return this.runWs(request, client, destination, state);
     }
+    public runError(error: unknown, request: Request, client: Response | ws.Server, state: Middleware.State = {}): Promise<void> {
+        if (client instanceof Response) return this.runHttpError(error, request, client, state);
+        else return this.runWsError(error, request, client, state);
+    }
     protected async runHttp(request: Request, response: Response, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {
         try {
             const pipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP in middleware);
@@ -40,11 +44,7 @@ export class Pipeline {
             };
 
             await next();
-        } catch (error) {
-            const errorPipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP_ERROR in middleware);
-            if (errorPipe.length === 0) return this.fallbackErrorHandler(error, request, response);
-            return this.runHttpError(error, errorPipe, request, response, state);
-        }
+        } catch (error) { return this.runHttpError(error, request, response, state); }
     }
     protected async runWs(request: Request, ws: ws.Server, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {        
         try {
@@ -68,14 +68,11 @@ export class Pipeline {
             };
 
             await next();
-        } catch (error) {
-            const errorPipe = this.pipeline.filter((middleware) => MIDDLEWARE.WEBSOCKET_ERROR in middleware);
-            if (errorPipe.length === 0) return this.fallbackErrorHandler(error, request, ws);
-            return this.runWsError(error, errorPipe, request, ws, state);
-        }
+        } catch (error) { return this.runWsError(error, request, ws, state); }
     }
-    protected async runHttpError(error: unknown, errorPipe: Middleware.HttpError[], request: Request, response: Response, state: Middleware.State): Promise<void> {
+    protected async runHttpError(error: unknown, request: Request, response: Response, state: Middleware.State): Promise<void> {
         try {
+            const errorPipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP_ERROR in middleware);
             let index = 0;
             const nextError = async (caughtError?: unknown): Promise<void> => {
                 if (caughtError) throw caughtError;
@@ -87,8 +84,9 @@ export class Pipeline {
             await nextError();
         } catch (err) { return this.fallbackErrorHandler(err, request, response); }
     }
-    protected async runWsError(error: unknown, errorPipe: Middleware.WsError[], request: Request, ws: ws.Server, state: Middleware.State): Promise<void> {
+    protected async runWsError(error: unknown, request: Request, ws: ws.Server, state: Middleware.State): Promise<void> {
         try {
+            const errorPipe = this.pipeline.filter(middleware => MIDDLEWARE.WEBSOCKET_ERROR in middleware);
             let index = 0;
             const nextError = async (caughtError?: unknown): Promise<void> => {
                 if (caughtError) throw caughtError;
@@ -104,15 +102,15 @@ export class Pipeline {
         if (client instanceof Response) {
             if (error instanceof ServerError) {
                 if (client.isSent) return void logger.warn('throw ApiError used when response was already sent');
-                return client.sendError(error.status, error.message);
+                return client.status(error.status).send(error.message);
             } else if (error instanceof Error) {
                 logger.error(error);
                 if (client.isSent) return;
-                return client.sendError(500, error.message);
+                return client.status(500).send(`Internal Server Error ${error.message}`);
             } else {
                 logger.error(error);
                 if (client.isSent) return;
-                return client.sendError(500, 'Internal Server Error');
+                return client.status(500).send('Internal Server Error');
             }
         } else {
             if (error instanceof ServerError) {
