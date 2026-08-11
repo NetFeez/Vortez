@@ -219,11 +219,11 @@ export class Response {
      */
     public async sendFile(path: string): Promise<void> {
         path = Path.normalize(path);
-        const details = await FS.promises.stat(path);
 		if  (!File.exists(path)) {
 			logger.warn(`&C2[Vortez Warning] File not found: &C6${path}`);
 			throw new ServerError(404, 'The requested URL was not found');
         }
+        const details = await FS.promises.stat(path);
         if (!details.isFile()) throw new ServerError(500, '[Response Error] - Provided path is not a file.');
         this.type(PATH.extname(path));
         if (this.vAcceptRange && this.request.headers.range) {
