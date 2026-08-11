@@ -265,7 +265,7 @@ export class Router {
         if (router instanceof Router) {
             router.prefix = template;
             const rules = router.algorithm.rules.map(rule => {
-                rule.template = this.templatePrefix(rule.template)
+                rule.template = this.templatePrefix(rule.template, template);
                 return rule;
             });
             router.algorithm.clear();
