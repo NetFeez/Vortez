@@ -16,6 +16,12 @@ export class Pipeline {
     public constructor(pipeline: Middleware.Type[] = []) {
         this.pipeline = [...pipeline];
     }
+
+    /**
+     * Add middleware or another pipeline to the current pipeline.
+     * @param items The middleware or pipelines to add.
+     * @returns The current pipeline instance for chaining.
+     */
     public use(...items: (Middleware.Type | Pipeline)[]): this {
         for (const item of items) {
             if (item instanceof Pipeline) this.pipeline.push(...item.pipeline);
@@ -24,18 +30,45 @@ export class Pipeline {
         return this;
     }
 
+    /**
+     * Run the middleware pipeline for the given request and client type (HTTP or WebSocket).
+     * @param request The request to process.
+     * @param client The client (HTTP response or WebSocket) to process the request for.
+     * @param destination An optional function to call after the middleware pipeline is complete.
+     * @param state The current state of the middleware pipeline.
+     * @throws Any error that occurs during the execution of the middleware pipeline.
+     * @returns A promise that resolves when the middleware pipeline is complete.
+     */
     public async run(request: Request, client: Response | ws.Server, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {
         try {
             if (CLIENT.HTTP in client) return await this.runHttp(request, client, destination, state);
             else return await this.runWs(request, client, destination, state);
         } catch (error) { return await this.runError(error, request, client, state); }
     }
+
+    /**
+     * Run the error handling pipeline for the given client type (HTTP or WebSocket).
+     * @param error The error that occurred.
+     * @param request The request that triggered the error.
+     * @param client The client (HTTP response or WebSocket) to handle the error for.
+     * @param state The current state of the middleware pipeline.
+     * @throws Unhandled errors that are not caught by any middleware in the error handling pipeline.
+     * @returns A promise that resolves when the error handling pipeline is complete.
+     */
     public async runError(error: unknown, request: Request, client: Response | ws.Server, state: Middleware.State = {}): Promise<void> {
-        try {
-            if (CLIENT.HTTP in client) return await this.runHttpError(error, request, client, state);
-            else return await this.runWsError(error, request, client, state);
-        } catch (error) { this.fallbackErrorHandler(error, request, client); return Promise.resolve(); }
+        if (CLIENT.HTTP in client) return await this.runHttpError(error, request, client, state);
+        else return await this.runWsError(error, request, client, state);
     }
+
+    /**
+     * Run the HTTP middleware pipeline.
+     * @param request The HTTP request.
+     * @param response The HTTP response.
+     * @param destination An optional function to call after the middleware pipeline is complete.
+     * @param state The current state of the middleware pipeline.
+     * @throws Any error that occurs during the execution of the middleware pipeline.
+     * @returns A promise that resolves when the middleware pipeline is complete.
+     */
     protected async runHttp(request: Request, response: Response, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {
         const pipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP in middleware);
 
@@ -50,6 +83,16 @@ export class Pipeline {
 
         await next();
     }
+
+    /**
+     * Run the WebSocket middleware pipeline.
+     * @param request The request that initiated the WebSocket connection.
+     * @param ws The WebSocket connection.
+     * @param destination An optional function to call after the middleware pipeline is complete.
+     * @param state The current state of the middleware pipeline.
+     * @throws Any error that occurs during the execution of the middleware pipeline.
+     * @returns A promise that resolves when the middleware pipeline is complete.
+     */
     protected async runWs(request: Request, ws: ws.Server, destination?: Pipeline.Destination, state: Middleware.State = {}): Promise<void> {        
         const pipe = this.pipeline.filter((middleware) => MIDDLEWARE.WEBSOCKET in middleware);
 
@@ -72,60 +115,49 @@ export class Pipeline {
 
         await next();
     }
+
+    /**
+     * Run the error handling pipeline for HTTP errors.
+     * @param error The error that occurred.
+     * @param request The request that triggered the error.
+     * @param response The response object to send the error to.
+     * @param state The current state.
+     * @throws The error if it is not handled by any middleware.
+     * @returns A promise that resolves when the error handling is complete.
+     */
     protected async runHttpError(error: unknown, request: Request, response: Response, state: Middleware.State): Promise<void> {
         const errorPipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP_ERROR in middleware);
         let index = 0;
         const nextError = async (caughtError?: unknown): Promise<void> => {
             if (caughtError) throw caughtError;
-            if (index >= errorPipe.length) return await this.fallbackErrorHandler(error, request, response);
+            if (index >= errorPipe.length) throw error;
             const current = errorPipe[index++];
             return await current.run(error, request, response, nextError, state);
         };
 
         await nextError();
     }
+
+    /**
+     * Run the error handling pipeline for WebSocket errors.
+     * @param error The error that occurred.
+     * @param request The request that triggered the error.
+     * @param ws The WebSocket connection.
+     * @param state The current state.
+     * @throws The error if it is not handled by any middleware.
+     * @returns A promise that resolves when the error handling is complete.
+     */
     protected async runWsError(error: unknown, request: Request, ws: ws.Server, state: Middleware.State): Promise<void> {
         const errorPipe = this.pipeline.filter(middleware => MIDDLEWARE.WEBSOCKET_ERROR in middleware);
         let index = 0;
         const nextError = async (caughtError?: unknown): Promise<void> => {
             if (caughtError) throw caughtError;
-            if (index >= errorPipe.length) return await this.fallbackErrorHandler(error, request, ws);
+            if (index >= errorPipe.length) throw error;
             const current = errorPipe[index++];
             return await current.run(error, request, ws, nextError, state);
         };
 
         await nextError();
-    }
-    protected async fallbackErrorHandler(error: unknown, request: Request, client: Response | ws.Server): Promise<void> {
-        if (CLIENT.HTTP in client) {
-            if (error instanceof ServerError) {
-                if (client.isSent) return void logger.warn('throw ApiError used when response was already sent');
-                return client.status(error.status).send(error.message);
-            } else if (error instanceof Error) {
-                logger.error(error);
-                if (client.isSent) return;
-                return client.status(500).send(`Internal Server Error ${error.message}`);
-            } else {
-                logger.error(error);
-                if (client.isSent) return;
-                return client.status(500).send('Internal Server Error');
-            }
-        } else {
-            if (error instanceof ServerError) {
-                if (error.isSended) return;
-                if (client.isClosed) return void logger.error(error);
-                if (client.status !== 'handshake') return;
-                await client.reject(error.status, error.message);
-            } else if (error instanceof Error) {
-                logger.error(error);
-                if (client.isClosed || client.status !== 'handshake') return;
-                await client.reject(500, error.message);
-            } else {
-                logger.error(error);
-                if (client.isClosed || client.status !== 'handshake') return;
-                await client.reject(500, 'Internal Server Error');
-            }
-        }
     }
     public get middlewareNames(): string[] { return this.pipeline.map(middleware => middleware.action.name || middleware.identifier); }
 }

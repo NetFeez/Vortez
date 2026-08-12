@@ -49,7 +49,7 @@ export class Server {
 	public constructor(config: Server.Config | Server.Config.toProcess = {}) {
 		this.config = config instanceof Server.Config ? config : new Server.Config(config);
 		this.router = new Server.Router(this.config.get('routing.algorithm'));
-		this.gate = new Gate(this.config, this.router);
+		this.gate = new Gate(this.router);
 		this.HttpServer = null;
 		this.HttpsServer = null;
 		this.protocol = null;
