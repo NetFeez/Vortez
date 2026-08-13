@@ -95,19 +95,19 @@ export class Pipeline {
             const current = pipe[index++];
             const name = current.action.name || current.identifier;
 
-            tracker.beginNext(depth, name);
-
+            let called = false;
             let resolved = false;
-            const wrappedNext: Middleware.Next = async (error): Promise<void> => {
+            const wrappedNext: Middleware.Next = async (error) => {
+                called = true;
+                tracker.beginNext(depth, name);
                 try { await next(error); }
-                finally { resolved = true; }
+                finally { resolved = true; tracker.endNext(depth); }
             };
 
-            try {
-                const result = current.run(request, response, wrappedNext, state);
-                if (result instanceof Promise) await result;
-                tracker.verifyAwait(depth, name, resolved);
-            } finally { tracker.endNext(depth); }
+            const result = current.run(request, response, wrappedNext, state);
+            if (result instanceof Promise) await result;
+            if (!called && !response.isSent) throw new ServerError(500, `[Pipeline Error] Middleware "${name}" (depth ${depth}) ended request execution without calling next() or sending a response.`);
+            if (called) tracker.verifyAwait(depth, name, resolved);
         };
 
         await next();
@@ -145,19 +145,19 @@ export class Pipeline {
             const current = pipe[index++];
             const name = current.action.name || current.identifier;
 
-            tracker.beginNext(depth, name);
-
+            let called = false;
             let resolved = false;
             const wrappedNext: Middleware.Next = async (error): Promise<void> => {
+                called = true;
+                tracker.beginNext(depth, name);
                 try { await next(error); }
-                finally { resolved = true; }
+                finally { resolved = true; tracker.endNext(depth); }
             };
 
-            try {
-                const result = current.run(request, ws, wrappedNext, state);
-                if (result instanceof Promise) await result;
-                tracker.verifyAwait(depth, name, resolved);
-            } finally { tracker.endNext(depth); }
+            const result = current.run(request, ws, wrappedNext, state);
+            if (result instanceof Promise) await result;
+            if (!called && !ws.isClosed && ws.status === 'handshake') throw new ServerError(500, `[Pipeline Error] Middleware "${name}" (depth ${depth}) ended request execution without calling next() or handling websocket connection.`);
+            if (called) tracker.verifyAwait(depth, name, resolved);
         };
 
         await next();
@@ -165,7 +165,7 @@ export class Pipeline {
 
     /**
      * Run the error handling pipeline for HTTP errors.
-     * @param error The error that occurred.
+     * @param initialError The error that occurred.
      * @param request The request that triggered the error.
      * @param response The response object to send the error to.
      * @param state The current state.
@@ -173,22 +173,21 @@ export class Pipeline {
      * @throws The error if it is not handled by any middleware.
      * @returns A promise that resolves when the error handling is complete.
      */
-    protected async runHttpError(error: unknown, request: Request, response: Response, state: Middleware.State, tracker?: Tracker): Promise<void> {
+    protected async runHttpError(initialError: unknown, request: Request, response: Response, state: Middleware.State, tracker?: Tracker): Promise<void> {
         const pipe = this.pipeline.filter(middleware => MIDDLEWARE.HTTP_ERROR in middleware);
         let index = 0;
-        const next: Middleware.Next = async (error) => {
-            if (error) throw error;
+        const next: Middleware.Next = async (nextError?: unknown) => {
+            const error = nextError ?? initialError;
             if (index >= pipe.length) throw error;
             const current = pipe[index++];
             return await current.run(error, request, response, next, state);
         };
-
-        await next();
+        await next(initialError);
     }
 
     /**
      * Run the error handling pipeline for WebSocket errors.
-     * @param error The error that occurred.
+     * @param initialError The error that occurred.
      * @param request The request that triggered the error.
      * @param ws The WebSocket connection.
      * @param state The current state.
@@ -196,16 +195,16 @@ export class Pipeline {
      * @throws The error if it is not handled by any middleware.
      * @returns A promise that resolves when the error handling is complete.
      */
-    protected async runWsError(error: unknown, request: Request, ws: ws.Server, state: Middleware.State, tracker?: Tracker): Promise<void> {
+    protected async runWsError(initialError: unknown, request: Request, ws: ws.Server, state: Middleware.State, tracker?: Tracker): Promise<void> {
         const pipe = this.pipeline.filter(middleware => MIDDLEWARE.WEBSOCKET_ERROR in middleware);
         let index = 0;
-        const next: Middleware.Next = async (error) => {
-            if (error) throw error;
+        const next: Middleware.Next = async (nextError?: unknown) => {
+            const error = nextError ?? initialError;
             if (index >= pipe.length) throw error;
             const current = pipe[index++];
             return await current.run(error, request, ws, next, state);
         };
-        await next();
+        await next(initialError);
     }
     public get middlewareNames(): string[] { return this.pipeline.map(middleware => middleware.action.name || middleware.identifier); }
 }

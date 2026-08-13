@@ -8,7 +8,6 @@ import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 
 import LoggerManager from '../LoggerManager.js';
-import ServerError from '../ServerError.js';
 import type Request from '../Request.js';
 import type Response from '../Response.js';
 import type ws from '../websocket/ws.js';
@@ -82,7 +81,7 @@ export class Tracker {
     public beginNext(depth: number, name: string): void {
         const state = this.nextCalls.get(depth);
         if (state?.called) {
-            const error = new ServerError(500, `[Tracker Error] Double next() execution detected in middleware "${name}" (depth: ${depth})`);
+            const error = new Error(`[Tracker Error] Double next() execution detected in middleware "${name}" (depth: ${depth})`);
             logger.error(error);
             throw error;
         }
@@ -118,7 +117,11 @@ export class Tracker {
      */
     public verifyAwait(depth: number, middlewareName: string, isNextResolved: boolean): void {
         const state = this.nextCalls.get(depth);
-        if (state && state.called && !isNextResolved && !state.completed) logger.warn(`[Tracker Warning] Middleware "${middlewareName}" (depth ${depth}) did not await next(). Floating promise execution detected.`);
+        if (state && state.called && !isNextResolved && !state.completed) {
+            const message = `[Tracker Warning] Middleware "${middlewareName}" (depth ${depth}) did not await next(). Floating promise execution detected.`;
+            logger.warn(message);
+            throw new Error(message);
+        }
     }
 }
 
