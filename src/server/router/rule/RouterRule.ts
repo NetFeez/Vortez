@@ -6,6 +6,7 @@ import type ws from "../../websocket/ws.js";
 import type Middleware from "../middleware/Middleware.js";
 import Pipeline from "../middleware/Pipeline.js";
 import Router from "../Router.js";
+import Tracker from "../Tracker.js";
 
 import Rule from "./Rule.js";
 
@@ -32,8 +33,8 @@ export class RouterRule extends Rule<Router> {
     public override test(request: Request): boolean {
         return super.test(request) && this.content.test(request);
     }
-    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}): Promise<void> {
-        await this.content.route(request, client, state);
+    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
+        await this.content.route(request, client, state, tracker);
     }
 }
 

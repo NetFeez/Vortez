@@ -21,6 +21,7 @@ import _HttpRule from './rule/HttpRule.js';
 import _WsRule from './rule/WsRule.js';
 import _RouterRule from './rule/RouterRule.js';
 import Rule from './rule/Rule.js';
+import _Tracker from './Tracker.js';
 
 const logger = LoggerManager.getInstance();
 
@@ -63,16 +64,20 @@ export class Router {
      * Routes a request to the appropriate rule based on the request and client type (HTTP or WebSocket).
      * @param request - The Request object representing the incoming request.
      * @param client - The client object, which can be either a Response (for HTTP) or a WebSocket.Server (for WebSocket).
+     * @param state - Shared middleware state.
+     * @param tracker - Optional execution tracker instance.
      * @returns A promise that resolves to true if a matching rule was found and executed, or false if no matching rule was found.
      * @throws An error if the client type is invalid (not Response or WebSocket.Server).
      * @remarks This method determines the type of client (HTTP or WebSocket) and calls the appropriate routing method (routeRequest or routeWebSocket) to find and execute the matching rule. If no matching rule is found, it returns false. If the client type is invalid, it throws an error.
      */
-    public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}): Promise<boolean> {
+    public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}, tracker?: _Tracker): Promise<boolean> {
+        tracker ??= new _Tracker(request, client);
         const rule: Rule<any> | null = this.vAlgorithm.find(request) || null;
         if (!rule) return false;
+        tracker.rule = rule;
         request.ruleParams = rule.params(request.url);
-        const destination: _Pipeline.Destination = async (state) => await rule.exec(request, client, state);
-        await this.pipeline.run(request, client, destination);
+        const destination: _Pipeline.Destination = async (state) => await rule.exec(request, client, state, tracker);
+        await this.pipeline.run(request, client, destination, state, tracker);
         return true;
     }
 
@@ -263,7 +268,7 @@ export class Router {
      */
     public router(template: string, router: Router | Router.SubRouterOptions = {}): Router {
         template = this.templatePrefix(template);
-        
+
         let subRouter: Router;
         if (router instanceof Router) {
             router.prefix = template;
@@ -342,6 +347,7 @@ export namespace Router {
     export import Middleware = _Middleware;
     export import HttpRule = _HttpRule;
     export import WsRule = _WsRule;
+    export import Tracker = _Tracker;
 
     export interface AlgorithmMap {
         FIFO: typeof _FIFO;

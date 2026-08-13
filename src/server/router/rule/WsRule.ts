@@ -4,6 +4,7 @@ import type Request from "../../Request.js";
 import type ws from "../../websocket/ws.js";
 import type Middleware from "../middleware/Middleware.js";
 import Pipeline from "../middleware/Pipeline.js";
+import Tracker from "../Tracker.js";
 
 import Rule from "./Rule.js";
 
@@ -27,11 +28,11 @@ export class WsRule extends Rule<WsRule.Content> {
         return super.test(request);
     }
 
-    public override async exec(request: Request, client: ws.Server, state: Middleware.State = {}): Promise<void> {
+    public override async exec(request: Request, client: ws.Server, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
         request.ruleParams = this.params(request.url);
         await this.pipeline.run(request, client, async middlewareState => {
             await this.vContent(request, client, middlewareState);
-        }, state);
+        }, state, tracker);
     }
 
     /**

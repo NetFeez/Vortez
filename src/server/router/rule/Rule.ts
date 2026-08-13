@@ -11,6 +11,7 @@ import Response from '../../Response.js';
 import ws from '../../websocket/ws.js';
 import Middleware from '../middleware/Middleware.js';
 import Pipeline from '../middleware/Pipeline.js';
+import Tracker from '../Tracker.js';
 
 export abstract class Rule<Content extends any> {
     public [RULE.BASE] = true;
@@ -50,8 +51,9 @@ export abstract class Rule<Content extends any> {
      * @param request - The request received by the router.
      * @param client - The client associated with the request.
      * @param state - Shared middleware state.
+     * @param tracker - Optional execution tracker instance.
      */
-    public abstract exec(request: Request, client: Response | ws.Server, state?: Middleware.State): Promise<void>;
+    public abstract exec(request: Request, client: Response | ws.Server, state?: Middleware.State, tracker?: Tracker): Promise<void>;
     /**
      * Tests whether a request matches the routing rule.
      * @param request - The request to test.
