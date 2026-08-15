@@ -23,9 +23,9 @@ export class WsRule extends Rule<WsRule.Content> {
         pipeline: Pipeline = new Pipeline()
     ) { super(template, content, pipeline); }
 
-    public override test(request: Request): boolean {
-        if (!WsRule.isWebsocketRequest(request)) return false;
-        return super.test(request);
+    public override test(url: string, method?: string, isWs?: boolean): boolean {
+        if (isWs === false || method !== 'GET') return false;
+        return super.test(url);
     }
 
     public override async exec(request: Request, client: ws.Server, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
@@ -43,6 +43,7 @@ export class WsRule extends Rule<WsRule.Content> {
      */
     public static isWebsocketRequest(request: Request): boolean {
         if (!('upgrade' in request.headers)) return false;
+        if (request.headers['upgrade']?.toLowerCase() !== 'websocket') return false;
         if (!('sec-websocket-key' in request.headers)) return false;
         if (request.method !== 'GET') return false;
         return true;

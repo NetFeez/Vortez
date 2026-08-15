@@ -26,16 +26,16 @@ export abstract class Algorithm {
      * @returns The matching rule, or null if no rule matches.
      * @remarks This method is used by the router to find a rule that matches the incoming request and client.
      */
-    public abstract find(request: Request): Algorithm.ruleType | null;
+    public abstract find(url: string, method?: string, isWs?: boolean): Algorithm.ruleType | null;
     /**
-     * Test whether a request and client match any rule in the routing algorithm.
-     * @param request - The request to test.
-     * @param client - The client to test.
+     * Test whether a URL and optional method/type match any rule in the routing algorithm.
+     * @param url - The URL to test.
+     * @param method - Optional HTTP method to match.
+     * @param isWs - Optional flag indicating if request is WebSocket.
      * @returns True if a rule matches, false otherwise.
-     * @remarks This method is used by the router to determine whether a request and client match any rule in the routing algorithm.
      */
-    public test(request: Request): boolean {
-        return this.find(request) !== null;
+    public test(url: string, method?: string, isWs?: boolean): boolean {
+        return this.find(url, method, isWs) !== null;
     }
 }
 export namespace Algorithm {

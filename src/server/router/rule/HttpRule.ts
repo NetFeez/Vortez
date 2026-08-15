@@ -31,11 +31,10 @@ export class HttpRule extends Rule<HttpRule.Content> {
         pipeline: Pipeline = new Pipeline()
     ) { super(template, content, pipeline); }
 
-
-    public override test(request: Request): boolean {
-        if (this.method !== 'ALL' && this.method !== request.method) return false;
-        if (!HttpRule.isHttpRequest(request)) return false;
-        return super.test(request);
+    public override test(url: string, method?: string, isWs?: boolean): boolean {
+        if (isWs) return false;
+        if (!this.testMethod(method)) return false;
+        return super.test(url);
     }
 
     public override async exec(request: Request, client: Response, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
@@ -44,6 +43,17 @@ export class HttpRule extends Rule<HttpRule.Content> {
             await this.vContent(request, client, middlewareState);
             if (client.isSent && tracker) tracker.markSent();
         }, state, tracker);
+    }
+
+    /**
+     * Tests whether a request method matches the rule's method.
+     * @param method - The method to test.
+     * @returns True if the method matches; otherwise, false.
+     */
+    public testMethod(method?: Request.Method): boolean {
+        if (!method) return false;
+        if (this.method === 'ALL') return true;
+        return this.method === method;
     }
 
     /**

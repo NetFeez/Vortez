@@ -46,17 +46,7 @@ export class Router {
 
     public get prefix(): string { return this.vPrefix; }
     protected set prefix(prefix: string) {
-        const old = this.vPrefix;
         this.vPrefix = prefix;
-        const rules = this.vAlgorithm.rules.map(rule => {
-            let template = rule.template;
-            if (this.hasPrefix(template, old)) template = template.slice(old.length);
-            rule.template = this.templatePrefix(template, prefix);
-            if (rule instanceof _RouterRule) rule.content.prefix = rule.template.replace(/(.+)\/\*$/, '$1');
-            return rule;
-        });
-        this.vAlgorithm.clear();
-        this.vAlgorithm.add(...rules);
     }
 
     public get algorithm(): _Algorithm { return this.vAlgorithm; }
@@ -67,14 +57,16 @@ export class Router {
     }
 
     /**
-     * Tests whether a request matches any routing rule in the router.
-     * @param request - The request to test.
-     * @param client - The client that made the request.
-     * @returns True if the request matches any routing rule, false otherwise.
+     * Tests whether a request or URL matches any routing rule in the router.
+     * @param urlOrRequest - The URL string or Request to test.
+     * @param method - Optional HTTP method string.
+     * @param isWs - Optional flag indicating if request is WebSocket.
+     * @returns True if a matching routing rule exists, false otherwise.
      */
-    public test(request: Request): boolean {
-        const rule = this.vAlgorithm.test(request) || null;
-        return !!rule;
+    public test(urlOrRequest: string | Request, method?: string, isWs?: boolean): boolean {
+        if (typeof urlOrRequest === 'string') return this.vAlgorithm.test(urlOrRequest, method, isWs);
+        const isWebSocket = _WsRule.isWebsocketRequest(urlOrRequest);
+        return this.vAlgorithm.test(urlOrRequest.url, urlOrRequest.method, isWebSocket);
     }
 
     /**
@@ -83,17 +75,26 @@ export class Router {
      * @param client - The client object, which can be either a Response (for HTTP) or a WebSocket.Server (for WebSocket).
      * @param state - Shared middleware state.
      * @param tracker - Optional execution tracker instance.
+     * @param path - Optional active path override (used for sub-router surplus delegation).
      * @returns A promise that resolves to true if a matching rule was found and executed, or false if no matching rule was found.
      * @throws An error if the client type is invalid (not Response or WebSocket.Server).
-     * @remarks This method determines the type of client (HTTP or WebSocket) and calls the appropriate routing method (routeRequest or routeWebSocket) to find and execute the matching rule. If no matching rule is found, it returns false. If the client type is invalid, it throws an error.
      */
-    public async route(request: Request, client: Response | ws.Server, state: _Middleware.State = {}, tracker?: _Tracker): Promise<boolean> {
-        tracker ??= new _Tracker(request, client);
-        const rule: Rule<any> | null = this.vAlgorithm.find(request) || null;
+    public async route(
+        request: Request,
+        client: Response | ws.Server,
+        state: _Middleware.State = {},
+        tracker: _Tracker = new _Tracker(request, client),
+        path: string = request.url
+    ): Promise<boolean> {
+        const isWs = _WsRule.isWebsocketRequest(request);
+        const rule: Rule<any> | null = this.vAlgorithm.find(path, request.method, isWs) || null;
         if (!rule) return false;
         tracker.rule = rule;
-        request.ruleParams = rule.params(request.url);
-        const destination: _Pipeline.Destination = async (state) => await rule.exec(request, client, state, tracker);
+        const params = rule.params(path);
+        request.ruleParams = { ...request.ruleParams, ...params };
+        const destination: _Pipeline.Destination = async (middlewareState) => {
+            await rule.exec(request, client, middlewareState, tracker);
+        };
         await this.pipeline.run(request, client, destination, state, tracker);
         return true;
     }
@@ -288,11 +289,10 @@ export class Router {
 
         let subRouter: Router;
         if (router instanceof Router) {
-            router.prefix = template;
             subRouter = router;
         } else {
             const { algorithm = 'FIFO', pipeline = new _Pipeline() } = router;
-            subRouter = new Router(algorithm, template);
+            subRouter = new Router(algorithm);
             subRouter.pipeline.use(pipeline);
         }
 

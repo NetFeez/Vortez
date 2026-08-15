@@ -24,20 +24,19 @@ export class RouterRule extends Rule<Router> {
         super(template, content, pipeline);
     }
 
-    /**
-     * Tests whether a request matches the routing rule.
-     * @param request - The request to test.
-     * @returns True if the request matches the routing rule, false otherwise.
-     * @Remarks This method overrides the base Rule.test() method to add additional checks for HTTP requests.
-     */
-    public override test(request: Request): boolean {
-        return super.test(request) && this.content.test(request);
+    public override test(url: string, method?: string, isWs?: boolean): boolean {
+        if (!super.test(url)) return false;
+        const surplus = this.surplus(url);
+        return this.content.test(surplus, method, isWs);
     }
-    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
-        await this.content.route(request, client, state, tracker);
+
+    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker, currentPath?: string): Promise<void> {
+        const path = currentPath ?? request.url;
+        const surplus = this.surplus(path);
+        await this.content.route(request, client, state, tracker, surplus);
     }
 }
 
-export namespace RouterRule {}
+export namespace RouterRule { }
 
 export default RouterRule;

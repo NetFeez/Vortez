@@ -63,7 +63,7 @@ export abstract class Rule<Content extends any> {
      * 
      * @virtual
      */
-    public test(request: Request, ...args: any[]): boolean { return this.vExpression.test(request.url); };
+    public test(url: string, ...args: any[]): boolean { return this.vExpression.test(url); };
     /**
      * Gets the parameters from the URL based on the routing rule.
      * @param path - The URL to resolve.

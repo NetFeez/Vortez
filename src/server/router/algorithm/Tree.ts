@@ -1,11 +1,3 @@
-import { CLIENT } from '../../../support/symbols.js';
-
-import type Request from '../../Request.js';
-import type Response from '../../Response.js';
-import type Websocket from '../../websocket/ws.js';
-import type HttpRule from '../rule/HttpRule.js';
-import type WsRule from '../rule/WsRule.js';
-
 import Algorithm from './Algorithm.js';
 import FIFO from './FIFO.js';
 
@@ -19,6 +11,7 @@ class RouteNode {
         this.statics = new Map();
         this.fifo = new FIFO();
     }
+
     public get rules(): Algorithm.ruleType[] {
         const rules = [...this.fifo.rules];
         if (this.wildcard) rules.push(...this.wildcard.rules);
@@ -38,10 +31,11 @@ namespace RouteNode {
 
 export class Tree extends Algorithm {
     private root: RouteNode;
-    public constructor() { super();
-        this.root = new RouteNode();
-    }
+
+    public constructor() { super(); this.root = new RouteNode(); }
+
     public override get rules(): Algorithm.ruleType[] { return this.root.rules; }
+
     public override add(...rules: Algorithm.ruleType[]): void {
         for (const rule of rules) {
             const segments = this.splitPath(rule.template);
@@ -54,10 +48,10 @@ export class Tree extends Algorithm {
                 } else if (segment.startsWith('$')) {
                     const isOptional = segment.startsWith('$?');
                     const paramName = segment.replace(/^\$\??/, '');
-					if (isOptional && index === segments.length - 1) {
-						currentNode.fifo.add(rule);
-						break;
-					}
+                    if (isOptional && index === segments.length - 1) {
+                        currentNode.fifo.add(rule);
+                        break;
+                    }
                     currentNode.params ??= { name: paramName, isOptional, node: new RouteNode() };
                     currentNode = currentNode.params.node;
                 } else {
@@ -75,21 +69,20 @@ export class Tree extends Algorithm {
      * @param request - The request to navigate to.
      * @returns The route node or null if not found.
      */
-    private navigate(request: Request): RouteNode | null {
-        const segments = this.splitPath(request.url);
+    private navigate(url: string, method?: string, isWs?: boolean): RouteNode | null {
+        const segments = this.splitPath(url);
         let currentNode = this.root;
 
         for (const segment of segments) {
             if (currentNode.statics.has(segment)) {
                 currentNode = currentNode.statics.get(segment)!;
             } else if (currentNode.params) {
-                const { name, node } = currentNode.params;
-                request.ruleParams[name] = segment; 
+                const { node } = currentNode.params;
                 currentNode = node;
             } else if (currentNode.wildcard) {
                 currentNode = currentNode.wildcard;
                 break;
-            } else if (currentNode.fifo.rules.some((rule) => rule.test(request))) {
+            } else if (currentNode.fifo.rules.some((rule) => rule.test(url, method, isWs))) {
                 return currentNode;
             } else return null;
         }
@@ -106,10 +99,10 @@ export class Tree extends Algorithm {
     public override clear(): Promise<void> | void {
         this.root = new RouteNode();
     }
-    public override find(request: Request): Algorithm.ruleType | null {
-        const node = this.navigate(request);
-        return node ? node.fifo.find(request) : null;
+    public override find(url: string, method?: string, isWs?: boolean): Algorithm.ruleType | null {
+        const node = this.navigate(url, method, isWs);
+        return node ? node.fifo.find(url, method, isWs) : null;
     }
 }
-export namespace Tree {};
+export namespace Tree { };
 export default Tree;
