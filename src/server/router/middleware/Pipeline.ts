@@ -106,6 +106,7 @@ export class Pipeline {
 
             const result = current.run(request, response, wrappedNext, state);
             if (result instanceof Promise) await result;
+            if (response.isSent && tracker) tracker.markSent();
             if (!called && !response.isSent) throw new ServerError(500, `[Pipeline Error] Middleware "${name}" (depth ${depth}) ended request execution without calling next() or sending a response.`);
             if (called) tracker.verifyAwait(depth, name, resolved);
         };

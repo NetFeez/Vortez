@@ -4,8 +4,6 @@
  * @license Apache-2.0
  */
 
-import { CLIENT, RULE } from '../../support/symbols.js';
-
 import type Request from '../Request.js';
 import type Response from '../Response.js';
 import type ws from '../websocket/ws.js';
