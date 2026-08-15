@@ -34,7 +34,7 @@ export abstract class Algorithm {
      * @param isWs - Optional flag indicating if request is WebSocket.
      * @returns True if a rule matches, false otherwise.
      */
-    public test(url: string, method?: string, isWs?: boolean): boolean {
+    public test(url: string, method: Request.Method = 'GET', isWs: boolean = false): boolean {
         return this.find(url, method, isWs) !== null;
     }
 }

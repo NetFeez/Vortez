@@ -24,7 +24,7 @@ export class RouterRule extends Rule<Router> {
         super(template, content, pipeline);
     }
 
-    public override test(url: string, method?: string, isWs?: boolean): boolean {
+    public override test(url: string, method: Request.Method = 'GET', isWs: boolean = false): boolean {
         if (!super.test(url)) return false;
         const surplus = this.surplus(url);
         return this.content.test(surplus, method, isWs);

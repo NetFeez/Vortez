@@ -23,13 +23,12 @@ export class WsRule extends Rule<WsRule.Content> {
         pipeline: Pipeline = new Pipeline()
     ) { super(template, content, pipeline); }
 
-    public override test(url: string, method?: string, isWs?: boolean): boolean {
+    public override test(url: string, method: Request.Method = 'GET', isWs: boolean = false): boolean {
         if (isWs === false || method !== 'GET') return false;
         return super.test(url);
     }
 
     public override async exec(request: Request, client: ws.Server, state: Middleware.State = {}, tracker?: Tracker): Promise<void> {
-        request.ruleParams = this.params(request.url);
         await this.pipeline.run(request, client, async middlewareState => {
             await this.vContent(request, client, middlewareState);
         }, state, tracker);

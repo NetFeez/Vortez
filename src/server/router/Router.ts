@@ -63,7 +63,7 @@ export class Router {
      * @param isWs - Optional flag indicating if request is WebSocket.
      * @returns True if a matching routing rule exists, false otherwise.
      */
-    public test(urlOrRequest: string | Request, method?: string, isWs?: boolean): boolean {
+    public test(urlOrRequest: string | Request, method: Request.Method = 'GET', isWs: boolean = false): boolean {
         if (typeof urlOrRequest === 'string') return this.vAlgorithm.test(urlOrRequest, method, isWs);
         const isWebSocket = _WsRule.isWebsocketRequest(urlOrRequest);
         return this.vAlgorithm.test(urlOrRequest.url, urlOrRequest.method, isWebSocket);

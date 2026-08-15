@@ -63,7 +63,7 @@ export abstract class Rule<Content extends any> {
      * 
      * @virtual
      */
-    public test(url: string, ...args: any[]): boolean { return this.vExpression.test(url); };
+    public test(url: string, method: Request.Method = 'GET', isWs: boolean = false): boolean { return this.vExpression.test(url); };
     /**
      * Gets the parameters from the URL based on the routing rule.
      * @param path - The URL to resolve.
@@ -99,7 +99,7 @@ export abstract class Rule<Content extends any> {
         const zones = template.split('/').slice(1);
         let generated = '^';
 
-        for (let index = 0; index < zones.length; index ++) {
+        for (let index = 0; index < zones.length; index++) {
             const zone = zones[index];
 
             if (zone == '*') {
