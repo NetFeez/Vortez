@@ -18,6 +18,7 @@ import _WebSocket from "./websocket/ws.js";
 import _Router from "./router/Router.js";
 import _Middleware from "./router/middleware/Middleware.js";
 import _ServerError from "./ServerError.js";
+import _TrackerError from './router/TrackerError.js';
 import { Gate } from './router/Gate.js';
 
 export { LoggerManager } from './LoggerManager.js';
@@ -29,6 +30,7 @@ export { Websocket as WebSocket } from "./websocket/ws.js";
 export { Router } from "./router/Router.js";
 export { Middleware } from "./router/middleware/Middleware.js";
 export { ServerError } from "./ServerError.js";
+export { TrackerError } from "./router/TrackerError.js";
 
 const logger = _LoggerManager.getInstance();
 
@@ -72,15 +74,17 @@ export class Server {
 			logger.info(`&C(255,180,220)│ &C3Host: &R${host}`);
 			logger.info(`&C(255,180,220)│ &C3HTTP Port: &R${port}`);
 			logger.info(`&C(255,180,220)│ &C3HTTP URL: &C6http://${host}:${port}`);
-			try { if (sslOptions) {
-				this.HttpsServer = await this.initHTTPS(host, sslOptions);
-				logger.info(`&C(255,180,220)│ &C3HTTPS Port: &R${sslOptions.port ?? 443}`);
-				logger.info(`&C(255,180,220)│ &C3HTTPS URL: &C6https://${host}:${sslOptions.port ?? 443}`);
-			} } catch(error) {
+			try {
+				if (sslOptions) {
+					this.HttpsServer = await this.initHTTPS(host, sslOptions);
+					logger.info(`&C(255,180,220)│ &C3HTTPS Port: &R${sslOptions.port ?? 443}`);
+					logger.info(`&C(255,180,220)│ &C3HTTPS URL: &C6https://${host}:${sslOptions.port ?? 443}`);
+				}
+			} catch (error) {
 				throw Error('Certificate error ' + (error instanceof Error ? error.message : error), { cause: error });
 			}
 			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
-		} catch(error) {
+		} catch (error) {
 			logger.error(`&C(255,180,220)│ &C1✖ Error starting server: &R&C6${error instanceof Error ? error.message : error}`);
 			logger.info('&C(255,180,220)╰─────────────────────────────────────────────');
 			await this.stop();
@@ -110,7 +114,7 @@ export class Server {
 			}
 			logger.info('&C(255,180,220)│ &C2✔ All servers stopped successfully');
 			logger.info('&C(255,180,220)╰─────────────────────────────');
-		} catch(error) {
+		} catch (error) {
 			logger.error('&C(255,180,220)│ &C1✖ Error stopping server: &R&C6' + (error instanceof Error ? error.message : error));
 			logger.info('&C(255,180,220)╰─────────────────────────────');
 		}
@@ -194,31 +198,33 @@ export class Server {
 	 */
 	public static async loadCertificates(pathCert: string, pathKey: string): Promise<Server.Certificates> {
 		const key = await File.read(pathKey).catch(() => { throw new Error(`Failed to read key file at ${pathKey}`); });
-    	const cert = await File.read(pathCert).catch(() => { throw new Error(`Failed to read certificate file at ${pathCert}`); });
-        return { cert, key };
-  	}
+		const cert = await File.read(pathCert).catch(() => { throw new Error(`Failed to read certificate file at ${pathCert}`); });
+		return { cert, key };
+	}
 }
 
 export namespace Server {
 	export import Config = _Config;
-    export import Request = _Request
-    export import Response = _Response
-    export import WebSocket = _WebSocket
-    export import Router = _Router;
+	export import Request = _Request
+	export import Response = _Response
+	export import WebSocket = _WebSocket
+	export import Router = _Router;
 	export import Middleware = _Middleware;
 	export import LoggerManager = _LoggerManager;
 	export import ServerDebug = _ServerDebug;
 	export import ServerError = _ServerError;
-    export interface Certificates {
-        cert: Buffer | string,
-        key: Buffer | string
-    }
+	export import TrackerError = _TrackerError;
+
+	export interface Certificates {
+		cert: Buffer | string,
+		key: Buffer | string
+	}
 	export type SSLOptions = {
 		cert: string,
 		key: string,
 		port?: number
-    };
-    export type Protocol = 'HTTP' | 'HTTPS' | 'HTTP/S';
+	};
+	export type Protocol = 'HTTP' | 'HTTPS' | 'HTTP/S';
 }
 
 export default Server;

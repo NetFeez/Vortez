@@ -12,6 +12,7 @@ import type Request from '../Request.js';
 import type Response from '../Response.js';
 import type ws from '../websocket/ws.js';
 import type Rule from './rule/Rule.js';
+import _TrackerError from './TrackerError.js';
 
 const logger = LoggerManager.getInstance();
 
@@ -73,7 +74,7 @@ export class Tracker {
 
     /**
      * Registers a next() invocation at a given depth in the middleware pipeline.
-     * Throws a ServerError if next() has already been called at this depth.
+     * Throws a TrackerError if next() has already been called at this depth.
      * 
      * @param depth - Current index in the middleware pipeline.
      * @param name - Identifier/name of the middleware calling next().
@@ -81,7 +82,7 @@ export class Tracker {
     public beginNext(depth: number, name: string): void {
         const state = this.nextCalls.get(depth);
         if (state?.called) {
-            const error = new Error(`[Tracker Error] Double next() execution detected in middleware "${name}" (depth: ${depth})`);
+            const error = new _TrackerError(`[Tracker Error] Double next() execution detected in middleware "${name}" (depth: ${depth})`);
             logger.error(error);
             throw error;
         }
@@ -109,7 +110,7 @@ export class Tracker {
 
     /**
      * Inspects whether next() was properly awaited by the calling middleware.
-     * If the middleware function finishes before next() completes downstream, logs a warning.
+     * If the middleware function finishes before next() completes downstream, logs a warning and throws a TrackerError.
      * 
      * @param depth - Current index in the middleware pipeline.
      * @param middlewareName - Identifier of the middleware.
@@ -120,12 +121,14 @@ export class Tracker {
         if (state && state.called && !isNextResolved && !state.completed) {
             const message = `[Tracker Warning] Middleware "${middlewareName}" (depth ${depth}) did not await next(). Floating promise execution detected.`;
             logger.warn(message);
-            throw new Error(message);
+            throw new _TrackerError(message);
         }
     }
 }
 
 export namespace Tracker {
+    export import TrackerError = _TrackerError;
+
     export type Status = 'initialized' | 'routed' | 'executing' | 'sent' | 'completed' | 'failed';
 
     export interface NextState {
