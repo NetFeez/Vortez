@@ -52,7 +52,7 @@ export class Router {
             let template = rule.template;
             if (this.hasPrefix(template, old)) template = template.slice(old.length);
             rule.template = this.templatePrefix(template, prefix);
-            if (rule instanceof _RouterRule) rule.content.prefix = rule.template;
+            if (rule instanceof _RouterRule) rule.content.prefix = rule.template.replace(/(.+)\/\*$/, '$1');
             return rule;
         });
         this.vAlgorithm.clear();
