@@ -31,15 +31,32 @@ export class Router {
         Tree: _Tree,
     };
 
+    protected vPrefix: string;
     protected vAlgorithm: _Algorithm;
     public readonly pipeline: _Pipeline;
 
     public constructor(
         algorithm: keyof Router.AlgorithmMap | _Algorithm = 'FIFO',
-        protected prefix: string = ''
+        prefix: string = ''
     ) {
+        this.vPrefix = prefix;
         this.vAlgorithm = Router.getAlgorithm(algorithm);
         this.pipeline = new _Pipeline();
+    }
+
+    public get prefix(): string { return this.vPrefix; }
+    protected set prefix(prefix: string) {
+        const old = this.vPrefix;
+        this.vPrefix = prefix;
+        const rules = this.vAlgorithm.rules.map(rule => {
+            let template = rule.template;
+            if (this.hasPrefix(template, old)) template = template.slice(old.length);
+            rule.template = this.templatePrefix(template, prefix);
+            if (rule instanceof _RouterRule) rule.content.prefix = rule.template;
+            return rule;
+        });
+        this.vAlgorithm.clear();
+        this.vAlgorithm.add(...rules);
     }
 
     public get algorithm(): _Algorithm { return this.vAlgorithm; }
@@ -272,12 +289,6 @@ export class Router {
         let subRouter: Router;
         if (router instanceof Router) {
             router.prefix = template;
-            const rules = router.algorithm.rules.map(rule => {
-                rule.template = this.templatePrefix(rule.template, template);
-                return rule;
-            });
-            router.algorithm.clear();
-            router.algorithm.add(...rules);
             subRouter = router;
         } else {
             const { algorithm = 'FIFO', pipeline = new _Pipeline() } = router;
@@ -308,7 +319,7 @@ export class Router {
      */
     public multiple(...rules: (_HttpRule | _WsRule)[]): this {
         for (const rule of rules) {
-            if (!rule.template.startsWith(this.prefix)) rule.template = this.templatePrefix(rule.template);
+            if (!this.hasPrefix(rule.template)) rule.template = this.templatePrefix(rule.template);
             this.vAlgorithm.add(rule);
         }
         return this;
@@ -319,11 +330,24 @@ export class Router {
      * @param template - The template to prefix.
      * @returns The prefixed template.
      */
-    protected templatePrefix(template: string, prefix: string = this.prefix): string {
+    protected templatePrefix(template: string, prefix: string = this.vPrefix): string {
         if (!prefix) return template.startsWith('/') ? template : '/' + template;
         const combined = `${prefix}/${template}`;
         return combined.replace(/\/+/g, '/');
     }
+
+    /**
+     * Checks if a given template has the specified prefix.
+     * @param template - The template to check.
+     * @param prefix - The prefix to check against. Defaults to the router's prefix.
+     * @returns True if the template has the specified prefix, false otherwise.
+     * @remarks This method checks if the provided template starts with the specified prefix or is equal to it. If no prefix is provided, it defaults to the router's current prefix.
+     */
+    protected hasPrefix(template: string, prefix: string = this.vPrefix): boolean {
+        if (!prefix) return false;
+        return template === prefix || template.startsWith(`${prefix}/`);
+    }
+
     /**
      * Gets the algorithm instance based on the provided algorithm name or instance.
      * @param algorithm - The name of the algorithm or an instance of the algorithm.
