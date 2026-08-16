@@ -14,6 +14,9 @@ import Pipeline from '../middleware/Pipeline.js';
 import Tracker from '../Tracker.js';
 
 export abstract class Rule<Content extends any> {
+    protected static readonly MULTI_SLASH_REPLACER = /\/+/g;
+    protected static readonly RULE_NORMALIZER = /^\/?(.+?)\/?$/;
+
     public [RULE.BASE] = true;
 
     protected vTemplate: string;
@@ -86,9 +89,9 @@ export abstract class Rule<Content extends any> {
         return $surplus;
     }
     protected static normalize(template: string): string {
-        if (!template.startsWith('/')) template = '/' + template;
-        if (template.endsWith('/')) template = template.slice(0, -1);
-        template = template.replace(/\/+/g, '/');
+        template = template
+            .replace(this.MULTI_SLASH_REPLACER, '/')
+            .replace(this.RULE_NORMALIZER, '/$1');
         return template;
     }
     protected static create(template: string): RegExp {
