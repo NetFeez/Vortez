@@ -30,8 +30,8 @@ export class RouterRule extends Rule<Router> {
         return this.content.test(surplus, method, isWs);
     }
 
-    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker, currentPath?: string): Promise<void> {
-        const path = currentPath ?? request.url;
+    public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker, delegatedPath?: string): Promise<void> {
+        const path = delegatedPath ?? request.url;
         const surplus = this.surplus(path);
         await this.content.route(request, client, state, tracker, surplus);
     }

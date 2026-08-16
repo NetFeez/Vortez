@@ -52,8 +52,9 @@ export abstract class Rule<Content extends any> {
      * @param client - The client associated with the request.
      * @param state - Shared middleware state.
      * @param tracker - Optional execution tracker instance.
+     * @param delegatedPath - The path to match against the rule.
      */
-    public abstract exec(request: Request, client: Response | ws.Server, state?: Middleware.State, tracker?: Tracker): Promise<void>;
+    public abstract exec(request: Request, client: Response | ws.Server, state?: Middleware.State, tracker?: Tracker, delegatedPath?: string): Promise<void>;
     /**
      * Tests whether a request matches the routing rule.
      * @param request - The request to test.

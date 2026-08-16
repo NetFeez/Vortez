@@ -91,7 +91,7 @@ export class Router {
         const params = rule.params(path);
         request.ruleParams = { ...request.ruleParams, ...params };
         const destination: _Pipeline.Destination = async (middlewareState) => {
-            await rule.exec(request, client, middlewareState, tracker);
+            await rule.exec(request, client, middlewareState, tracker, path);
         };
         await this.pipeline.run(request, client, destination, state, tracker);
         return true;
