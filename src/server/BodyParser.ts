@@ -7,7 +7,9 @@
 import HTTP from 'http';
 
 export class BodyParser {
-    private static FORMDATA_VAR_INFO_REGEX = /Content-Disposition: ?form-data;? ?name="(.*?)?";? ?(?:filename="(.*?)?")?(?:\s*)?(?:Content-Type: ?(.*)?)?([^]*)/i;
+    private static CRLF = Buffer.from('\r\n');
+    private static HEADER_SEP = Buffer.from('\r\n\r\n');
+    public static MAX_BODY_SIZE = 500 * 1024 * 1024;
     public constructor(
         protected readonly headers: HTTP.IncomingHttpHeaders,
         protected readonly httpRequest: HTTP.IncomingMessage
@@ -37,12 +39,13 @@ export class BodyParser {
 	 */
     private async extractBody(): Promise<Buffer> {
         const chunks: any[] = [];
+        const maxBodySize = BodyParser.MAX_BODY_SIZE;
         return new Promise((resolve, reject) => {
             this.httpRequest.on('end', () => resolve(Buffer.concat(chunks)));
             this.httpRequest.on('error', (error) => reject(Error('fail parsing request body', { cause: error })));
             this.httpRequest.on('data', (chunk) => {
                 const size = chunks.reduce((total, current) => total + current.length, 0) + chunk.length;
-                if (size > 1e+8) return void this.httpRequest.destroy(Error('Request body is too large'));
+                if (size > maxBodySize) return void this.httpRequest.destroy(Error(`Request body is too large (max ${Math.round(maxBodySize / 1024 / 1024)}MB)`));
                 chunks.push(chunk);
             });
         });
@@ -106,40 +109,59 @@ export class BodyParser {
     private processFormData(body: Buffer, options: string[] = []): BodyParser.Body.Mimes.FormData {
         const content: BodyParser.Body.VarList = {};
         const files: BodyParser.Body.FileList = {};
-		const boundary = options.join(';').replace(/.*boundary=(.*)/gi, (result, boundary: string) => boundary);
-		const separator = '--' + (boundary !== '' ? boundary : this.inferBoundary(body) ?? '');
-        const decoded = body.toString('latin1').trim();
-        const fragments = decoded.split(separator);
-        fragments.forEach((fragment) => {
-            const info = this.getMultiPartInfo(fragment);
-            if (info == null) return;
-            if (info.fileName == null) return void (content[info.varName] = info.content.toString());
+        const boundary = options.join(';').replace(/.*boundary=(.*)/gi, (_: string, b: string) => b);
+        const separator = Buffer.from('--' + (boundary !== '' ? boundary : this.inferBoundary(body) ?? ''));
+        const parts = this.vSplitMultipart(body, separator);
+        for (const part of parts) {
+            const info = this.vParsePart(part);
+            if (info == null) continue;
+            if (info.fileName == null) { content[info.varName] = info.content.toString(); continue; }
             files[info.varName] = {
                 name: info.fileName,
                 size: info.content.length,
                 mimeType: info.mimeType || 'unknown',
                 content: info.content
-            }
-        });
-        return {
-            mimeType: 'multipart/form-data',
-            content, files
-        };
+            };
+        }
+        return { mimeType: 'multipart/form-data', content, files };
     }
-    /**
-	 * Extracts multipart field or file information from a raw string fragment.
-	 * @param data - The individual multipart fragment.
-	 * @returns Parsed multipart info or `null` if parsing fails.
-	 */
-    private getMultiPartInfo(data: string): BodyParser.MultiPart.Info | null {
-        const info = BodyParser.FORMDATA_VAR_INFO_REGEX.exec(data.trim());
-        if (info == null) return null;
-        const [ varName = "", fileName = null, mimeType = null, content = "" ] = info.splice(1);
+    private vSplitMultipart(body: Buffer, separator: Buffer): Buffer[] {
+        const parts: Buffer[] = [];
+        let cursor = 0;
+        const sepLen = separator.length;
+        while (cursor < body.length) {
+            const start = body.indexOf(separator, cursor);
+            if (start === -1) break;
+            const afterSep = start + sepLen;
+            if (afterSep + 2 > body.length) break;
+            if (body[afterSep] === 0x2D && body[afterSep + 1] === 0x2D) break;
+            const contentStart = afterSep + 2;
+            let next = body.indexOf(separator, contentStart);
+            if (next === -1) next = body.length;
+            else if (
+                next >= 2 &&
+                body[next - 2] === 0x0D &&
+                body[next - 1] === 0x0A
+            ) next -= 2;
+            parts.push(body.subarray(contentStart, next));
+            cursor = next;
+        }
+        return parts;
+    }
+    private vParsePart(part: Buffer): BodyParser.MultiPart.Info | null {
+        const sepIdx = part.indexOf(BodyParser.HEADER_SEP);
+        if (sepIdx === -1) return null;
+        const headerStr = part.subarray(0, sepIdx).toString('ascii');
+        const content = part.subarray(sepIdx + 4);
+        const nameMatch = headerStr.match(/name="([^"]*)"/);
+        const fileMatch = headerStr.match(/filename="([^"]*)"/);
+        const typeMatch = headerStr.match(/Content-Type:\s*(.+)/i);
+        if (!nameMatch) return null;
         return {
-            varName: Buffer.from(varName.trim(), 'binary').toString(),
-            content: Buffer.from(content.trim(), 'binary'),
-            fileName: fileName !== null ? Buffer.from(fileName.trim(), 'binary').toString() : null,
-            mimeType: mimeType !== null ? Buffer.from(mimeType.trim(), 'binary').toString() : null
+            varName: nameMatch[1],
+            content,
+            fileName: fileMatch?.[1] ?? null,
+            mimeType: typeMatch?.[1]?.trim() ?? null
         };
     }
 	/** 
