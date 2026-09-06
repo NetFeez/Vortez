@@ -76,7 +76,7 @@ export abstract class Rule<Content extends any> {
      */
     public params(path: string): Rule.ruleParams {
         const math = this.vExpression.exec(path);
-        return { ...math?.groups };
+        return math?.groups ? { ...math.groups } : {};
     }
     /**
      * Gets the surplus from the URL based on the routing rule.

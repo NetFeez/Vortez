@@ -11,6 +11,16 @@ import LoggerManager from '../../LoggerManager.js';
 
 const logger = LoggerManager.getInstance();
 
+/**
+ * Serving pipeline: runs middleware against a Request + client (HTTP response or WebSocket),
+ * dispatches by client type, and routes failures through a dedicated error pipeline.
+ * @remarks Intentional divergence from the SPA mirror the navigation guard pipeline of the
+ * VizUI router (src/core/router/pipeline/Pipeline.ts): that pipeline has no client dispatch,
+ * its navigation guards may either call `next()` or return a control result
+ * ({ redirect | abort | error }) and auto-progress when they return undefined, and it mirrors
+ * this error channel through Guard.Error guards run by `Pipeline.runError`. Only the
+ * `use()` flattening and the recursive `next()` chain are fully shared.
+ */
 export class Pipeline {
     private readonly pipeline: Middleware.Type[] = [];
 

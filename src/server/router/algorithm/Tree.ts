@@ -45,9 +45,9 @@ export class Tree extends Algorithm {
                 if (segment === '*') {
                     currentNode.wildcard ??= new RouteNode();
                     currentNode = currentNode.wildcard;
-                } else if (segment.startsWith('$')) {
-                    const isOptional = segment.startsWith('$?');
-                    const paramName = segment.replace(/^\$\??/, '');
+                } else if (segment.startsWith('$') || segment.startsWith(':')) {
+                    const isOptional = segment.startsWith('$?') || segment.startsWith(':?');
+                    const paramName = segment.replace(/^[\$:]\??/, '');
                     if (isOptional && index === segments.length - 1) {
                         currentNode.fifo.add(rule);
                         break;

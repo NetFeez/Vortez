@@ -31,9 +31,11 @@ export class RouterRule extends Rule<Router> {
     }
 
     public override async exec(request: Request, client: Response | ws.Server, state: Middleware.State = {}, tracker?: Tracker, delegatedPath?: string): Promise<void> {
-        const path = delegatedPath ?? request.url;
-        const surplus = this.surplus(path);
-        await this.content.route(request, client, state, tracker, surplus);
+        await this.pipeline.run(request, client, async middlewareState => {
+            const path = delegatedPath ?? request.url;
+            const surplus = this.surplus(path);
+            await this.content.route(request, client, middlewareState, tracker, surplus);
+        }, state, tracker);
     }
 }
 
